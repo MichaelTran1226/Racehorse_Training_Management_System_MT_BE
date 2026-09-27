@@ -1,52 +1,104 @@
 [
   {
-    "id": "FOUNDATION",
-    "fr": "FR-022",
-    "title": "Chốt stack, contract và nền dự án",
-    "milestone": "M0",
-    "priority": "P0 Critical",
-    "area": "governance",
-    "deps": [],
-    "lead": "Điều phối + FE + BE",
-    "risk": "High",
-    "ac": [
-      "Ghi quyết định stack/DB/runtime và auth policy, không lấy demo làm quyết định ngầm.",
-      "FE và BE khởi động được theo README; migration và health check có evidence.",
-      "CI chạy lint/typecheck/test/build thích hợp; .env và credential không được tracked."
-    ],
-    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
-    "screens": [],
-    "status": "Backlog",
-    "owner": "",
-    "targetDate": "",
-    "issueUrl": ""
-  },
-  {
     "id": "UI-V2",
     "fr": "FR-022",
-    "title": "Duyệt bộ giao diện Stitch V2",
+    "title": "Duyệt bộ giao diện Stitch V2, xây dựng Design System tokens (màu Forest Green #315D4B, font Manrope), Master layout (Sidebar 224px, Header 64px, Content 1440px) và routing cơ bản trên Frontend",
     "milestone": "M0",
     "priority": "P0 Critical",
     "area": "ui",
     "deps": [],
-    "lead": "FE + Điều phối",
+    "lead": "Lead + Frontend Dev",
     "risk": "Medium",
     "ac": [
-      "Screen map truy nguyên Flow 1–3 + auth/audit; optional tạm hoãn, màn hình riêng và link Stitch thực.",
-      "Không phả hệ/video; V03 dùng đúng file ảnh; AUTH01/02/03 tách rõ.",
-      "Review website desktop 1280/1440/1920px và state checklist; mọi lệch thiết kế có issue."
+      "Duyệt 31 màn hình Stitch",
+      "Khởi tạo project FE chạy mượt 1280/1440/1920px",
+      "Setup Router, Theme, Button, Modal, Table chuẩn"
     ],
     "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_FE",
-    "screens": [],
-    "status": "Backlog",
+    "screens": [
+      "AUTH01",
+      "AUTH02",
+      "AUTH03",
+      "AUTH04",
+      "AUTH05",
+      "AUTH06",
+      "AUTH07",
+      "AUTH08",
+      "SYS01",
+      "SYS02",
+      "H01",
+      "H02",
+      "H03",
+      "H04",
+      "T01",
+      "T02",
+      "T03",
+      "T04",
+      "T05",
+      "V01",
+      "V02",
+      "V03",
+      "V04",
+      "V05",
+      "V06",
+      "O01",
+      "O02",
+      "M01",
+      "M02",
+      "M03",
+      "M04",
+      "T03-CREATE",
+      "V02-RX",
+      "V06-CREATE",
+      "H04-GROOM",
+      "H03-OWNER"
+    ],
+    "status": "Todo",
     "owner": "",
-    "targetDate": "",
-    "issueUrl": ""
+    "targetDate": "30/09/2026",
+    "issueUrl": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_FE/issues/1",
+    "taskDetail": "Duyệt bộ giao diện Stitch V2, xây dựng Design System tokens (màu Forest Green #315D4B, font Manrope), Master layout (Sidebar 224px, Header 64px, Content 1440px) và routing cơ bản trên Frontend",
+    "lookup": "GH-FE-01",
+    "githubTitle": "[GH-FE-01][UI-V2] Duyệt bộ giao diện Stitch V2, xây dựng Design System tokens (màu Forest Green #315D4B, font Manrope), Master layout (Sidebar 224px, Header 64px, Content 1440px) và routing cơ bản trên Frontend",
+    "sprint": "Sprint 1",
+    "start": "28/09/2026",
+    "assigneePlaceholder": "Frontend Dev 1",
+    "branch": "feat/1-ui-v2-design-system"
+  },
+  {
+    "id": "FOUNDATION",
+    "fr": "FR-022",
+    "title": "Khởi tạo Backend, chốt Stack kỹ thuật (Node/NestJS hoặc Express/TS + SQLite/Postgres ORM), thiết kế Database Schema ban đầu, cấu hình Migration, Docker setup, CI pipeline và Health check endpoint",
+    "milestone": "M0",
+    "priority": "P0 Critical",
+    "area": "governance",
+    "deps": [],
+    "lead": "Lead + Backend Dev",
+    "risk": "High",
+    "ac": [
+      "Chốt stack chính thức",
+      "DB schema & migration chạy thành công",
+      "API Health check 200 OK",
+      "Setup test runner & CI lint/typecheck"
+    ],
+    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
+    "screens": [],
+    "status": "Todo",
+    "owner": "",
+    "targetDate": "30/09/2026",
+    "issueUrl": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/1",
+    "taskDetail": "Khởi tạo Backend, chốt Stack kỹ thuật (Node/NestJS hoặc Express/TS + SQLite/Postgres ORM), thiết kế Database Schema ban đầu, cấu hình Migration, Docker setup, CI pipeline và Health check endpoint",
+    "lookup": "GH-BE-01",
+    "githubTitle": "[GH-BE-01][FOUNDATION] Khởi tạo Backend, chốt Stack kỹ thuật (Node/NestJS hoặc Express/TS + SQLite/Postgres ORM), thiết kế Database Schema ban đầu, cấu hình Migration, Docker setup, CI pipeline và Health check endpoint",
+    "sprint": "Sprint 1",
+    "start": "28/09/2026",
+    "assigneePlaceholder": "Backend Dev 1",
+    "branch": "feat/1-foundation-stack"
   },
   {
     "id": "AUTH-LOGIN",
     "fr": "FR-001",
-    "title": "Đăng nhập và session",
+    "title": "Xác thực Đăng nhập & Quản lý Session/JWT",
     "milestone": "M0",
     "priority": "P0 Critical",
     "area": "auth",
@@ -54,12 +106,13 @@
       "FOUNDATION",
       "UI-V2"
     ],
-    "lead": "BE + FE",
+    "lead": "Backend Dev + Frontend Dev",
     "risk": "High",
     "ac": [
-      "Credentials hợp lệ tạo session và đưa đúng dashboard của role server cấp.",
-      "Sai mật khẩu, account khóa/chưa xác minh và session hết hạn không truy cập dữ liệu.",
-      "Logout/thu hồi session được kiểm chứng; password/token không vào URL hoặc log."
+      "Đăng nhập thành công trả về JWT & Role",
+      "5 vai trò vào đúng Dashboard riêng",
+      "Sai mật khẩu báo lỗi",
+      "Đăng xuất hủy token"
     ],
     "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
     "screens": [
@@ -67,27 +120,35 @@
       "SYS01",
       "SYS02"
     ],
-    "status": "Backlog",
+    "status": "Todo",
     "owner": "",
-    "targetDate": "",
-    "issueUrl": ""
+    "targetDate": "02/10/2026",
+    "issueUrl": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/2",
+    "taskDetail": "Xác thực Đăng nhập & Quản lý Session/JWT: Mã hóa mật khẩu an toàn, sinh JWT access/refresh token, xử lý đăng xuất, lưu phiên đăng nhập và điều hướng chính xác theo 5 vai trò người dùng",
+    "lookup": "GH-BE-02",
+    "githubTitle": "[GH-BE-02][AUTH-LOGIN] Xác thực Đăng nhập & Quản lý Session/JWT",
+    "sprint": "Sprint 1",
+    "start": "01/10/2026",
+    "assigneePlaceholder": "Fullstack Dev 1",
+    "branch": "feat/2-auth-login-session"
   },
   {
     "id": "AUTH-REGISTER",
     "fr": "FR-001",
-    "title": "Đăng ký chủ ngựa và xác minh email",
+    "title": "Đăng ký tài khoản Chủ sở hữu ngựa (Horse Owner) & Xác thực OTP qua Email",
     "milestone": "M0",
     "priority": "P0 Critical",
     "area": "auth",
     "deps": [
       "AUTH-LOGIN"
     ],
-    "lead": "BE + FE",
+    "lead": "Backend Dev + Frontend Dev",
     "risk": "High",
     "ac": [
-      "Signup không nhận role đặc quyền hoặc ownerId tùy ý; password được xử lý an toàn.",
-      "Mã xác minh đúng một lần, hết hạn/giới hạn gửi/lần thử có kiểm chứng; email provider đã chốt.",
-      "Xác minh xong vào tài khoản chưa có ngựa; không tự gán ownership; gửi lỗi không giả thành công."
+      "Đăng ký chỉ gán role Horse Owner",
+      "OTP 6 số hết hạn sau 15p",
+      "Giới hạn gửi lại mã (Rate limit)",
+      "Xác thực xong kích hoạt tài khoản"
     ],
     "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
     "screens": [
@@ -95,27 +156,34 @@
       "AUTH03",
       "AUTH04"
     ],
-    "status": "Backlog",
+    "status": "Todo",
     "owner": "",
-    "targetDate": "",
-    "issueUrl": ""
+    "targetDate": "03/10/2026",
+    "issueUrl": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/3",
+    "taskDetail": "Đăng ký tài khoản Chủ sở hữu ngựa (Horse Owner) & Xác thực OTP qua Email: Gửi mã xác minh 6 số, giới hạn thời gian hết hạn OTP, kích hoạt tài khoản chính chủ",
+    "lookup": "GH-BE-03",
+    "githubTitle": "[GH-BE-03][AUTH-REGISTER] Đăng ký tài khoản Chủ sở hữu ngựa (Horse Owner) & Xác thực OTP qua Email",
+    "sprint": "Sprint 1",
+    "start": "01/10/2026",
+    "assigneePlaceholder": "Fullstack Dev 2",
+    "branch": "feat/3-auth-register-otp"
   },
   {
     "id": "AUTH-RESET",
     "fr": "FR-001",
-    "title": "Khôi phục mật khẩu",
+    "title": "Quy trình Quên mật khẩu & Đặt lại mật khẩu an toàn",
     "milestone": "M0",
     "priority": "P0 Critical",
     "area": "auth",
     "deps": [
       "AUTH-LOGIN"
     ],
-    "lead": "BE + FE",
+    "lead": "Backend Dev + Frontend Dev",
     "risk": "High",
     "ac": [
-      "Forgot trả thông báo chung cho email tồn tại/không tồn tại.",
-      "Reset token hết hạn/đã dùng bị từ chối; mật khẩu xác nhận sai không được lưu.",
-      "Đổi mật khẩu thành công, session xử lý theo policy và login bằng mật khẩu mới đạt E2E."
+      "Thông báo chung tránh lộ email tồn tại",
+      "Token reset dùng 1 lần",
+      "Đổi mật khẩu xong đăng nhập bằng mật khẩu mới thành công"
     ],
     "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
     "screens": [
@@ -123,15 +191,22 @@
       "AUTH06",
       "AUTH07"
     ],
-    "status": "Backlog",
+    "status": "Todo",
     "owner": "",
-    "targetDate": "",
-    "issueUrl": ""
+    "targetDate": "04/10/2026",
+    "issueUrl": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/4",
+    "taskDetail": "Quy trình Quên mật khẩu & Đặt lại mật khẩu an toàn: Gửi liên kết/mã reset qua email, kiểm tra token reset một lần, cập nhật mật khẩu mới và hủy các phiên đăng nhập cũ",
+    "lookup": "GH-BE-04",
+    "githubTitle": "[GH-BE-04][AUTH-RESET] Quy trình Quên mật khẩu & Đặt lại mật khẩu an toàn",
+    "sprint": "Sprint 1",
+    "start": "02/10/2026",
+    "assigneePlaceholder": "Backend Dev 2",
+    "branch": "feat/4-auth-password-reset"
   },
   {
     "id": "AUTH-STAFF",
     "fr": "FR-001",
-    "title": "Mời nhân sự và quản lý quyền",
+    "title": "Mời nhân sự nội bộ (Manager, Trainer, Vet, Groom) & Quản lý danh sách nhân sự",
     "milestone": "M0",
     "priority": "P0 Critical",
     "area": "auth",
@@ -139,12 +214,12 @@
       "AUTH-LOGIN",
       "FR-021"
     ],
-    "lead": "BE + FE",
+    "lead": "Backend Dev + Frontend Dev",
     "risk": "Critical",
     "ac": [
-      "Lời mời gắn email và role server cấp; hết hạn/thu hồi/đã dùng bị từ chối.",
-      "Chỉ người có quyền được mời/đổi role/khóa account; không mất quản trị viên cuối cùng.",
-      "Đổi quyền có audit, ảnh hưởng session theo policy; không chỉ ẩn menu."
+      "Chỉ Manager được mời nhân sự",
+      "Link mời hết hạn sau 48h",
+      "Người nhận tạo mật khẩu và nhận đúng role được phân công"
     ],
     "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
     "screens": [
@@ -152,71 +227,91 @@
       "M02",
       "M03"
     ],
-    "status": "Backlog",
+    "status": "Todo",
     "owner": "",
-    "targetDate": "",
-    "issueUrl": ""
+    "targetDate": "04/10/2026",
+    "issueUrl": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/5",
+    "taskDetail": "Mời nhân sự nội bộ (Manager, Trainer, Vet, Groom) & Quản lý danh sách nhân sự: Manager tạo link mời kèm vai trò cụ thể, nhân viên nhận email kích hoạt tài khoản",
+    "lookup": "GH-BE-05",
+    "githubTitle": "[GH-BE-05][AUTH-STAFF] Mời nhân sự nội bộ (Manager, Trainer, Vet, Groom) & Quản lý danh sách nhân sự",
+    "sprint": "Sprint 1",
+    "start": "02/10/2026",
+    "assigneePlaceholder": "Frontend Dev 2",
+    "branch": "feat/5-auth-staff-invitation"
   },
   {
     "id": "AUTH-SCOPE",
     "fr": "FR-001",
-    "title": "RBAC và dữ liệu theo chủ sở hữu",
+    "title": "Phân quyền RBAC 5 vai trò & Cách ly dữ liệu Chủ ngựa",
     "milestone": "M0",
     "priority": "P0 Critical",
     "area": "auth",
     "deps": [
       "AUTH-LOGIN"
     ],
-    "lead": "BE + FE + QA",
+    "lead": "Backend Dev + QA Tester",
     "risk": "Critical",
     "ac": [
-      "Kiểm chứng đủ năm role trên API, trang và hành động sửa; sai quyền bị 403.",
-      "Hai Owner không đọc được ngựa/lịch/bệnh án/báo cáo của nhau bằng thay ID.",
-      "Scope ownership được tái sử dụng cho export/AI; có test hồi quy khi các module đó xuất hiện."
+      "Chặn 403 Forbidden nếu gọi sai quyền",
+      "Owner A tuyệt đối không xem được hồ sơ/bệnh án/lịch tập ngựa của Owner B"
     ],
     "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
     "screens": [
       "SYS01",
-      "O01"
+      "O01",
+      "M03"
     ],
-    "status": "Backlog",
+    "status": "Todo",
     "owner": "",
-    "targetDate": "",
-    "issueUrl": ""
+    "targetDate": "04/10/2026",
+    "issueUrl": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/6",
+    "taskDetail": "Phân quyền RBAC 5 vai trò & Cách ly dữ liệu Chủ ngựa: Xây dựng RBAC Middleware bảo vệ toàn bộ API endpoints, đảm bảo Horse Owner chỉ truy cập được dữ liệu ngựa của mình",
+    "lookup": "GH-BE-06",
+    "githubTitle": "[GH-BE-06][AUTH-SCOPE] Phân quyền RBAC 5 vai trò & Cách ly dữ liệu Chủ ngựa",
+    "sprint": "Sprint 1",
+    "start": "03/10/2026",
+    "assigneePlaceholder": "Backend Dev 1",
+    "branch": "feat/6-auth-rbac-scope"
   },
   {
     "id": "FR-021",
     "fr": "FR-021",
-    "title": "Nhật ký kiểm toán",
+    "title": "Hệ thống Nhật ký kiểm toán bất biến (Audit Trail Logging)",
     "milestone": "M0",
     "priority": "P0 Critical",
     "area": "governance",
     "deps": [
       "AUTH-LOGIN"
     ],
-    "lead": "BE + FE",
+    "lead": "Backend Dev + Frontend Dev",
     "risk": "High",
     "ac": [
-      "Thao tác nhạy cảm ghi tác nhân, thời gian, đối tượng, kết quả cùng thay đổi nghiệp vụ.",
-      "Không có API/UI sửa/xóa audit cho người dùng thường; không lưu credential.",
-      "Quản lý lọc/xem log; sai quyền từ chối; test failure/rollback không tạo lịch sử thành công sai."
+      "Bảng AuditLog bất biến (không cho sửa/xóa)",
+      "Ghi tự động qua Interceptor/Middleware",
+      "Giao diện xem và lọc log cho Manager"
     ],
     "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
     "screens": [
+      "M04",
       "V04",
-      "V05",
-      "M03",
-      "M04"
+      "V05"
     ],
-    "status": "Backlog",
+    "status": "Todo",
     "owner": "",
-    "targetDate": "",
-    "issueUrl": ""
+    "targetDate": "04/10/2026",
+    "issueUrl": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/7",
+    "taskDetail": "Hệ thống Nhật ký kiểm toán bất biến (Audit Trail Logging): Ghi nhận toàn bộ thao tác nhạy cảm (Đăng nhập, Phân quyền, Ban hành Medical Lock, Xếp lịch) kèm Actor, Timestamp, IP và Payload diff",
+    "lookup": "GH-BE-07",
+    "githubTitle": "[GH-BE-07][FR-021] Hệ thống Nhật ký kiểm toán bất biến (Audit Trail Logging)",
+    "sprint": "Sprint 1",
+    "start": "03/10/2026",
+    "assigneePlaceholder": "Backend Dev 2",
+    "branch": "feat/7-audit-trail-logging"
   },
   {
     "id": "FR-002",
     "fr": "FR-002",
-    "title": "Hồ sơ định danh ngựa",
+    "title": "Quản lý Hồ sơ & Định danh ngựa (Microchip RFID)",
     "milestone": "M1",
     "priority": "P0 Critical",
     "area": "horse",
@@ -224,12 +319,13 @@
       "AUTH-SCOPE",
       "FR-021"
     ],
-    "lead": "BE + FE",
+    "lead": "Fullstack Dev + QA Tester",
     "risk": "High",
     "ac": [
-      "Tạo/sửa/tìm theo chip; chip duy nhất kể cả hai request đồng thời.",
-      "Không xóa vật lý hồ sơ đã có lịch sử; sức khỏe và vòng đời rõ ràng.",
-      "Owner chỉ thấy ngựa liên kết đúng; hồ sơ không chứa phả hệ hay video."
+      "Tạo mới/cập nhật ngựa thành công",
+      "Số chip là unique constraint",
+      "Soft delete khi đã có dữ liệu liên quan",
+      "Tìm kiếm và lọc mượt mà"
     ],
     "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
     "screens": [
@@ -237,70 +333,91 @@
       "H02",
       "H03",
       "O01",
-      "M01"
+      "H03-OWNER"
     ],
-    "status": "Backlog",
+    "status": "Todo",
     "owner": "",
-    "targetDate": "",
-    "issueUrl": ""
+    "targetDate": "04/10/2026",
+    "issueUrl": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/8",
+    "taskDetail": "Quản lý Hồ sơ & Định danh ngựa (Microchip RFID): CRUD hồ sơ ngựa, validate số chip duy nhất (chống trùng lặp đồng thời), lưu trạng thái vòng đời, liên kết Chủ sở hữu",
+    "lookup": "GH-BE-08",
+    "githubTitle": "[GH-BE-08][FR-002] Quản lý Hồ sơ & Định danh ngựa (Microchip RFID)",
+    "sprint": "Sprint 1",
+    "start": "02/10/2026",
+    "assigneePlaceholder": "Fullstack Dev 1",
+    "branch": "feat/8-horse-profile-rfid"
   },
   {
     "id": "FR-003",
     "fr": "FR-003",
-    "title": "Phân bổ ô chuồng",
+    "title": "Sơ đồ phân bổ ô chuồng trại (Stall Allocation)",
     "milestone": "M1",
     "priority": "P0 Critical",
     "area": "horse",
     "deps": [
       "FR-002"
     ],
-    "lead": "BE + FE",
+    "lead": "Frontend Dev + Backend Dev",
     "risk": "High",
     "ac": [
-      "Chuyển ngựa vào ô trống và gán Groom hợp lệ lưu được, giao diện cập nhật.",
-      "Hai người phân cùng ô đồng thời chỉ một thành công; không để ngựa chiếm nhiều ô ngoài quy tắc.",
-      "Groom xem đúng phạm vi phân công; xung đột được giải thích và không mất dữ liệu."
+      "Hiển thị trực quan ô trống/đã có ngựa",
+      "Gán/chuyển ô chuồng atomic transaction",
+      "Chặn xếp trùng ô chuồng kể cả 2 request đồng thời"
     ],
     "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
     "screens": [
-      "H04"
+      "H04",
+      "H04-GROOM"
     ],
-    "status": "Backlog",
+    "status": "Todo",
     "owner": "",
-    "targetDate": "",
-    "issueUrl": ""
+    "targetDate": "07/10/2026",
+    "issueUrl": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/9",
+    "taskDetail": "Sơ đồ phân bổ ô chuồng trại (Stall Allocation): Hiển thị layout chuồng dạng lưới trực quan, phân bổ ngựa vào ô chuồng, kiểm tra xung đột ô (không thể xếp 2 ngựa vào cùng 1 ô)",
+    "lookup": "GH-BE-09",
+    "githubTitle": "[GH-BE-09][FR-003] Sơ đồ phân bổ ô chuồng trại (Stall Allocation)",
+    "sprint": "Sprint 2",
+    "start": "05/10/2026",
+    "assigneePlaceholder": "Frontend Dev 1",
+    "branch": "feat/9-stall-allocation-map"
   },
   {
     "id": "FR-008",
     "fr": "FR-008",
-    "title": "Bảng sức khỏe đàn ngựa",
+    "title": "Bảng theo dõi trạng thái sức khỏe đàn ngựa theo mã màu (Health Status Board)",
     "milestone": "M2",
     "priority": "P0 Critical",
     "area": "medical",
     "deps": [
       "FR-002"
     ],
-    "lead": "BE + FE",
+    "lead": "Frontend Dev + Backend Dev",
     "risk": "Medium",
     "ac": [
-      "Bốn trạng thái sức khỏe có màu và chữ, lọc/tìm đúng dữ liệu.",
-      "Medical Lock là thuộc tính hạn chế riêng, không suy tự động từ màu trạng thái.",
-      "Trạng thái trống/loading/lỗi và phân quyền đọc đạt kiểm tra viewport."
+      "Phân loại chính xác 4 mã màu",
+      "Thống kê số lượng ngựa theo từng trạng thái",
+      "Bác sĩ thú y lọc nhanh danh sách ngựa cần can thiệp"
     ],
     "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
     "screens": [
-      "V01",
-      "M01"
+      "V01"
     ],
-    "status": "Backlog",
+    "status": "Todo",
     "owner": "",
-    "targetDate": "",
-    "issueUrl": ""
+    "targetDate": "07/10/2026",
+    "issueUrl": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/10",
+    "taskDetail": "Bảng theo dõi trạng thái sức khỏe đàn ngựa theo mã màu (Health Status Board): Xanh lá (Đủ điều kiện), Vàng (Cần theo dõi), Đỏ (Chấn thương), Tím (Cách ly)",
+    "lookup": "GH-BE-10",
+    "githubTitle": "[GH-BE-10][FR-008] Bảng theo dõi trạng thái sức khỏe đàn ngựa theo mã màu (Health Status Board)",
+    "sprint": "Sprint 2",
+    "start": "05/10/2026",
+    "assigneePlaceholder": "Frontend Dev 2",
+    "branch": "feat/10-health-status-board"
   },
   {
     "id": "FR-009",
     "fr": "FR-009",
-    "title": "Bệnh án và phác đồ",
+    "title": "Bệnh án điện tử, chẩn đoán, phác đồ điều trị & Kê đơn thuốc",
     "milestone": "M2",
     "priority": "P0 Critical",
     "area": "medical",
@@ -308,27 +425,34 @@
       "FR-008",
       "FR-021"
     ],
-    "lead": "BE + FE",
+    "lead": "Backend Dev + Frontend Dev",
     "risk": "High",
     "ac": [
-      "Vet lưu bệnh án, phác đồ/thuốc với đơn vị và lịch; người không có quyền không chỉnh được.",
-      "Validation không lưu chẩn đoán/thuốc thiếu thông tin bắt buộc; lỗi giữ form.",
-      "Lịch sử sửa có audit; chính sách trừ kho được chốt trước tích hợp vật tư."
+      "Ghi nhận bệnh án đầy đủ thông tin lâm sàng",
+      "Kê đơn thuốc có validation liều lượng",
+      "Lưu trữ lịch sử vĩnh viễn theo mã chip ngựa"
     ],
     "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
     "screens": [
-      "H03",
-      "V02"
+      "V02",
+      "V02-RX"
     ],
-    "status": "Backlog",
+    "status": "Todo",
     "owner": "",
-    "targetDate": "",
-    "issueUrl": ""
+    "targetDate": "08/10/2026",
+    "issueUrl": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/11",
+    "taskDetail": "Bệnh án điện tử, chẩn đoán, phác đồ điều trị & Kê đơn thuốc: Lưu lịch sử khám chữa bệnh chi tiết của từng con ngựa, đơn thuốc kèm liều lượng và thời gian điều trị",
+    "lookup": "GH-BE-11",
+    "githubTitle": "[GH-BE-11][FR-009] Bệnh án điện tử, chẩn đoán, phác đồ điều trị & Kê đơn thuốc",
+    "sprint": "Sprint 2",
+    "start": "06/10/2026",
+    "assigneePlaceholder": "Fullstack Dev 2",
+    "branch": "feat/11-medical-record-prescriptions"
   },
   {
     "id": "FR-010",
     "fr": "FR-010",
-    "title": "Đánh dấu chấn thương trên ảnh 2D",
+    "title": "Bản đồ chấn thương 2D trên mô hình hệ xương giải phẫu (2D Skeletal Injury Mapper)",
     "milestone": "M2",
     "priority": "P0 Critical",
     "area": "medical",
@@ -336,26 +460,33 @@
       "FR-009",
       "UI-V2"
     ],
-    "lead": "FE + BE",
+    "lead": "Frontend Dev + Backend Dev",
     "risk": "High",
     "ac": [
-      "Ảnh đúng SHA256 của asset người dùng; không thay bằng mô hình tự vẽ hay 3D.",
-      "Marker lưu và tải lại đúng vị trí ảnh ở 1280/1440/1920px; vùng và bên cơ thể chọn riêng.",
-      "Vet sửa, người xem chỉ đọc; keyboard chọn vùng; lỗi tải ảnh/lưu có trạng thái rõ."
+      "Dùng đúng ảnh giải phẫu hệ xương 900x600",
+      "Tọa độ chấm điểm chuẩn hóa % không lệch khi co giãn màn hình",
+      "Hiển thị danh sách marker chấn thương"
     ],
     "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
     "screens": [
       "V03"
     ],
-    "status": "Backlog",
+    "status": "Todo",
     "owner": "",
-    "targetDate": "",
-    "issueUrl": ""
+    "targetDate": "09/10/2026",
+    "issueUrl": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/12",
+    "taskDetail": "Bản đồ chấn thương 2D trên mô hình hệ xương giải phẫu (2D Skeletal Injury Mapper): Cho phép Bác sĩ chấm điểm tọa độ (x, y) chấn thương trên ảnh giải phẫu gốc 900x600, ghi chú mức độ và theo dõi phục hồi",
+    "lookup": "GH-BE-12",
+    "githubTitle": "[GH-BE-12][FR-010] Bản đồ chấn thương 2D trên mô hình hệ xương giải phẫu (2D Skeletal Injury Mapper)",
+    "sprint": "Sprint 2",
+    "start": "07/10/2026",
+    "assigneePlaceholder": "Frontend Dev 1",
+    "branch": "feat/12-2d-injury-mapper"
   },
   {
     "id": "FR-011",
     "fr": "FR-011",
-    "title": "Ban hành và mở khóa y tế",
+    "title": "Quy trình Ban hành Lệnh Khóa huấn luyện khẩn cấp (Medical Lock) & Tái khám mở khóa",
     "milestone": "M2",
     "priority": "P0 Critical",
     "area": "medical",
@@ -363,28 +494,68 @@
       "FR-009",
       "FR-021"
     ],
-    "lead": "BE + FE",
+    "lead": "Backend Dev + Frontend Dev",
     "risk": "Critical",
     "ac": [
-      "Chỉ Vet ban hành/gỡ khóa với lý do và đánh giá; ngày dự kiến không tự mở khóa.",
-      "Lệnh khóa cập nhật hạn chế và xử lý buổi tập chịu ảnh hưởng nhất quán, có audit.",
-      "Mở khóa không tự chạy lại lịch đã đình chỉ; test quyền, retry và concurrency."
+      "Chỉ Vet mới được kích hoạt/hủy Medical Lock",
+      "Bắt buộc nhập lý do chấn thương",
+      "Tự động kích hoạt cờ đỏ trên toàn hệ thống"
     ],
     "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
     "screens": [
-      "T05",
       "V04",
       "V05"
     ],
-    "status": "Backlog",
+    "status": "Todo",
     "owner": "",
-    "targetDate": "",
-    "issueUrl": ""
+    "targetDate": "10/10/2026",
+    "issueUrl": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/13",
+    "taskDetail": "Quy trình Ban hành Lệnh Khóa huấn luyện khẩn cấp (Medical Lock) & Tái khám mở khóa: Chỉ Bác sĩ thú y có quyền bật cờ IsMedicalLocked kèm lý do, tự động gửi cảnh báo và ghi log kiểm toán",
+    "lookup": "GH-BE-13",
+    "githubTitle": "[GH-BE-13][FR-011] Quy trình Ban hành Lệnh Khóa huấn luyện khẩn cấp (Medical Lock) & Tái khám mở khóa",
+    "sprint": "Sprint 2",
+    "start": "08/10/2026",
+    "assigneePlaceholder": "Backend Dev 1",
+    "branch": "feat/13-emergency-medical-lock"
+  },
+  {
+    "id": "FR-012",
+    "fr": "FR-012",
+    "title": "Quản lý Lịch trình y tế dự phòng (Tiêm phòng vaccine, tẩy giun, kiểm tra móng Farrier)",
+    "milestone": "M2",
+    "priority": "P1 High",
+    "area": "medical",
+    "deps": [
+      "FR-009"
+    ],
+    "lead": "Fullstack Dev + QA Tester",
+    "risk": "Medium",
+    "ac": [
+      "Quản lý lịch tiêm phòng/móng",
+      "Cảnh báo quá hạn hoặc sắp đến hạn trong vòng 7 ngày",
+      "Đánh dấu đã hoàn thành ca chăm sóc"
+    ],
+    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
+    "screens": [
+      "V06",
+      "V06-CREATE"
+    ],
+    "status": "Todo",
+    "owner": "",
+    "targetDate": "11/10/2026",
+    "issueUrl": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/18",
+    "taskDetail": "Quản lý Lịch trình y tế dự phòng (Tiêm phòng vaccine, tẩy giun, kiểm tra móng Farrier): Lên lịch định kỳ, hiển thị timeline và gửi thông báo cảnh báo khi đến hạn",
+    "lookup": "GH-BE-18",
+    "githubTitle": "[GH-BE-18][FR-012] Quản lý Lịch trình y tế dự phòng (Tiêm phòng vaccine, tẩy giun, kiểm tra móng Farrier)",
+    "sprint": "Sprint 2",
+    "start": "09/10/2026",
+    "assigneePlaceholder": "Fullstack Dev 1",
+    "branch": "feat/18-preventive-care-schedule"
   },
   {
     "id": "FR-004",
     "fr": "FR-004",
-    "title": "Giáo án theo giai đoạn",
+    "title": "Lập kế hoạch giáo án huấn luyện chi tiết theo từng giai đoạn",
     "milestone": "M2",
     "priority": "P0 Critical",
     "area": "training",
@@ -392,27 +563,34 @@
       "FR-002",
       "FR-011"
     ],
-    "lead": "BE + FE",
+    "lead": "Backend Dev + Frontend Dev",
     "risk": "High",
     "ac": [
-      "Lưu giai đoạn, cự ly, tốc độ, khối lượng, mặt sân với đơn vị rõ.",
-      "Thiếu/âm/sai thời gian bị từ chối; giữ form khi API lỗi.",
-      "Không áp dụng giáo án khi bị Medical Lock; không thêm ngoại lệ rehab chưa duyệt."
+      "HLV Trưởng tạo giáo án theo tuần/tháng",
+      "Chia giai đoạn rèn luyện thể lực/tốc độ",
+      "Gán mục tiêu cự ly và thông số cụ thể"
     ],
     "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
     "screens": [
       "T01",
       "T02"
     ],
-    "status": "Backlog",
+    "status": "Todo",
     "owner": "",
-    "targetDate": "",
-    "issueUrl": ""
+    "targetDate": "14/10/2026",
+    "issueUrl": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/14",
+    "taskDetail": "Lập kế hoạch giáo án huấn luyện chi tiết theo từng giai đoạn: Thiết lập các bài tập theo cự ly (mét), khối lượng tải trọng, tốc độ mục tiêu và loại mặt sân (cỏ, cát, hỗn hợp)",
+    "lookup": "GH-BE-14",
+    "githubTitle": "[GH-BE-14][FR-004] Lập kế hoạch giáo án huấn luyện chi tiết theo từng giai đoạn",
+    "sprint": "Sprint 3",
+    "start": "12/10/2026",
+    "assigneePlaceholder": "Backend Dev 2",
+    "branch": "feat/14-training-plan-builder"
   },
   {
     "id": "FR-005",
     "fr": "FR-005",
-    "title": "Enforcement Medical Lock",
+    "title": "Thực thi cơ chế Chặn xếp lịch tự động bởi Lệnh 'Khóa huấn luyện' (Medical Lock Enforcement)",
     "milestone": "M2",
     "priority": "P0 Critical",
     "area": "medical",
@@ -420,28 +598,33 @@
       "FR-011",
       "FR-004"
     ],
-    "lead": "BE + FE + QA",
+    "lead": "Backend Dev + QA Tester",
     "risk": "Critical",
     "ac": [
-      "API chặn lập lịch/áp giáo án khi khóa (đăng ký giải để giai đoạn tùy chọn); không phụ thuộc disabled button.",
-      "Test hai giao dịch Vet khóa và HLV lưu cùng lúc không tạo lịch vi phạm.",
-      "UI nhận từ chối hiển thị lý do và link hồ sơ; không báo thành công, không cho HLV bỏ qua."
+      "API từ chối xếp lịch với mã lỗi 422/400 kèm thông báo rõ ràng",
+      "UI hiển thị cảnh báo đỏ chặn thao tác",
+      "Đình chỉ các buổi tập đang chờ"
     ],
     "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
     "screens": [
-      "T02",
-      "T03",
       "T05"
     ],
-    "status": "Backlog",
+    "status": "Todo",
     "owner": "",
-    "targetDate": "",
-    "issueUrl": ""
+    "targetDate": "14/10/2026",
+    "issueUrl": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/15",
+    "taskDetail": "Thực thi cơ chế Chặn xếp lịch tự động bởi Lệnh 'Khóa huấn luyện' (Medical Lock Enforcement): Tự động kiểm tra trạng thái y tế trước khi gán bài tập, chặn cứng ở mức Transaction nếu cờ Medical Lock đang bật",
+    "lookup": "GH-BE-15",
+    "githubTitle": "[GH-BE-15][FR-005] Thực thi cơ chế Chặn xếp lịch tự động bởi Lệnh 'Khóa huấn luyện' (Medical Lock Enforcement)",
+    "sprint": "Sprint 3",
+    "start": "12/10/2026",
+    "assigneePlaceholder": "Backend Dev 1",
+    "branch": "feat/15-medical-lock-enforcement"
   },
   {
     "id": "FR-006",
     "fr": "FR-006",
-    "title": "Lịch tập và phân công",
+    "title": "Phân công lịch tập luyện hàng ngày & Điều phối lượt chạy thử (Time Trial)",
     "milestone": "M2",
     "priority": "P0 Critical",
     "area": "training",
@@ -450,82 +633,68 @@
       "FR-005",
       "FR-003"
     ],
-    "lead": "BE + FE",
+    "lead": "Frontend Dev + Backend Dev",
     "risk": "High",
     "ac": [
-      "Phân công ngựa, Groom/nài, thời gian và bài tập xuất hiện đúng lịch/ca.",
-      "Xung đột giờ/nhân sự/ngựa bị từ chối theo contract; Medical Lock kiểm tra lại khi lưu.",
-      "Website có lịch tuần và agenda; đổi/hủy lịch có evidence và không tạo role Jockey thứ sáu."
+      "Xem lịch tập theo ngày/tuần dạng Calendar",
+      "Phân công nhân sự phụ trách bài tập",
+      "Không cho xếp lịch trùng giờ cho 1 con ngựa"
     ],
     "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
     "screens": [
-      "T01",
-      "T03"
+      "T03",
+      "T03-CREATE"
     ],
-    "status": "Backlog",
+    "status": "Todo",
     "owner": "",
-    "targetDate": "",
-    "issueUrl": ""
+    "targetDate": "15/10/2026",
+    "issueUrl": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/16",
+    "taskDetail": "Phân công lịch tập luyện hàng ngày & Điều phối lượt chạy thử (Time Trial): Xếp lịch tập chi tiết từng ca sáng/chiều, phân công nài ngựa (Jockey) và người chăm sóc (Groom)",
+    "lookup": "GH-BE-16",
+    "githubTitle": "[GH-BE-16][FR-006] Phân công lịch tập luyện hàng ngày & Điều phối lượt chạy thử (Time Trial)",
+    "sprint": "Sprint 3",
+    "start": "13/10/2026",
+    "assigneePlaceholder": "Frontend Dev 2",
+    "branch": "feat/16-workout-daily-schedule"
   },
   {
     "id": "FR-007",
     "fr": "FR-007",
-    "title": "Kết quả và nhật ký huấn luyện",
+    "title": "Ghi nhận kết quả buổi tập, đánh giá phong độ & Cập nhật biểu đồ thể lực",
     "milestone": "M2",
     "priority": "P0 Critical",
     "area": "training",
     "deps": [
       "FR-006"
     ],
-    "lead": "BE + FE",
+    "lead": "Fullstack Dev + QA Tester",
     "risk": "Medium",
     "ac": [
-      "HLV ghi kết quả và nhận xét có đơn vị; dữ liệu không hợp lệ bị chặn.",
-      "Biểu đồ dùng bản ghi đã lưu, không có dữ liệu không bịa xu hướng.",
-      "Owner xem đúng ngựa, không sửa; nhật ký thay video trên portal."
+      "HLV nhập chỉ số sau buổi tập",
+      "Tự động vẽ biểu đồ thể lực tăng/giảm",
+      "Chủ ngựa xem được nhật ký thành tích theo thời gian thực"
     ],
     "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
     "screens": [
-      "H03",
-      "T01",
       "T04",
       "O02"
     ],
-    "status": "Backlog",
+    "status": "Todo",
     "owner": "",
-    "targetDate": "",
-    "issueUrl": ""
-  },
-  {
-    "id": "FR-012",
-    "fr": "FR-012",
-    "title": "Lịch y tế dự phòng",
-    "milestone": "M2",
-    "priority": "P1 High",
-    "area": "medical",
-    "deps": [
-      "FR-009"
-    ],
-    "lead": "BE + FE",
-    "risk": "Medium",
-    "ac": [
-      "Lưu lịch tiêm/tẩy giun/móng, nhắc trước ba ngày theo quy tắc đã thống nhất.",
-      "Múi giờ Asia/Ho_Chi_Minh, quá hạn/hoàn tất đúng; gửi lại job không lặp thông báo.",
-      "Groom đọc việc được giao, Vet cập nhật; test boundary ngày."
-    ],
-    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
-    "screens": [
-      "V06"
-    ],
-    "status": "Backlog",
-    "owner": "",
-    "targetDate": "",
-    "issueUrl": ""
+    "targetDate": "16/10/2026",
+    "issueUrl": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/17",
+    "taskDetail": "Ghi nhận kết quả buổi tập, đánh giá phong độ & Cập nhật biểu đồ thể lực: Nhập thời gian hoàn thành bài tập, nhịp tim hồi phục, nhận xét của HLV và đồng bộ sang màn hình của Chủ ngựa",
+    "lookup": "GH-BE-17",
+    "githubTitle": "[GH-BE-17][FR-007] Ghi nhận kết quả buổi tập, đánh giá phong độ & Cập nhật biểu đồ thể lực",
+    "sprint": "Sprint 3",
+    "start": "14/10/2026",
+    "assigneePlaceholder": "Fullstack Dev 2",
+    "branch": "feat/17-workout-performance-metrics"
   },
   {
     "id": "MVP-QA",
     "fr": "FR-001,FR-002,FR-003,FR-005,FR-010,FR-011",
-    "title": "Nghiệm thu MVP xuyên suốt",
+    "title": "Nghiệm thu toàn trình liên luồng MVP-QA (End-to-End Integration Testing)",
     "milestone": "M2",
     "priority": "P0 Critical",
     "area": "governance",
@@ -536,12 +705,14 @@
       "FR-010",
       "FR-012"
     ],
-    "lead": "QA + FE + BE",
+    "lead": "Lead QA + Toàn Đội Dev",
     "risk": "Critical",
     "ac": [
-      "E2E signup→verify→login→horse→injury→lock→blocked scheduling→unlock→reschedule đạt.",
-      "Năm role và hai Owner kiểm tra API/UI; asset và marker đúng ở ba viewport.",
-      "CI/build/test thực được đính kèm PR; review/merge và rollback có evidence trước Done."
+      "100% Gherkin test cases Pass",
+      "Không còn lỗi bảo mật/RBAC",
+      "Không có blocker",
+      "Đạt chuẩn tiêu chí Done",
+      "Sẵn sàng Demo nghiệm thu"
     ],
     "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
     "screens": [
@@ -559,236 +730,39 @@
       "H02",
       "H03",
       "H04",
+      "T01",
       "T02",
       "T03",
+      "T04",
       "T05",
+      "V01",
+      "V02",
       "V03",
       "V04",
       "V05",
+      "V06",
       "O01",
+      "O02",
       "M01",
       "M02",
-      "M03"
+      "M03",
+      "M04",
+      "T03-CREATE",
+      "V02-RX",
+      "V06-CREATE",
+      "H04-GROOM",
+      "H03-OWNER"
     ],
-    "status": "Backlog",
+    "status": "Todo",
     "owner": "",
-    "targetDate": "",
-    "issueUrl": ""
-  },
-  {
-    "id": "FR-013",
-    "fr": "FR-013",
-    "title": "Khẩu phần theo bữa",
-    "milestone": "M3",
-    "priority": "P1 High",
-    "area": "care",
-    "deps": [
-      "MVP-QA"
-    ],
-    "lead": "BE + FE",
-    "risk": "Medium",
-    "ac": [
-      "HLV/Vet lập và duyệt lượng/đơn vị từng bữa; Groom không sửa.",
-      "Ca chăm sóc chỉ dùng phiên bản đã duyệt; thay đổi có version.",
-      "Không lượng âm, thiếu dữ liệu có empty state; quyền và audit được kiểm tra."
-    ],
-    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
-    "screens": [
-      "C02"
-    ],
-    "status": "Backlog",
-    "owner": "",
-    "targetDate": "",
-    "issueUrl": ""
-  },
-  {
-    "id": "FR-014",
-    "fr": "FR-014",
-    "title": "Checklist ca chăm sóc",
-    "milestone": "M3",
-    "priority": "P1 High",
-    "area": "care",
-    "deps": [
-      "FR-013",
-      "FR-003"
-    ],
-    "lead": "BE + FE",
-    "risk": "High",
-    "ac": [
-      "Groom chỉ thao tác ca/ngựa được giao, lưu checklist và giờ hoàn tất.",
-      "Ghi chú bất thường text gửi cảnh báo đúng người; không ảnh sự cố/video.",
-      "Gửi lặp hoặc mất mạng không nhân đôi hoàn tất/trừ kho; không giả lưu thành công."
-    ],
-    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
-    "screens": [
-      "C01"
-    ],
-    "status": "Backlog",
-    "owner": "",
-    "targetDate": "",
-    "issueUrl": ""
-  },
-  {
-    "id": "FR-015",
-    "fr": "FR-015",
-    "title": "Tồn kho và đề xuất bổ sung",
-    "milestone": "M3",
-    "priority": "P1 High",
-    "area": "care",
-    "deps": [
-      "FR-014"
-    ],
-    "lead": "BE + FE",
-    "risk": "High",
-    "ac": [
-      "Tồn, đơn vị, ngưỡng cảnh báo và đề xuất được lưu/đọc đúng quyền.",
-      "Một sự kiện tiêu hao chỉ trừ một lần; test concurrency không để tồn âm.",
-      "Duyệt/từ chối có người, thời gian, lý do; lỗi không âm thầm mất đề xuất."
-    ],
-    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
-    "screens": [
-      "C03",
-      "C04"
-    ],
-    "status": "Backlog",
-    "owner": "",
-    "targetDate": "",
-    "issueUrl": ""
-  },
-  {
-    "id": "FR-016",
-    "fr": "FR-016",
-    "title": "Giải đua và đăng ký",
-    "milestone": "M3",
-    "priority": "P1 High",
-    "area": "racing",
-    "deps": [
-      "MVP-QA",
-      "FR-005"
-    ],
-    "lead": "BE + FE",
-    "risk": "Critical",
-    "ac": [
-      "Giải có điều kiện và hạn thật; ngựa không đủ điều kiện có lý do từng dòng.",
-      "API chặn trùng/hết hạn/khóa y tế, kể cả khóa đồng thời với đăng ký.",
-      "Đăng ký hợp lệ lưu và trả kết quả thật; scope vai trò được kiểm tra."
-    ],
-    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
-    "screens": [
-      "R01",
-      "R02"
-    ],
-    "status": "Backlog",
-    "owner": "",
-    "targetDate": "",
-    "issueUrl": ""
-  },
-  {
-    "id": "FR-017",
-    "fr": "FR-017",
-    "title": "Ghi nhận thành tích thi đấu",
-    "milestone": "M3",
-    "priority": "P1 High",
-    "area": "racing",
-    "deps": [
-      "FR-016"
-    ],
-    "lead": "BE + FE",
-    "risk": "Medium",
-    "ac": [
-      "Kết quả hợp lệ cập nhật hồ sơ ngựa, có nguồn và người nhập.",
-      "Thời gian/thứ hạng/tiền thưởng không hợp lệ bị chặn; sửa có lịch sử.",
-      "Owner xem đúng kết quả ngựa sở hữu; không tạo thành tích mẫu như dữ liệu thật."
-    ],
-    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
-    "screens": [
-      "H03",
-      "R03"
-    ],
-    "status": "Backlog",
-    "owner": "",
-    "targetDate": "",
-    "issueUrl": ""
-  },
-  {
-    "id": "FR-018",
-    "fr": "FR-018",
-    "title": "Báo cáo chi phí và tiền thưởng",
-    "milestone": "M3",
-    "priority": "P1 High",
-    "area": "finance",
-    "deps": [
-      "FR-017"
-    ],
-    "lead": "BE + FE",
-    "risk": "High",
-    "ac": [
-      "Quy tắc chia thưởng được chốt; tổng hợp kỳ đối soát được với chứng từ.",
-      "Owner isolation áp cả API lẫn file xuất; đổi horseId không đọc dữ liệu khác.",
-      "Kỳ chưa dữ liệu/thiếu hợp đồng/lỗi xuất hiển thị rõ; không tự điền tỷ lệ chia."
-    ],
-    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
-    "screens": [
-      "O03",
-      "M01"
-    ],
-    "status": "Backlog",
-    "owner": "",
-    "targetDate": "",
-    "issueUrl": ""
-  },
-  {
-    "id": "FR-019",
-    "fr": "FR-019",
-    "title": "Gợi ý huấn luyện có người duyệt",
-    "milestone": "M4",
-    "priority": "P2 Medium",
-    "area": "ai",
-    "deps": [
-      "MVP-QA",
-      "FR-007"
-    ],
-    "lead": "BE + FE",
-    "risk": "High",
-    "ac": [
-      "Dữ liệu đầu vào đủ theo quyết định đã chốt; thiếu thì không sinh kết luận giả.",
-      "Gợi ý có lý do, nguồn và đánh giá; không tự áp dụng giáo án/mở khóa y tế.",
-      "Owner/role scope, lỗi provider và rủi ro prompt injection được kiểm tra."
-    ],
-    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
-    "screens": [
-      "AI01"
-    ],
-    "status": "Backlog",
-    "owner": "",
-    "targetDate": "",
-    "issueUrl": ""
-  },
-  {
-    "id": "FR-020",
-    "fr": "FR-020",
-    "title": "Trợ lý tra cứu theo quyền",
-    "milestone": "M4",
-    "priority": "P2 Medium",
-    "area": "ai",
-    "deps": [
-      "FR-019",
-      "AUTH-SCOPE"
-    ],
-    "lead": "BE + FE",
-    "risk": "High",
-    "ac": [
-      "Câu trả lời dựa nguồn được cấp quyền, có nguồn/ngày và trạng thái không biết.",
-      "Không lấy dữ liệu owner khác qua prompt hoặc tài liệu truy hồi.",
-      "Không tự kê đơn, thao tác tiền hay Medical Lock; lỗi dịch vụ hiển thị trung thực."
-    ],
-    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
-    "screens": [
-      "AI02"
-    ],
-    "status": "Backlog",
-    "owner": "",
-    "targetDate": "",
-    "issueUrl": ""
+    "targetDate": "18/10/2026",
+    "issueUrl": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/19",
+    "taskDetail": "Nghiệm thu toàn trình liên luồng MVP-QA (End-to-End Integration Testing): Kiểm thử kịch bản xuyên suốt (Đăng ký -> Hồ sơ -> Khám chấn thương 2D -> Khóa huấn luyện -> Chặn giáo án -> Khám lại mở khóa -> Xếp lịch mới), Fix bug & Release v1.0",
+    "lookup": "GH-BE-19",
+    "githubTitle": "[GH-BE-19][MVP-QA] Nghiệm thu toàn trình liên luồng MVP-QA (End-to-End Integration Testing)",
+    "sprint": "Sprint 3",
+    "start": "15/10/2026",
+    "assigneePlaceholder": "Lead QA Tester",
+    "branch": "feat/19-mvp-e2e-verification"
   }
 ]

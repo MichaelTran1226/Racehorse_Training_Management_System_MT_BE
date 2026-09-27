@@ -1,59 +1,47 @@
-# [FR-001][AUTH-STAFF] Mời nhân sự và quản lý quyền
+# [GH-BE-05][AUTH-STAFF] Mời nhân sự nội bộ (Manager, Trainer, Vet, Groom) & Quản lý danh sách nhân sự
 
 Work ID: AUTH-STAFF
+Mã tra cứu: GH-BE-05
 Blueprint ID: FR-001
-Target repository: MichaelTran1226/Racehorse_Training_Management_System_MT_BE
-Related repository: MichaelTran1226/Racehorse_Training_Management_System_MT_FE
-Project: https://github.com/users/MichaelTran1226/projects/2
-Status: Backlog — draft local, chưa đồng bộ.
-Priority: P0 Critical
-Type: Story
-Area: auth
-Milestone/Iteration đề xuất: M0
-Owner/Target date: chưa gán; phải có người thật trước Ready.
-Lead đề xuất: BE + FE
-Risk: Critical
+Sprint: Sprint 1
+Thời gian kế hoạch: 02/10/2026 – 04/10/2026
+Lead theo workbook: Backend Dev + Frontend Dev
+Vị trí phân công theo workbook: Frontend Dev 2 (chưa phải username GitHub)
+Branch: `feat/5-auth-staff-invitation`
 
-## Context và phạm vi
+## Nội dung task gốc
 
-Triển khai mời nhân sự và quản lý quyền theo SRS/blueprint EquiFlow và UI V2. Nguồn local chưa publish: RACEHORSE-TRAINING-BP, bộ stitch-v2; thay bằng URL file thực sau PR tài liệu. Không dùng yêu cầu Sports Center cũ. Không có phả hệ hoặc video trong scope.
+Mời nhân sự nội bộ (Manager, Trainer, Vet, Groom) & Quản lý danh sách nhân sự: Manager tạo link mời kèm vai trò cụ thể, nhân viên nhận email kích hoạt tài khoản
 
-Screens: AUTH08, M02, M03. Xem SCREEN-MAP.md trong gói UI; chỉ dùng màn có evidence review khi bắt đầu FE.
+Nguồn: [kế hoạch 3 sprint](../EquiFlow_Sprint_Plan_3_Weeks.xlsx). Chỉ website desktop Flow 1–3; không mobile, phả hệ, video hoặc flow optional.
 
-## Acceptance criteria
+## Giao diện
 
-- [ ] Lời mời gắn email và role server cấp; hết hạn/thu hồi/đã dùng bị từ chối.
-- [ ] Chỉ người có quyền được mời/đổi role/khóa account; không mất quản trị viên cuối cùng.
-- [ ] Đổi quyền có audit, ảnh hưởng session theo policy; không chỉ ẩn menu.
+[Stitch chuẩn theo task](https://stitch.withgoogle.com/projects/1737930245422720673) · [Danh mục tên thống nhất](../../GENERATE/ui-design/stitch-v2/SCREEN-MAP-CORE.md)
 
-## Công việc và ownership
+Screen IDs: AUTH08, M02, M03. Bộ có 31 màn chính và 5 biến thể thao tác/quyền của cùng task; không thêm flow. Tên Canvas dùng cùng mã tra cứu, Work ID và tên task ở trên.
 
-- [ ] Chốt contract, validation, quyền, state lỗi và quyết định còn mở liên quan trong DECISIONS.md.
-- [ ] BE: schema/migration/API/service theo stack đã chốt, tích hợp quyền và audit khi cần.
-- [ ] FE: màn theo screen ID, state/routing/accessibility và tích hợp contract thực.
-- [ ] QA: test dương, âm, quyền và concurrency thích hợp với AC; ghi evidence thật.
+## Acceptance criteria theo task
 
-Phạm vi file dự kiến: module auth trong từng repo, test cùng module và tài liệu API. Chưa đặt đường dẫn framework khi chưa chốt stack. Chia thành subtask ≤1 buổi làm nếu ước lượng vượt năng lực một slice; không đánh dấu các checkbox chỉ vì scaffold.
+- [ ] Chỉ Manager được mời nhân sự
+- [ ] Link mời hết hạn sau 48h
+- [ ] Người nhận tạo mật khẩu và nhận đúng role được phân công
 
-## Dependency / Blocker
+## Checklist thực hiện
 
-- AUTH-LOGIN (thay bằng URL issue thật sau sync)
-- FR-021 (thay bằng URL issue thật sau sync)
+- [ ] Chốt API/DTO, validation, quyền, trạng thái lỗi và các quyết định còn mở.
+- [ ] FE: layout, routing, form, state và tích hợp API theo screen ID; desktop 1280/1440/1920px.
+- [ ] BE: API/service, migration, quyền và audit phù hợp task; không chỉ vô hiệu hóa nút UI.
+- [ ] QA: kiểm tra dương/âm, RBAC, owner isolation và concurrency phù hợp AC.
+- [ ] PR liên kết issue chính; review, merge, build/test thật và tài liệu/rollback trước Done.
 
-D-01 stack và D-02 onboarding chưa duyệt là blocker của implementation liên quan. Owner/iteration/date hiện chưa được cam kết.
+## Dependency
 
-## Verification / Done
+- [AUTH-LOGIN](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/2)
+- [FR-021](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/7)
 
-- [ ] Lệnh lint/typecheck/build và test hẹp theo stack đã chọn chạy thật, lưu output.
-- [ ] Unit/integration trước, API/E2E sau; UI ở 1280/1440/1920px nếu có.
-- [ ] PR FE và BE liên kết issue chính, review/merge đầy đủ; tài liệu/rollback cập nhật.
-- [ ] Đọc lại Project item, chỉ chuyển Done khi AC đạt. Không suy số issue từ FR.
+## Giới hạn và quyết định
 
-## Progress comment
+Stack trong FOUNDATION vẫn là lựa chọn cần chốt, không tự chọn framework. OTP 15 phút, lời mời 48 giờ và cửa sổ cảnh báo y tế 7 ngày theo workbook hiện tại; thay thế đề xuất UI cũ. Mọi lệnh mở Medical Lock chỉ do Vet; không tự mở theo ngày dự kiến. Màn mockup không chứng minh API hoặc kiểm thử nghiệp vụ đã hoàn thành.
 
-Progress: Not started
-Summary: Draft kế hoạch từ UI V2
-Evidence: Chưa có implementation/test evidence
-Branch/PR: Chưa tạo
-Next: Gán owner, chốt dependency và AC
-Blocker: Xem mục Dependency / Blocker
+Status triển khai: Todo. Chưa có implementation/test evidence; không gán username giả.

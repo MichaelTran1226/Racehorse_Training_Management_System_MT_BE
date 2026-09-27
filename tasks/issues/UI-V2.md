@@ -1,58 +1,46 @@
-# [FR-022][UI-V2] Duyệt bộ giao diện Stitch V2
+# [GH-FE-01][UI-V2] Duyệt bộ giao diện Stitch V2, xây dựng Design System tokens (màu Forest Green #315D4B, font Manrope), Master layout (Sidebar 224px, Header 64px, Content 1440px) và routing cơ bản trên Frontend
 
 Work ID: UI-V2
+Mã tra cứu: GH-FE-01
 Blueprint ID: FR-022
-Target repository: MichaelTran1226/Racehorse_Training_Management_System_MT_FE
-Related repository: MichaelTran1226/Racehorse_Training_Management_System_MT_BE
-Project: https://github.com/users/MichaelTran1226/projects/2
-Status: Backlog — draft local, chưa đồng bộ.
-Priority: P0 Critical
-Type: Task
-Area: ui
-Milestone/Iteration đề xuất: M0
-Owner/Target date: chưa gán; phải có người thật trước Ready.
-Lead đề xuất: FE + Điều phối
-Risk: Medium
+Sprint: Sprint 1
+Thời gian kế hoạch: 28/09/2026 – 30/09/2026
+Lead theo workbook: Lead + Frontend Dev
+Vị trí phân công theo workbook: Frontend Dev 1 (chưa phải username GitHub)
+Branch: `feat/1-ui-v2-design-system`
 
-## Context và phạm vi
+## Nội dung task gốc
 
-Triển khai duyệt bộ giao diện stitch v2 theo SRS/blueprint EquiFlow và UI V2. Nguồn local chưa publish: RACEHORSE-TRAINING-BP, bộ stitch-v2; thay bằng URL file thực sau PR tài liệu. Không dùng yêu cầu Sports Center cũ. Không có phả hệ hoặc video trong scope.
+Duyệt bộ giao diện Stitch V2, xây dựng Design System tokens (màu Forest Green #315D4B, font Manrope), Master layout (Sidebar 224px, Header 64px, Content 1440px) và routing cơ bản trên Frontend
 
-Screens: Nền tảng, không màn riêng. Xem SCREEN-MAP.md trong gói UI; chỉ dùng màn có evidence review khi bắt đầu FE.
+Nguồn: [kế hoạch 3 sprint](../EquiFlow_Sprint_Plan_3_Weeks.xlsx). Chỉ website desktop Flow 1–3; không mobile, phả hệ, video hoặc flow optional.
 
-## Acceptance criteria
+## Giao diện
 
-- [ ] Screen map truy nguyên Flow 1–3 + auth/audit; optional tạm hoãn, màn hình riêng và link Stitch thực.
-- [ ] Không phả hệ/video; V03 dùng đúng file ảnh; AUTH01/02/03 tách rõ.
-- [ ] Review website desktop 1280/1440/1920px và state checklist; mọi lệch thiết kế có issue.
+[Stitch chuẩn theo task](https://stitch.withgoogle.com/projects/1737930245422720673) · [Danh mục tên thống nhất](../../GENERATE/ui-design/stitch-v2/SCREEN-MAP-CORE.md)
 
-## Công việc và ownership
+Screen IDs: AUTH01, AUTH02, AUTH03, AUTH04, AUTH05, AUTH06, AUTH07, AUTH08, SYS01, SYS02, H01, H02, H03, H04, T01, T02, T03, T04, T05, V01, V02, V03, V04, V05, V06, O01, O02, M01, M02, M03, M04, T03-CREATE, V02-RX, V06-CREATE, H04-GROOM, H03-OWNER. Bộ có 31 màn chính và 5 biến thể thao tác/quyền của cùng task; không thêm flow. Tên Canvas dùng cùng mã tra cứu, Work ID và tên task ở trên.
 
-- [ ] Chốt contract, validation, quyền, state lỗi và quyết định còn mở liên quan trong DECISIONS.md.
-- [ ] BE: schema/migration/API/service theo stack đã chốt, tích hợp quyền và audit khi cần.
-- [ ] FE: màn theo screen ID, state/routing/accessibility và tích hợp contract thực.
-- [ ] QA: test dương, âm, quyền và concurrency thích hợp với AC; ghi evidence thật.
+## Acceptance criteria theo task
 
-Phạm vi file dự kiến: module ui trong từng repo, test cùng module và tài liệu API. Chưa đặt đường dẫn framework khi chưa chốt stack. Chia thành subtask ≤1 buổi làm nếu ước lượng vượt năng lực một slice; không đánh dấu các checkbox chỉ vì scaffold.
+- [ ] Duyệt 31 màn hình Stitch
+- [ ] Khởi tạo project FE chạy mượt 1280/1440/1920px
+- [ ] Setup Router, Theme, Button, Modal, Table chuẩn
 
-## Dependency / Blocker
+## Checklist thực hiện
 
-Không có dependency công việc; cần review và owner.
+- [ ] Chốt API/DTO, validation, quyền, trạng thái lỗi và các quyết định còn mở.
+- [ ] FE: layout, routing, form, state và tích hợp API theo screen ID; desktop 1280/1440/1920px.
+- [ ] BE: API/service, migration, quyền và audit phù hợp task; không chỉ vô hiệu hóa nút UI.
+- [ ] QA: kiểm tra dương/âm, RBAC, owner isolation và concurrency phù hợp AC.
+- [ ] PR liên kết issue chính; review, merge, build/test thật và tài liệu/rollback trước Done.
 
-D-01 stack và D-02 onboarding chưa duyệt là blocker của implementation liên quan. Owner/iteration/date hiện chưa được cam kết.
+## Dependency
 
-## Verification / Done
+- Không có dependency công việc; cần review và phân công.
 
-- [ ] Lệnh lint/typecheck/build và test hẹp theo stack đã chọn chạy thật, lưu output.
-- [ ] Unit/integration trước, API/E2E sau; UI ở 1280/1440/1920px nếu có.
-- [ ] PR FE và BE liên kết issue chính, review/merge đầy đủ; tài liệu/rollback cập nhật.
-- [ ] Đọc lại Project item, chỉ chuyển Done khi AC đạt. Không suy số issue từ FR.
+## Giới hạn và quyết định
 
-## Progress comment
+Stack trong FOUNDATION vẫn là lựa chọn cần chốt, không tự chọn framework. OTP 15 phút, lời mời 48 giờ và cửa sổ cảnh báo y tế 7 ngày theo workbook hiện tại; thay thế đề xuất UI cũ. Mọi lệnh mở Medical Lock chỉ do Vet; không tự mở theo ngày dự kiến. Màn mockup không chứng minh API hoặc kiểm thử nghiệp vụ đã hoàn thành.
 
-Progress: Not started
-Summary: Draft kế hoạch từ UI V2
-Evidence: Chưa có implementation/test evidence
-Branch/PR: Chưa tạo
-Next: Gán owner, chốt dependency và AC
-Blocker: Xem mục Dependency / Blocker
+Status triển khai: Todo. Chưa có implementation/test evidence; không gán username giả.

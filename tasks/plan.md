@@ -1,80 +1,60 @@
-# Kế hoạch triển khai website EquiFlow — Flow 1, 2, 3
+# Kế hoạch website EquiFlow — Flow 1, 2, 3
 
-Ngày 27/09/2026. Phạm vi đã chốt: **website desktop, không mobile**. Flow 4–6 (chăm sóc mở rộng, tồn kho, giải đua, tài chính, AI) **tạm hoãn**. Không cây phả hệ, không video.
+Nguồn chuẩn: [EquiFlow_Sprint_Plan_3_Weeks.xlsx](EquiFlow_Sprint_Plan_3_Weeks.xlsx), 20 task. Tên/mã task bên dưới được lấy từ workbook; chi tiết kỹ thuật giữ trong từng issue. Chỉ website desktop, không mobile. Không flow optional, cây phả hệ hoặc video.
 
-[Project của nhóm](https://github.com/users/MichaelTran1226/projects/2) · [Thiết kế Stitch](https://stitch.withgoogle.com/projects/381590170997471617) · [Danh mục giao diện](ui/SCREEN-MAP.md) · [Quy chuẩn thiết kế](ui/DESIGN.md) · [Quyết định còn mở](ui/DECISIONS.md)
+[Project nhóm](https://github.com/users/MichaelTran1226/projects/2) · [Stitch theo task](https://stitch.withgoogle.com/projects/1737930245422720673) · [Danh mục màn hình](ui/SCREEN-MAP.md) · [Quy chuẩn thiết kế](ui/DESIGN.md)
 
-## Bắt đầu làm từ đâu
+## Lịch ba sprint
 
-1. Nhóm nhận [FOUNDATION](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/1) để chốt stack/DB/runtime và contract. Song song review [UI-V2](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_FE/issues/1). Không coi demo React/Vite là quyết định chọn stack.
-2. Chia người FE, BE, QA, review; gán assignee thật trên từng issue. Chọn iteration/ngày theo sức làm thực tế. Hiện chưa tự gán thành viên hoặc deadline.
-3. Làm auth/session và audit; sau đó hồ sơ/ô chuồng.
-4. Làm y tế/Medical Lock trước phần enforcement của huấn luyện; FE có thể làm layout giáo án/lịch bằng contract đã thống nhất.
-5. Nghiệm thu xuyên suốt trước khi mở lại optional.
+| Sprint | Thời gian | Task | Đầu ra |
+|---|---|---|---|
+| Sprint 1 | 28/09–04/10/2026 | 9 | Nền tảng, UI, auth/RBAC, audit, hồ sơ ngựa |
+| Sprint 2 | 05/10–11/10/2026 | 6 | Ô chuồng và Flow 3 y tế/ảnh 2D/Medical Lock |
+| Sprint 3 | 12/10–18/10/2026 | 5 | Flow 2 huấn luyện và nghiệm thu xuyên suốt |
 
-## Milestone và đầu ra
+Lịch này là kế hoạch trong workbook, không phải bằng chứng đã hoàn tất hay đảm bảo tiến độ. Các vị trí Frontend Dev/Backend Dev/Fullstack Dev/QA chưa được suy thành username GitHub.
 
-| Mốc | Nội dung | Điều kiện hoàn thành |
-|---|---|---|
-| M0 | UI, stack, auth/RBAC, audit | Năm vai trò vào đúng phạm vi; đăng ký/xác minh/reset/mời nhân sự; không tự nâng quyền |
-| M1 — Flow 1 | Hồ sơ ngựa, chip, ô chuồng, chủ sở hữu | Chip duy nhất; hai request không chiếm cùng ô; Owner không đọc ngựa người khác |
-| M2a — Flow 3 | Bảng sức khỏe, bệnh án, ảnh 2D, khóa/mở khóa, dự phòng | Đúng ảnh gốc; marker lưu đúng; chỉ Vet khóa/mở và có audit |
-| M2b — Flow 2 | Giáo án, lịch/phân công, kết quả, nhật ký Owner | Medical Lock chặn ở API/transaction; không tự khôi phục buổi đã đình chỉ |
-| MVP-QA | Kiểm thử liên luồng | Đăng ký → hồ sơ → chấn thương → khóa → lịch bị chặn → khám lại/mở → xếp lịch mới |
+## 20 đầu việc
 
-Thứ tự xây Flow 3 trước enforcement Flow 2 là dependency kỹ thuật, không đổi số flow nghiệp vụ.
-
-## 20 đầu việc đã tạo trên GitHub
-
-Mỗi issue là một slice phối hợp FE/BE/QA, không phải BE làm xong toàn bộ rồi FE mới bắt đầu. Issue UI nằm repo FE; các slice nghiệp vụ có primary issue ở BE và liên kết PR của cả hai repo.
-
-| Work ID | Mốc | Đầu việc | Lead đề xuất | Phụ thuộc |
+| Mã tra cứu | Work ID | Tên task thống nhất | Sprint | Phụ thuộc |
 |---|---|---|---|---|
-| FOUNDATION | M0 | [Chốt stack, contract và nền dự án](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/1) | Điều phối + FE + BE | — |
-| UI-V2 | M0 | [Duyệt bộ giao diện Stitch V2](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_FE/issues/1) | FE + Điều phối | — |
-| AUTH-LOGIN | M0 | [Đăng nhập và session](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/2) | BE + FE | [FOUNDATION](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/1), [UI-V2](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_FE/issues/1) |
-| AUTH-REGISTER | M0 | [Đăng ký chủ ngựa và xác minh email](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/3) | BE + FE | [AUTH-LOGIN](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/2) |
-| AUTH-RESET | M0 | [Khôi phục mật khẩu](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/4) | BE + FE | [AUTH-LOGIN](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/2) |
-| AUTH-STAFF | M0 | [Mời nhân sự và quản lý quyền](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/5) | BE + FE | [AUTH-LOGIN](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/2), [FR-021](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/7) |
-| AUTH-SCOPE | M0 | [RBAC và dữ liệu theo chủ sở hữu](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/6) | BE + FE + QA | [AUTH-LOGIN](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/2) |
-| FR-021 | M0 | [Nhật ký kiểm toán](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/7) | BE + FE | [AUTH-LOGIN](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/2) |
-| FR-002 | M1 | [Hồ sơ định danh ngựa](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/8) | BE + FE | [AUTH-SCOPE](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/6), [FR-021](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/7) |
-| FR-003 | M1 | [Phân bổ ô chuồng](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/9) | BE + FE | [FR-002](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/8) |
-| FR-008 | M2 | [Bảng sức khỏe đàn ngựa](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/10) | BE + FE | [FR-002](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/8) |
-| FR-009 | M2 | [Bệnh án và phác đồ](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/11) | BE + FE | [FR-008](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/10), [FR-021](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/7) |
-| FR-010 | M2 | [Đánh dấu chấn thương trên ảnh 2D](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/12) | FE + BE | [FR-009](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/11), [UI-V2](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_FE/issues/1) |
-| FR-011 | M2 | [Ban hành và mở khóa y tế](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/13) | BE + FE | [FR-009](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/11), [FR-021](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/7) |
-| FR-004 | M2 | [Giáo án theo giai đoạn](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/14) | BE + FE | [FR-002](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/8), [FR-011](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/13) |
-| FR-005 | M2 | [Enforcement Medical Lock](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/15) | BE + FE + QA | [FR-011](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/13), [FR-004](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/14) |
-| FR-006 | M2 | [Lịch tập và phân công](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/16) | BE + FE | [FR-004](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/14), [FR-005](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/15), [FR-003](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/9) |
-| FR-007 | M2 | [Kết quả và nhật ký huấn luyện](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/17) | BE + FE | [FR-006](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/16) |
-| FR-012 | M2 | [Lịch y tế dự phòng](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/18) | BE + FE | [FR-009](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/11) |
-| MVP-QA | M2 | [Nghiệm thu MVP xuyên suốt](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/19) | QA + FE + BE | [FR-003](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/9), [FR-005](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/15), [FR-007](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/17), [FR-010](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/12), [FR-012](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/18) |
+| GH-FE-01 | UI-V2 | [Duyệt bộ giao diện Stitch V2, xây dựng Design System tokens (màu Forest Green #315D4B, font Manrope), Master layout (Sidebar 224px, Header 64px, Content 1440px) và routing cơ bản trên Frontend](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_FE/issues/1) | Sprint 1 | — |
+| GH-BE-01 | FOUNDATION | [Khởi tạo Backend, chốt Stack kỹ thuật (Node/NestJS hoặc Express/TS + SQLite/Postgres ORM), thiết kế Database Schema ban đầu, cấu hình Migration, Docker setup, CI pipeline và Health check endpoint](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/1) | Sprint 1 | — |
+| GH-BE-02 | AUTH-LOGIN | [Xác thực Đăng nhập & Quản lý Session/JWT](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/2) | Sprint 1 | FOUNDATION, UI-V2 |
+| GH-BE-03 | AUTH-REGISTER | [Đăng ký tài khoản Chủ sở hữu ngựa (Horse Owner) & Xác thực OTP qua Email](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/3) | Sprint 1 | AUTH-LOGIN |
+| GH-BE-04 | AUTH-RESET | [Quy trình Quên mật khẩu & Đặt lại mật khẩu an toàn](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/4) | Sprint 1 | AUTH-LOGIN |
+| GH-BE-05 | AUTH-STAFF | [Mời nhân sự nội bộ (Manager, Trainer, Vet, Groom) & Quản lý danh sách nhân sự](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/5) | Sprint 1 | AUTH-LOGIN, FR-021 |
+| GH-BE-06 | AUTH-SCOPE | [Phân quyền RBAC 5 vai trò & Cách ly dữ liệu Chủ ngựa](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/6) | Sprint 1 | AUTH-LOGIN |
+| GH-BE-07 | FR-021 | [Hệ thống Nhật ký kiểm toán bất biến (Audit Trail Logging)](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/7) | Sprint 1 | AUTH-LOGIN |
+| GH-BE-08 | FR-002 | [Quản lý Hồ sơ & Định danh ngựa (Microchip RFID)](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/8) | Sprint 1 | AUTH-SCOPE, FR-021 |
+| GH-BE-09 | FR-003 | [Sơ đồ phân bổ ô chuồng trại (Stall Allocation)](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/9) | Sprint 2 | FR-002 |
+| GH-BE-10 | FR-008 | [Bảng theo dõi trạng thái sức khỏe đàn ngựa theo mã màu (Health Status Board)](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/10) | Sprint 2 | FR-002 |
+| GH-BE-11 | FR-009 | [Bệnh án điện tử, chẩn đoán, phác đồ điều trị & Kê đơn thuốc](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/11) | Sprint 2 | FR-008, FR-021 |
+| GH-BE-12 | FR-010 | [Bản đồ chấn thương 2D trên mô hình hệ xương giải phẫu (2D Skeletal Injury Mapper)](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/12) | Sprint 2 | FR-009, UI-V2 |
+| GH-BE-13 | FR-011 | [Quy trình Ban hành Lệnh Khóa huấn luyện khẩn cấp (Medical Lock) & Tái khám mở khóa](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/13) | Sprint 2 | FR-009, FR-021 |
+| GH-BE-18 | FR-012 | [Quản lý Lịch trình y tế dự phòng (Tiêm phòng vaccine, tẩy giun, kiểm tra móng Farrier)](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/18) | Sprint 2 | FR-009 |
+| GH-BE-14 | FR-004 | [Lập kế hoạch giáo án huấn luyện chi tiết theo từng giai đoạn](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/14) | Sprint 3 | FR-002, FR-011 |
+| GH-BE-15 | FR-005 | [Thực thi cơ chế Chặn xếp lịch tự động bởi Lệnh 'Khóa huấn luyện' (Medical Lock Enforcement)](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/15) | Sprint 3 | FR-011, FR-004 |
+| GH-BE-16 | FR-006 | [Phân công lịch tập luyện hàng ngày & Điều phối lượt chạy thử (Time Trial)](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/16) | Sprint 3 | FR-004, FR-005, FR-003 |
+| GH-BE-17 | FR-007 | [Ghi nhận kết quả buổi tập, đánh giá phong độ & Cập nhật biểu đồ thể lực](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/17) | Sprint 3 | FR-006 |
+| GH-BE-19 | MVP-QA | [Nghiệm thu toàn trình liên luồng MVP-QA (End-to-End Integration Testing)](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/19) | Sprint 3 | FR-003, FR-005, FR-007, FR-010, FR-012 |
 
-## Quyết định cần chốt trong FOUNDATION
+## Thực hiện từng phần
 
-- D-01: FE/BE, ngôn ngữ, DB/ORM, API, test, runtime/deploy. Chưa có stack được nhóm phê duyệt.
-- D-02: đề xuất public signup chỉ Horse Owner; nhân sự nhận lời mời từ Manager. Chốt OTP/email/reset, cấp Manager đầu tiên, thời hạn và giới hạn gửi. Các giá trị trong mockup là đề xuất thiết kế.
-- D-03: MVP không có ngoại lệ rehab vượt Medical Lock; chỉ Vet mở khóa sau tái khám; Manager không duyệt thay Vet.
-- D-04: dùng ảnh hệ xương nhìn nghiêng nguyên bản 900×600; tọa độ marker chuẩn hóa theo ảnh, vùng/bên cơ thể chọn riêng; không mô hình 3D hay lớp giải phẫu khác.
+1. Nhận FOUNDATION và UI-V2 trước; chốt stack/DB/runtime/contract. FE và BE làm song song theo contract đã thống nhất.
+2. Hoàn tất auth/session, audit và owner isolation trước API hồ sơ/chuồng.
+3. Triển khai y tế và Medical Lock trước enforcement của huấn luyện. Chỉ Vet khóa/mở; Manager không duyệt thay.
+4. Tạo branch theo workbook; PR liên kết URL issue đầy đủ khi đi qua FE/BE. Không đóng primary issue trước khi các PR liên quan hoàn tất.
+5. QA kiểm tra luồng đăng ký → hồ sơ → chấn thương 2D → khóa → lịch bị chặn → tái khám/mở → xếp lịch mới. Không mở optional trong đợt này.
 
-## Cách nhận việc và mở PR
+## Thiết kế bàn giao
 
-1. Chọn issue không còn dependency chưa giải quyết; đọc AC và screen ID. FE/BE thống nhất DTO, enum, validation, quyền và lỗi trước code.
-2. Gán một assignee chịu trách nhiệm; bổ sung checklist FE/BE/QA hoặc sub-issue khi quá lớn. Không đánh dấu xong bằng scaffold.
-3. Tạo branch `feat/<issue-number>-<slug>` trong repo tương ứng; PR ghi `Refs <primary issue URL>` và liên kết PR liên quan. Không đóng primary issue trước khi cả FE/BE hoàn tất.
-4. Gắn evidence thật: build/test, ảnh UI, test quyền, lỗi và concurrency. Review rồi merge theo quy định nhóm.
+31 màn chính theo workbook + 5 biến thể của task hiện có: T03-CREATE (tạo lịch), V02-RX (thêm thuốc), V06-CREATE (lập lịch dự phòng), H04-GROOM (đọc phân công), H03-OWNER (đọc hồ sơ sở hữu). Không tạo task hay flow mới. T04 bổ sung ô nhập chỉ số thay cho telemetry ngoài phạm vi. Mỗi tên Canvas được ghi nguyên văn trong SCREEN-MAP.md và task-screen-map.json.
 
-## Definition of Ready / Done
+## Quyết định và nghiệm thu
 
-**Ready:** scope + AC rõ, contract thống nhất, dependency giải quyết, owner thật và kế hoạch làm được nhóm xác nhận. Project đang dùng trạng thái có sẵn Todo/In Progress/Done; Todo là backlog, không có nghĩa đã Ready.
-
-**Done:** AC đạt; unit/integration và API/E2E thích hợp; kiểm tra website ở 1280/1440/1920px; không lỗi console nghiêm trọng; review/merge mọi PR liên quan; tài liệu setup/migration/rollback; đọc lại trạng thái Project. Không coi bản Stitch là ứng dụng có API đang chạy.
-
-## Phạm vi thiết kế và giới hạn
-
-Bộ V2 theo nền sáng, xanh rừng, Manrope. Đăng nhập/đăng ký/xác minh/khôi phục tách riêng. Dữ liệu trong mockup được ghi là minh họa. Review layout desktop không thay thế test đăng nhập, RBAC, database hay Medical Lock thật. Flow 4–6 giữ trong backlog cục bộ để xem lại sau, không tạo issue optional trong đợt này.
-
-## Bằng chứng đồng bộ
-
-20 issue có URL thật trong bảng; Project #2 đã kiểm tra quyền ghi. Priority, Work type, Area, Blueprint ID, Risk, Work ID và Iteration đề xuất được gắn theo issue. Không gán deadline/assignee giả. File env giữ nguyên dry-run mặc định; lần ghi core này thực hiện theo yêu cầu trực tiếp “PLAN TRÊN GITHUB” của người dùng và có bản dry-run riêng.
+- Theo task: OTP 6 số/15 phút; lời mời 48 giờ; lịch dự phòng hiển thị cửa sổ sắp đến hạn 7 ngày. SRS trước đó nhắc trước 3 ngày: giữ mốc nhắc gửi 3 ngày nếu chưa có quyết định thay đổi, tách khỏi bộ lọc 7 ngày của UI.
+- Stack, cơ chế cấp Manager đầu tiên, provider email và thời hạn refresh token cần chốt trong FOUNDATION; workbook đưa lựa chọn, chưa chốt framework.
+- Ảnh giải phẫu đúng nguồn 900×600; marker theo tọa độ chuẩn hóa; một góc hệ xương, không 3D.
+- Ready: AC rõ, contract và dependency được giải quyết, có assignee thật. Todo không đồng nghĩa Ready.
+- Done: AC đạt, API/RBAC/concurrency và UI desktop kiểm tra thật; PR review/merge; build/test và rollback có evidence. Thiết kế Stitch không phải ứng dụng đã triển khai.

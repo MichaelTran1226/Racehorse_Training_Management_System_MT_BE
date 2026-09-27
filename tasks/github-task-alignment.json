@@ -1,0 +1,142 @@
+[
+  {
+    "id": "UI-V2",
+    "lookup": "GH-FE-01",
+    "title": "[GH-FE-01][UI-V2] Duyệt bộ giao diện Stitch V2, xây dựng Design System tokens (màu Forest Green #315D4B, font Manrope), Master layout (Sidebar 224px, Header 64px, Content 1440px) và routing cơ bản trên Frontend",
+    "url": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_FE/issues/1",
+    "nodeId": "I_kwDOUt9ULM8AAAABTgASpA"
+  },
+  {
+    "id": "FOUNDATION",
+    "lookup": "GH-BE-01",
+    "title": "[GH-BE-01][FOUNDATION] Khởi tạo Backend, chốt Stack kỹ thuật (Node/NestJS hoặc Express/TS + SQLite/Postgres ORM), thiết kế Database Schema ban đầu, cấu hình Migration, Docker setup, CI pipeline và Health check endpoint",
+    "url": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/1",
+    "nodeId": "I_kwDOUt9Ozc8AAAABTgASYQ"
+  },
+  {
+    "id": "AUTH-LOGIN",
+    "lookup": "GH-BE-02",
+    "title": "[GH-BE-02][AUTH-LOGIN] Xác thực Đăng nhập & Quản lý Session/JWT",
+    "url": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/2",
+    "nodeId": "I_kwDOUt9Ozc8AAAABTgAS7Q"
+  },
+  {
+    "id": "AUTH-REGISTER",
+    "lookup": "GH-BE-03",
+    "title": "[GH-BE-03][AUTH-REGISTER] Đăng ký tài khoản Chủ sở hữu ngựa (Horse Owner) & Xác thực OTP qua Email",
+    "url": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/3",
+    "nodeId": "I_kwDOUt9Ozc8AAAABTgATNA"
+  },
+  {
+    "id": "AUTH-RESET",
+    "lookup": "GH-BE-04",
+    "title": "[GH-BE-04][AUTH-RESET] Quy trình Quên mật khẩu & Đặt lại mật khẩu an toàn",
+    "url": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/4",
+    "nodeId": "I_kwDOUt9Ozc8AAAABTgATpA"
+  },
+  {
+    "id": "AUTH-STAFF",
+    "lookup": "GH-BE-05",
+    "title": "[GH-BE-05][AUTH-STAFF] Mời nhân sự nội bộ (Manager, Trainer, Vet, Groom) & Quản lý danh sách nhân sự",
+    "url": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/5",
+    "nodeId": "I_kwDOUt9Ozc8AAAABTgAT5w"
+  },
+  {
+    "id": "AUTH-SCOPE",
+    "lookup": "GH-BE-06",
+    "title": "[GH-BE-06][AUTH-SCOPE] Phân quyền RBAC 5 vai trò & Cách ly dữ liệu Chủ ngựa",
+    "url": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/6",
+    "nodeId": "I_kwDOUt9Ozc8AAAABTgAUWQ"
+  },
+  {
+    "id": "FR-021",
+    "lookup": "GH-BE-07",
+    "title": "[GH-BE-07][FR-021] Hệ thống Nhật ký kiểm toán bất biến (Audit Trail Logging)",
+    "url": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/7",
+    "nodeId": "I_kwDOUt9Ozc8AAAABTgAUog"
+  },
+  {
+    "id": "FR-002",
+    "lookup": "GH-BE-08",
+    "title": "[GH-BE-08][FR-002] Quản lý Hồ sơ & Định danh ngựa (Microchip RFID)",
+    "url": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/8",
+    "nodeId": "I_kwDOUt9Ozc8AAAABTgAU4w"
+  },
+  {
+    "id": "FR-003",
+    "lookup": "GH-BE-09",
+    "title": "[GH-BE-09][FR-003] Sơ đồ phân bổ ô chuồng trại (Stall Allocation)",
+    "url": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/9",
+    "nodeId": "I_kwDOUt9Ozc8AAAABTgAVIQ"
+  },
+  {
+    "id": "FR-008",
+    "lookup": "GH-BE-10",
+    "title": "[GH-BE-10][FR-008] Bảng theo dõi trạng thái sức khỏe đàn ngựa theo mã màu (Health Status Board)",
+    "url": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/10",
+    "nodeId": "I_kwDOUt9Ozc8AAAABTgAVjw"
+  },
+  {
+    "id": "FR-009",
+    "lookup": "GH-BE-11",
+    "title": "[GH-BE-11][FR-009] Bệnh án điện tử, chẩn đoán, phác đồ điều trị & Kê đơn thuốc",
+    "url": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/11",
+    "nodeId": "I_kwDOUt9Ozc8AAAABTgAWBQ"
+  },
+  {
+    "id": "FR-010",
+    "lookup": "GH-BE-12",
+    "title": "[GH-BE-12][FR-010] Bản đồ chấn thương 2D trên mô hình hệ xương giải phẫu (2D Skeletal Injury Mapper)",
+    "url": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/12",
+    "nodeId": "I_kwDOUt9Ozc8AAAABTgAWmg"
+  },
+  {
+    "id": "FR-011",
+    "lookup": "GH-BE-13",
+    "title": "[GH-BE-13][FR-011] Quy trình Ban hành Lệnh Khóa huấn luyện khẩn cấp (Medical Lock) & Tái khám mở khóa",
+    "url": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/13",
+    "nodeId": "I_kwDOUt9Ozc8AAAABTgAW4w"
+  },
+  {
+    "id": "FR-012",
+    "lookup": "GH-BE-18",
+    "title": "[GH-BE-18][FR-012] Quản lý Lịch trình y tế dự phòng (Tiêm phòng vaccine, tẩy giun, kiểm tra móng Farrier)",
+    "url": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/18",
+    "nodeId": "I_kwDOUt9Ozc8AAAABTgAYVg"
+  },
+  {
+    "id": "FR-004",
+    "lookup": "GH-BE-14",
+    "title": "[GH-BE-14][FR-004] Lập kế hoạch giáo án huấn luyện chi tiết theo từng giai đoạn",
+    "url": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/14",
+    "nodeId": "I_kwDOUt9Ozc8AAAABTgAXPg"
+  },
+  {
+    "id": "FR-005",
+    "lookup": "GH-BE-15",
+    "title": "[GH-BE-15][FR-005] Thực thi cơ chế Chặn xếp lịch tự động bởi Lệnh 'Khóa huấn luyện' (Medical Lock Enforcement)",
+    "url": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/15",
+    "nodeId": "I_kwDOUt9Ozc8AAAABTgAXgA"
+  },
+  {
+    "id": "FR-006",
+    "lookup": "GH-BE-16",
+    "title": "[GH-BE-16][FR-006] Phân công lịch tập luyện hàng ngày & Điều phối lượt chạy thử (Time Trial)",
+    "url": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/16",
+    "nodeId": "I_kwDOUt9Ozc8AAAABTgAXxA"
+  },
+  {
+    "id": "FR-007",
+    "lookup": "GH-BE-17",
+    "title": "[GH-BE-17][FR-007] Ghi nhận kết quả buổi tập, đánh giá phong độ & Cập nhật biểu đồ thể lực",
+    "url": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/17",
+    "nodeId": "I_kwDOUt9Ozc8AAAABTgAYBA"
+  },
+  {
+    "id": "MVP-QA",
+    "lookup": "GH-BE-19",
+    "title": "[GH-BE-19][MVP-QA] Nghiệm thu toàn trình liên luồng MVP-QA (End-to-End Integration Testing)",
+    "url": "https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/19",
+    "nodeId": "I_kwDOUt9Ozc8AAAABTgAYlw"
+  }
+]

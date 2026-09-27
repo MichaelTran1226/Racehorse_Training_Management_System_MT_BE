@@ -1,40 +1,24 @@
-# Backlog triển khai — chưa tạo issue thật
+# 20 task core — theo kế hoạch 3 sprint
 
-Mọi việc đang Backlog. Owner/date sẽ gán trên GitHub sau khi review.
+Chỉ website desktop Flow 1–3. Các mục optional ở `deferred/`, không nằm trong kế hoạch triển khai hiện tại.
 
-- [x] [FOUNDATION — Chốt stack, contract và nền dự án](issues/FOUNDATION.md) · M0 · P0 Critical · phụ thuộc: không (Ready for review)
-- [ ] [UI-V2 — Duyệt bộ giao diện Stitch V2](issues/UI-V2.md) · M0 · P0 Critical · phụ thuộc: không
-- [ ] [AUTH-LOGIN — Đăng nhập và session](issues/AUTH-LOGIN.md) · M0 · P0 Critical · phụ thuộc: FOUNDATION, UI-V2
-- [ ] [AUTH-REGISTER — Đăng ký chủ ngựa và xác minh email](issues/AUTH-REGISTER.md) · M0 · P0 Critical · phụ thuộc: AUTH-LOGIN
-- [ ] [AUTH-RESET — Khôi phục mật khẩu](issues/AUTH-RESET.md) · M0 · P0 Critical · phụ thuộc: AUTH-LOGIN
-- [ ] [AUTH-STAFF — Mời nhân sự và quản lý quyền](issues/AUTH-STAFF.md) · M0 · P0 Critical · phụ thuộc: AUTH-LOGIN, FR-021
-- [ ] [AUTH-SCOPE — RBAC và dữ liệu theo chủ sở hữu](issues/AUTH-SCOPE.md) · M0 · P0 Critical · phụ thuộc: AUTH-LOGIN
-- [ ] [FR-021 — Nhật ký kiểm toán](issues/FR-021.md) · M0 · P0 Critical · phụ thuộc: AUTH-LOGIN
-- [ ] [FR-002 — Hồ sơ định danh ngựa](issues/FR-002.md) · M1 · P0 Critical · phụ thuộc: AUTH-SCOPE, FR-021
-- [ ] [FR-003 — Phân bổ ô chuồng](issues/FR-003.md) · M1 · P0 Critical · phụ thuộc: FR-002
-- [ ] [FR-008 — Bảng sức khỏe đàn ngựa](issues/FR-008.md) · M2 · P0 Critical · phụ thuộc: FR-002
-- [ ] [FR-009 — Bệnh án và phác đồ](issues/FR-009.md) · M2 · P0 Critical · phụ thuộc: FR-008, FR-021
-- [ ] [FR-010 — Đánh dấu chấn thương trên ảnh 2D](issues/FR-010.md) · M2 · P0 Critical · phụ thuộc: FR-009, UI-V2
-- [ ] [FR-011 — Ban hành và mở khóa y tế](issues/FR-011.md) · M2 · P0 Critical · phụ thuộc: FR-009, FR-021
-- [ ] [FR-004 — Giáo án theo giai đoạn](issues/FR-004.md) · M2 · P0 Critical · phụ thuộc: FR-002, FR-011
-- [ ] [FR-005 — Enforcement Medical Lock](issues/FR-005.md) · M2 · P0 Critical · phụ thuộc: FR-011, FR-004
-- [ ] [FR-006 — Lịch tập và phân công](issues/FR-006.md) · M2 · P0 Critical · phụ thuộc: FR-004, FR-005, FR-003
-- [ ] [FR-007 — Kết quả và nhật ký huấn luyện](issues/FR-007.md) · M2 · P0 Critical · phụ thuộc: FR-006
-- [ ] [FR-012 — Lịch y tế dự phòng](issues/FR-012.md) · M2 · P1 High · phụ thuộc: FR-009
-- [ ] [MVP-QA — Nghiệm thu MVP xuyên suốt](issues/MVP-QA.md) · M2 · P0 Critical · phụ thuộc: FR-003, FR-005, FR-007, FR-010, FR-012
-- [ ] [FR-013 — Khẩu phần theo bữa](issues/FR-013.md) · M3 · P1 High · phụ thuộc: MVP-QA
-- [ ] [FR-014 — Checklist ca chăm sóc](issues/FR-014.md) · M3 · P1 High · phụ thuộc: FR-013, FR-003
-- [ ] [FR-015 — Tồn kho và đề xuất bổ sung](issues/FR-015.md) · M3 · P1 High · phụ thuộc: FR-014
-- [ ] [FR-016 — Giải đua và đăng ký](issues/FR-016.md) · M3 · P1 High · phụ thuộc: MVP-QA, FR-005
-- [ ] [FR-017 — Ghi nhận thành tích thi đấu](issues/FR-017.md) · M3 · P1 High · phụ thuộc: FR-016
-- [ ] [FR-018 — Báo cáo chi phí và tiền thưởng](issues/FR-018.md) · M3 · P1 High · phụ thuộc: FR-017
-- [ ] [FR-019 — Gợi ý huấn luyện có người duyệt](issues/FR-019.md) · M4 · P2 Medium · phụ thuộc: MVP-QA, FR-007
-- [ ] [FR-020 — Trợ lý tra cứu theo quyền](issues/FR-020.md) · M4 · P2 Medium · phụ thuộc: FR-019, AUTH-SCOPE
-
-## Checkpoint
-
-- [ ] M0: xác thực năm vai trò, audit, session và không nâng quyền.
-- [ ] M1: hồ sơ, chuồng, owner isolation.
-- [ ] M2: ảnh 2D đúng, Medical Lock concurrency, hành trình MVP.
-- [ ] M3: ca/kho idempotent, giải đua và báo cáo đối soát.
-- [ ] M4: AI dựa dữ liệu và có người duyệt.
+- [ ] [[GH-FE-01][UI-V2] Duyệt bộ giao diện Stitch V2, xây dựng Design System tokens (màu Forest Green #315D4B, font Manrope), Master layout (Sidebar 224px, Header 64px, Content 1440px) và routing cơ bản trên Frontend](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_FE/issues/1) · Sprint 1 · 28/09/2026–30/09/2026
+- [x] [[GH-BE-01][FOUNDATION] Khởi tạo Backend, chốt Stack kỹ thuật (Node/NestJS hoặc Express/TS + SQLite/Postgres ORM), thiết kế Database Schema ban đầu, cấu hình Migration, Docker setup, CI pipeline và Health check endpoint](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/1) · Sprint 1 · 28/09/2026–30/09/2026 — **DONE (PR #20)**
+- [ ] [[GH-BE-02][AUTH-LOGIN] Xác thực Đăng nhập & Quản lý Session/JWT](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/2) · Sprint 1 · 01/10/2026–02/10/2026
+- [ ] [[GH-BE-03][AUTH-REGISTER] Đăng ký tài khoản Chủ sở hữu ngựa (Horse Owner) & Xác thực OTP qua Email](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/3) · Sprint 1 · 01/10/2026–03/10/2026
+- [ ] [[GH-BE-04][AUTH-RESET] Quy trình Quên mật khẩu & Đặt lại mật khẩu an toàn](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/4) · Sprint 1 · 02/10/2026–04/10/2026
+- [ ] [[GH-BE-05][AUTH-STAFF] Mời nhân sự nội bộ (Manager, Trainer, Vet, Groom) & Quản lý danh sách nhân sự](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/5) · Sprint 1 · 02/10/2026–04/10/2026
+- [ ] [[GH-BE-06][AUTH-SCOPE] Phân quyền RBAC 5 vai trò & Cách ly dữ liệu Chủ ngựa](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/6) · Sprint 1 · 03/10/2026–04/10/2026
+- [ ] [[GH-BE-07][FR-021] Hệ thống Nhật ký kiểm toán bất biến (Audit Trail Logging)](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/7) · Sprint 1 · 03/10/2026–04/10/2026
+- [ ] [[GH-BE-08][FR-002] Quản lý Hồ sơ & Định danh ngựa (Microchip RFID)](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/8) · Sprint 1 · 02/10/2026–04/10/2026
+- [ ] [[GH-BE-09][FR-003] Sơ đồ phân bổ ô chuồng trại (Stall Allocation)](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/9) · Sprint 2 · 05/10/2026–07/10/2026
+- [ ] [[GH-BE-10][FR-008] Bảng theo dõi trạng thái sức khỏe đàn ngựa theo mã màu (Health Status Board)](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/10) · Sprint 2 · 05/10/2026–07/10/2026
+- [ ] [[GH-BE-11][FR-009] Bệnh án điện tử, chẩn đoán, phác đồ điều trị & Kê đơn thuốc](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/11) · Sprint 2 · 06/10/2026–08/10/2026
+- [ ] [[GH-BE-12][FR-010] Bản đồ chấn thương 2D trên mô hình hệ xương giải phẫu (2D Skeletal Injury Mapper)](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/12) · Sprint 2 · 07/10/2026–09/10/2026
+- [ ] [[GH-BE-13][FR-011] Quy trình Ban hành Lệnh Khóa huấn luyện khẩn cấp (Medical Lock) & Tái khám mở khóa](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/13) · Sprint 2 · 08/10/2026–10/10/2026
+- [ ] [[GH-BE-18][FR-012] Quản lý Lịch trình y tế dự phòng (Tiêm phòng vaccine, tẩy giun, kiểm tra móng Farrier)](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/18) · Sprint 2 · 09/10/2026–11/10/2026
+- [ ] [[GH-BE-14][FR-004] Lập kế hoạch giáo án huấn luyện chi tiết theo từng giai đoạn](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/14) · Sprint 3 · 12/10/2026–14/10/2026
+- [ ] [[GH-BE-15][FR-005] Thực thi cơ chế Chặn xếp lịch tự động bởi Lệnh 'Khóa huấn luyện' (Medical Lock Enforcement)](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/15) · Sprint 3 · 12/10/2026–14/10/2026
+- [ ] [[GH-BE-16][FR-006] Phân công lịch tập luyện hàng ngày & Điều phối lượt chạy thử (Time Trial)](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/16) · Sprint 3 · 13/10/2026–15/10/2026
+- [ ] [[GH-BE-17][FR-007] Ghi nhận kết quả buổi tập, đánh giá phong độ & Cập nhật biểu đồ thể lực](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/17) · Sprint 3 · 14/10/2026–16/10/2026
+- [ ] [[GH-BE-19][MVP-QA] Nghiệm thu toàn trình liên luồng MVP-QA (End-to-End Integration Testing)](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/19) · Sprint 3 · 15/10/2026–18/10/2026
