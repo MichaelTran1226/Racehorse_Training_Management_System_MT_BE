@@ -1,0 +1,556 @@
+// EquiFlow - Racehorse Training & Stable Management System
+// Prisma Schema Definition for PostgreSQL (Managed via Supabase / Local PostgreSQL)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// -------------------------------------------------------------
+// ENUMS
+// -------------------------------------------------------------
+
+enum Role {
+  CLUB_MANAGER
+  HEAD_TRAINER
+  VETERINARIAN
+  GROOM
+  HORSE_OWNER
+}
+
+enum UserStatus {
+  ACTIVE
+  PENDING_VERIFICATION
+  SUSPENDED
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+enum HorseStatus {
+  ACTIVE
+  IN_TRAINING
+  UNDER_OBSERVATION
+  INJURED
+  ISOLATED
+  RESTING
+  RETIRED
+}
+
+enum StallStatus {
+  AVAILABLE
+  OCCUPIED
+  MAINTENANCE
+}
+
+enum TrackSurface {
+  TURF
+  DIRT
+  SYNTHETIC
+}
+
+enum PlanStatus {
+  DRAFT
+  APPROVED
+  ACTIVE
+  COMPLETED
+  SUSPENDED
+}
+
+enum WorkoutStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED_MEDICAL_LOCK
+  SKIPPED
+}
+
+enum BodySide {
+  LEFT
+  RIGHT
+  BILATERAL
+}
+
+enum SeverityLevel {
+  MILD
+  MODERATE
+  SEVERE
+  CRITICAL
+}
+
+enum InjuryStatus {
+  ACTIVE
+  HEALING
+  RESOLVED
+}
+
+enum PreventiveType {
+  VACCINATION
+  DEWORMING
+  FARRIER_HOOF_CARE
+  DENTAL
+}
+
+enum PreventiveStatus {
+  PENDING
+  COMPLETED
+  OVERDUE
+}
+
+enum ShiftType {
+  MORNING
+  AFTERNOON
+  EVENING
+}
+
+enum TournamentStatus {
+  UPCOMING
+  OPEN_REGISTRATION
+  CLOSED_REGISTRATION
+  COMPLETED
+  CANCELLED
+}
+
+enum RegistrationStatus {
+  REGISTERED
+  SCRATCHED_MEDICAL
+  CONFIRMED
+  DISQUALIFIED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum InsightType {
+  WORKOUT_RECOMMENDATION
+  INJURY_RISK_WARNING
+  RECOVERY_ADVICE
+}
+
+enum InsightStatus {
+  GENERATED
+  ACKNOWLEDGED
+  APPLIED
+  DISMISSED
+}
+
+// -------------------------------------------------------------
+// MODELS
+// -------------------------------------------------------------
+
+model User {
+  id                   String     @id @default(uuid())
+  email                String     @unique
+  passwordHash         String
+  fullName             String
+  phoneNumber          String?
+  role                 Role
+  status               UserStatus @default(PENDING_VERIFICATION)
+  verificationCode     String?
+  verificationExpiry   DateTime?
+  verificationAttempts Int        @default(0)
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+
+  horsesOwned           Horse[]                 @relation("OwnerHorses")
+  stallAllocations      StallAllocation[]       @relation("GroomStalls")
+  trainingPlansCreated  TrainingPlan[]          @relation("TrainerPlans")
+  workoutSessionsStaff  WorkoutSession[]        @relation("StaffWorkouts")
+  medicalRecordsExamined MedicalRecord[]        @relation("VetRecords")
+  medicalLocksIssued    MedicalLock[]           @relation("VetLocksIssued")
+  medicalLocksUnlocked  MedicalLock[]           @relation("VetLocksUnlocked")
+  preventiveSchedules   PreventiveSchedule[]    @relation("VetPreventives")
+  dailyGroomingLogs     DailyGroomingLog[]      @relation("GroomLogs")
+  tournamentRegistrations TournamentRegistration[] @relation("TrainerRegistrations")
+  invoicesBilled        FinancialInvoice[]      @relation("OwnerInvoices")
+  auditLogs             AuditLog[]              @relation("UserAuditLogs")
+  refreshTokens         RefreshToken[]
+  invitationsSent       StaffInvitation[]       @relation("InvitedByUser")
+
+  @@index([email])
+  @@index([role])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  revoked   Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model StaffInvitation {
+  id          String       @id @default(uuid())
+  email       String
+  role        Role
+  inviteToken String       @unique
+  invitedById String
+  invitedBy   User         @relation("InvitedByUser", fields: [invitedById], references: [id], onDelete: Restrict)
+  status      InviteStatus @default(PENDING)
+  expiresAt   DateTime
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([email])
+  @@index([inviteToken])
+}
+
+model Horse {
+  id              String      @id @default(uuid())
+  name            String
+  microchipRfid   String      @unique
+  breed           String
+  dob             DateTime
+  gender          String
+  color           String
+  avatarUrl       String?
+  status          HorseStatus @default(ACTIVE)
+  isMedicalLocked Boolean     @default(false)
+  ownerId         String?
+  owner           User?       @relation("OwnerHorses", fields: [ownerId], references: [id], onDelete: SetNull)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  stallAllocations        StallAllocation[]
+  trainingPlans           TrainingPlan[]
+  workoutSessions         WorkoutSession[]
+  medicalRecords          MedicalRecord[]
+  injuryLogs              InjuryLog[]
+  medicalLocks            MedicalLock[]
+  preventiveSchedules     PreventiveSchedule[]
+  nutritionPlans          NutritionPlan[]
+  dailyGroomingLogs       DailyGroomingLog[]
+  tournamentRegistrations TournamentRegistration[]
+  financialInvoices       FinancialInvoice[]
+  aiInsights              AIInsight[]
+
+  @@index([microchipRfid])
+  @@index([ownerId])
+  @@index([status])
+  @@index([isMedicalLocked])
+}
+
+model Stall {
+  id          String      @id @default(uuid())
+  code        String      @unique
+  zone        String
+  status      StallStatus @default(AVAILABLE)
+  notes       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  allocations StallAllocation[]
+
+  @@index([zone])
+  @@index([code])
+}
+
+model StallAllocation {
+  id                 String    @id @default(uuid())
+  stallId            String
+  stall              Stall     @relation(fields: [stallId], references: [id], onDelete: Restrict)
+  horseId            String
+  horse              Horse     @relation(fields: [horseId], references: [id], onDelete: Restrict)
+  assignedGroomUserId String?
+  assignedGroom      User?     @relation("GroomStalls", fields: [assignedGroomUserId], references: [id], onDelete: SetNull)
+  startDate          DateTime  @default(now())
+  endDate            DateTime?
+  isActive           Boolean   @default(true)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([stallId, isActive])
+  @@index([horseId, isActive])
+}
+
+model TrainingPlan {
+  id            String       @id @default(uuid())
+  horseId       String
+  horse         Horse        @relation(fields: [horseId], references: [id], onDelete: Restrict)
+  trainerUserId String
+  trainer       User         @relation("TrainerPlans", fields: [trainerUserId], references: [id], onDelete: Restrict)
+  phaseName     String
+  targetSpeed   Float?
+  targetDistance Int?
+  trackSurface  TrackSurface @default(TURF)
+  startDate     DateTime
+  endDate       DateTime
+  status        PlanStatus   @default(APPROVED)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  workoutSessions WorkoutSession[]
+
+  @@index([horseId])
+  @@index([trainerUserId])
+}
+
+model WorkoutSession {
+  id                   String        @id @default(uuid())
+  trainingPlanId       String
+  trainingPlan         TrainingPlan  @relation(fields: [trainingPlanId], references: [id], onDelete: Restrict)
+  horseId              String
+  horse                Horse         @relation(fields: [horseId], references: [id], onDelete: Restrict)
+  assignedStaffUserId  String?
+  assignedStaff        User?         @relation("StaffWorkouts", fields: [assignedStaffUserId], references: [id], onDelete: SetNull)
+  scheduledDate        DateTime
+  distanceMeters       Int
+  targetDurationSeconds Int?
+  actualTimeSeconds    Float?
+  heartRatePeak        Int?
+  heartRateRecovery    Int?
+  performanceScore     Float?
+  trainerNotes         String?
+  status               WorkoutStatus @default(SCHEDULED)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  @@index([trainingPlanId])
+  @@index([horseId])
+  @@index([scheduledDate])
+}
+
+model MedicalRecord {
+  id                  String     @id @default(uuid())
+  horseId             String
+  horse               Horse      @relation(fields: [horseId], references: [id], onDelete: Restrict)
+  veterinarianUserId  String
+  veterinarian        User       @relation("VetRecords", fields: [veterinarianUserId], references: [id], onDelete: Restrict)
+  examinationDate     DateTime   @default(now())
+  symptoms            String
+  clinicalDiagnosis   String
+  treatmentProtocol   String
+  prescriptionDetails String?
+  requiresFollowUp    Boolean    @default(false)
+  followUpDate        DateTime?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  injuries InjuryLog[]
+
+  @@index([horseId])
+  @@index([veterinarianUserId])
+}
+
+model InjuryLog {
+  id              String        @id @default(uuid())
+  medicalRecordId String
+  medicalRecord   MedicalRecord @relation(fields: [medicalRecordId], references: [id], onDelete: Cascade)
+  horseId         String
+  horse           Horse         @relation(fields: [horseId], references: [id], onDelete: Restrict)
+  coordinateX     Float         // Normalized 0.0 - 1.0 (Lateral Skeleton Map)
+  coordinateY     Float         // Normalized 0.0 - 1.0 (Lateral Skeleton Map)
+  anatomicalZone  String
+  bodySide        BodySide      @default(LEFT)
+  injuryType      String
+  severity        SeverityLevel @default(MODERATE)
+  status          InjuryStatus  @default(ACTIVE)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([horseId])
+  @@index([medicalRecordId])
+}
+
+model MedicalLock {
+  id                 String    @id @default(uuid())
+  horseId            String
+  horse              Horse     @relation(fields: [horseId], references: [id], onDelete: Restrict)
+  veterinarianUserId String
+  veterinarian       User      @relation("VetLocksIssued", fields: [veterinarianUserId], references: [id], onDelete: Restrict)
+  lockedAt           DateTime  @default(now())
+  expectedRestDays   Int
+  lockReason         String
+  unlockConditions   String
+  isLocked           Boolean   @default(true)
+  unlockedAt         DateTime?
+  unlockVetUserId    String?
+  unlockVet          User?     @relation("VetLocksUnlocked", fields: [unlockVetUserId], references: [id], onDelete: SetNull)
+  recheckNotes       String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([horseId, isLocked])
+}
+
+model PreventiveSchedule {
+  id                 String           @id @default(uuid())
+  horseId            String
+  horse              Horse            @relation(fields: [horseId], references: [id], onDelete: Restrict)
+  veterinarianUserId String?
+  veterinarian       User?            @relation("VetPreventives", fields: [veterinarianUserId], references: [id], onDelete: SetNull)
+  scheduleType       PreventiveType
+  dueDate            DateTime
+  completedDate      DateTime?
+  productAdministered String?
+  notes              String?
+  status             PreventiveStatus @default(PENDING)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([horseId])
+  @@index([dueDate, status])
+}
+
+model NutritionPlan {
+  id                  String   @id @default(uuid())
+  horseId             String
+  horse               Horse    @relation(fields: [horseId], references: [id], onDelete: Restrict)
+  hayFeedKg           Float
+  grainFeedKg         Float
+  supplementsJson     String?  // JSON string of supplements & vitamins
+  specialInstructions String?
+  validFrom           DateTime @default(now())
+  validTo             DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([horseId])
+}
+
+model DailyGroomingLog {
+  id                 String    @id @default(uuid())
+  horseId            String
+  horse              Horse     @relation(fields: [horseId], references: [id], onDelete: Restrict)
+  groomUserId        String
+  groom              User      @relation("GroomLogs", fields: [groomUserId], references: [id], onDelete: Restrict)
+  shiftDate          DateTime  @default(now())
+  shiftType          ShiftType @default(MORNING)
+  feedCompleted      Boolean   @default(false)
+  cleaningCompleted  Boolean   @default(false)
+  groomingCompleted  Boolean   @default(false)
+  iceBootCompleted   Boolean   @default(false)
+  healthObservations String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([horseId])
+  @@index([groomUserId])
+  @@index([shiftDate])
+}
+
+model Tournament {
+  id                   String           @id @default(uuid())
+  name                 String
+  raceDate             DateTime
+  location             String
+  distanceMeters       Int
+  trackType            TrackSurface     @default(TURF)
+  prizePool            Decimal          @default(0) @db.Decimal(12, 2)
+  registrationDeadline DateTime
+  status               TournamentStatus @default(UPCOMING)
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  registrations TournamentRegistration[]
+
+  @@index([raceDate])
+  @@index([status])
+}
+
+model TournamentRegistration {
+  id                    String             @id @default(uuid())
+  tournamentId          String
+  tournament            Tournament         @relation(fields: [tournamentId], references: [id], onDelete: Restrict)
+  horseId               String
+  horse                 Horse              @relation(fields: [horseId], references: [id], onDelete: Restrict)
+  registeredByTrainerId String
+  registeredByTrainer   User               @relation("TrainerRegistrations", fields: [registeredByTrainerId], references: [id], onDelete: Restrict)
+  status                RegistrationStatus @default(REGISTERED)
+  registrationDate      DateTime           @default(now())
+  notes                 String?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  result TournamentResult?
+
+  @@unique([tournamentId, horseId])
+  @@index([tournamentId])
+  @@index([horseId])
+}
+
+model TournamentResult {
+  id                 String                 @id @default(uuid())
+  registrationId     String                 @unique
+  registration       TournamentRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  finalRank          Int
+  finishTimeSeconds  Float
+  avgSpeedKmh        Float
+  prizeMoneyWon      Decimal                @default(0) @db.Decimal(12, 2)
+  officialNotes      String?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+}
+
+model FinancialInvoice {
+  id            String        @id @default(uuid())
+  horseId       String
+  horse         Horse         @relation(fields: [horseId], references: [id], onDelete: Restrict)
+  ownerId       String
+  owner         User          @relation("OwnerInvoices", fields: [ownerId], references: [id], onDelete: Restrict)
+  billingPeriod String        // e.g. "2026-09"
+  boardingFee   Decimal       @default(0) @db.Decimal(10, 2)
+  medicalFee    Decimal       @default(0) @db.Decimal(10, 2)
+  trainingFee   Decimal       @default(0) @db.Decimal(10, 2)
+  prizeCredit   Decimal       @default(0) @db.Decimal(10, 2)
+  netAmount     Decimal       @default(0) @db.Decimal(10, 2)
+  status        InvoiceStatus @default(DRAFT)
+  invoiceUrl    String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([horseId])
+  @@index([ownerId])
+  @@index([billingPeriod])
+}
+
+model AIInsight {
+  id                 String        @id @default(uuid())
+  horseId            String
+  horse              Horse         @relation(fields: [horseId], references: [id], onDelete: Restrict)
+  insightType        InsightType
+  trainingLoadIndex  Float
+  riskScore          Float
+  recommendationsJson String       // JSON string of AI suggestions
+  status             InsightStatus @default(GENERATED)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  @@index([horseId])
+  @@index([insightType])
+}
+
+model AuditLog {
+  id            String   @id @default(uuid())
+  userId        String?
+  user          User?    @relation("UserAuditLogs", fields: [userId], references: [id], onDelete: SetNull)
+  action        String
+  entityName    String
+  entityId      String?
+  oldValuesJson String?  // JSON string snapshot before change
+  newValuesJson String?  // JSON string snapshot after change
+  ipAddress     String?
+  userAgent     String?
+  timestamp     DateTime @default(now())
+
+  @@index([userId])
+  @@index([entityName, entityId])
+  @@index([timestamp])
+}

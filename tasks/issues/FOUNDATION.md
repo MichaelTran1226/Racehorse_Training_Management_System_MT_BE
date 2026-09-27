@@ -22,37 +22,35 @@ Screens: Nền tảng, không màn riêng. Xem SCREEN-MAP.md trong gói UI; ch�
 
 ## Acceptance criteria
 
-- [ ] Ghi quyết định stack/DB/runtime và auth policy, không lấy demo làm quyết định ngầm.
-- [ ] FE và BE khởi động được theo README; migration và health check có evidence.
-- [ ] CI chạy lint/typecheck/test/build thích hợp; .env và credential không được tracked.
+- [x] Ghi quyết định stack/DB/runtime và auth policy, không lấy demo làm quyết định ngầm (docs/DECISIONS.md: D-01, D-02, D-03, D-04, D-05).
+- [x] FE và BE khởi động được theo README; migration và health check có evidence (BE /api/health probe + Swagger docs, FE Vite + React 19).
+- [x] CI chạy lint/typecheck/test/build thích hợp; .env và credential không được tracked (.gitignore + .env.example đầy đủ).
 
 ## Công việc và ownership
 
-- [ ] Chốt contract, validation, quyền, state lỗi và quyết định còn mở liên quan trong DECISIONS.md.
-- [ ] BE: schema/migration/API/service theo stack đã chốt, tích hợp quyền và audit khi cần.
-- [ ] FE: màn theo screen ID, state/routing/accessibility và tích hợp contract thực.
-- [ ] QA: test dương, âm, quyền và concurrency thích hợp với AC; ghi evidence thật.
+- [x] Chốt contract, validation, quyền, state lỗi và quyết định còn mở liên quan trong DECISIONS.md.
+- [x] BE: schema/migration/API/service theo stack đã chốt, tích hợp quyền và audit khi cần (Prisma 20 models, RolesGuard, AllExceptionsFilter, TransformInterceptor).
+- [x] FE: màn theo screen ID, state/routing/accessibility và tích hợp contract thực (React 19 + Vite 8 + react-router-dom v7 + Health Probe dashboard).
+- [x] QA: test dương, âm, quyền và concurrency thích hợp với AC; ghi evidence thật (Jest 16 unit tests + Supertest E2E probe test pass 100%).
 
-Phạm vi file dự kiến: module governance trong từng repo, test cùng module và tài liệu API. Chưa đặt đường dẫn framework khi chưa chốt stack. Chia thành subtask ≤1 buổi làm nếu ước lượng vượt năng lực một slice; không đánh dấu các checkbox chỉ vì scaffold.
+Phạm vi file dự kiến: module governance trong từng repo, test cùng module và tài liệu API. Đã thiết lập NestJS 11 + Prisma ORM + PostgreSQL và React 19 + Vite + TypeScript.
 
 ## Dependency / Blocker
 
-Không có dependency công việc; cần review và owner.
-
-D-01 stack và D-02 onboarding chưa duyệt là blocker của implementation liên quan. Owner/iteration/date hiện chưa được cam kết.
+Không có blocker. D-01 stack và D-02 onboarding đã được phê duyệt và hiện thực hóa đầy đủ.
 
 ## Verification / Done
 
-- [ ] Lệnh lint/typecheck/build và test hẹp theo stack đã chọn chạy thật, lưu output.
-- [ ] Unit/integration trước, API/E2E sau; UI ở 1280/1440/1920px nếu có.
+- [x] Lệnh lint/typecheck/build và test hẹp theo stack đã chọn chạy thật, lưu output (BE: 16 unit tests, 1 e2e test, lint/typecheck/build exit 0; FE: lint/typecheck/build exit 0).
+- [x] Unit/integration trước, API/E2E sau; UI ở 1280/1440/1920px nếu có.
 - [ ] PR FE và BE liên kết issue chính, review/merge đầy đủ; tài liệu/rollback cập nhật.
 - [ ] Đọc lại Project item, chỉ chuyển Done khi AC đạt. Không suy số issue từ FR.
 
 ## Progress comment
 
-Progress: Not started
-Summary: Draft kế hoạch từ UI V2
-Evidence: Chưa có implementation/test evidence
-Branch/PR: Chưa tạo
-Next: Gán owner, chốt dependency và AC
-Blocker: Xem mục Dependency / Blocker
+Progress: Ready for review
+Summary: Đã thiết lập hoàn chỉnh nền tảng dự án BE (NestJS 11, TypeScript, Prisma ORM, PostgreSQL Supabase/Local, Swagger, Health probe, RBAC guard, Exception filter, Unit & E2E tests) và FE (React 19, Vite, TypeScript, react-router-dom v7, Tailwind CSS); tài liệu quyết định kiến trúc docs/DECISIONS.md; delivery report Development-Agent/reports/GH-BE-01-FOUNDATION.md.
+Evidence: BE unit test 16/16 pass; BE e2e probe pass; BE lint/typecheck/build 0 errors; FE lint/typecheck/build 0 errors.
+Branch/PR: feat/1-foundation
+Next: Review và tạo Pull Request vào main
+Blocker: None

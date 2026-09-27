@@ -2,7 +2,7 @@
 
 Mọi việc đang Backlog. Owner/date sẽ gán trên GitHub sau khi review.
 
-- [ ] [FOUNDATION — Chốt stack, contract và nền dự án](issues/FOUNDATION.md) · M0 · P0 Critical · phụ thuộc: không
+- [x] [FOUNDATION — Chốt stack, contract và nền dự án](issues/FOUNDATION.md) · M0 · P0 Critical · phụ thuộc: không (Ready for review)
 - [ ] [UI-V2 — Duyệt bộ giao diện Stitch V2](issues/UI-V2.md) · M0 · P0 Critical · phụ thuộc: không
 - [ ] [AUTH-LOGIN — Đăng nhập và session](issues/AUTH-LOGIN.md) · M0 · P0 Critical · phụ thuộc: FOUNDATION, UI-V2
 - [ ] [AUTH-REGISTER — Đăng ký chủ ngựa và xác minh email](issues/AUTH-REGISTER.md) · M0 · P0 Critical · phụ thuộc: AUTH-LOGIN
