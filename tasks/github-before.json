@@ -1,0 +1,26 @@
+[
+  {
+    "side": "FE",
+    "name": "MichaelTran1226/Racehorse_Training_Management_System_MT_FE",
+    "permissions": {
+      "admin": true,
+      "maintain": true,
+      "push": true,
+      "triage": true,
+      "pull": true
+    },
+    "issues": []
+  },
+  {
+    "side": "BE",
+    "name": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
+    "permissions": {
+      "admin": true,
+      "maintain": true,
+      "push": true,
+      "triage": true,
+      "pull": true
+    },
+    "issues": []
+  }
+]

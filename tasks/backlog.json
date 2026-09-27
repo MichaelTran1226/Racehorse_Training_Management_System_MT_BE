@@ -1,0 +1,794 @@
+[
+  {
+    "id": "FOUNDATION",
+    "fr": "FR-022",
+    "title": "Chốt stack, contract và nền dự án",
+    "milestone": "M0",
+    "priority": "P0 Critical",
+    "area": "governance",
+    "deps": [],
+    "lead": "Điều phối + FE + BE",
+    "risk": "High",
+    "ac": [
+      "Ghi quyết định stack/DB/runtime và auth policy, không lấy demo làm quyết định ngầm.",
+      "FE và BE khởi động được theo README; migration và health check có evidence.",
+      "CI chạy lint/typecheck/test/build thích hợp; .env và credential không được tracked."
+    ],
+    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
+    "screens": [],
+    "status": "Backlog",
+    "owner": "",
+    "targetDate": "",
+    "issueUrl": ""
+  },
+  {
+    "id": "UI-V2",
+    "fr": "FR-022",
+    "title": "Duyệt bộ giao diện Stitch V2",
+    "milestone": "M0",
+    "priority": "P0 Critical",
+    "area": "ui",
+    "deps": [],
+    "lead": "FE + Điều phối",
+    "risk": "Medium",
+    "ac": [
+      "Screen map truy nguyên Flow 1–3 + auth/audit; optional tạm hoãn, màn hình riêng và link Stitch thực.",
+      "Không phả hệ/video; V03 dùng đúng file ảnh; AUTH01/02/03 tách rõ.",
+      "Review website desktop 1280/1440/1920px và state checklist; mọi lệch thiết kế có issue."
+    ],
+    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_FE",
+    "screens": [],
+    "status": "Backlog",
+    "owner": "",
+    "targetDate": "",
+    "issueUrl": ""
+  },
+  {
+    "id": "AUTH-LOGIN",
+    "fr": "FR-001",
+    "title": "Đăng nhập và session",
+    "milestone": "M0",
+    "priority": "P0 Critical",
+    "area": "auth",
+    "deps": [
+      "FOUNDATION",
+      "UI-V2"
+    ],
+    "lead": "BE + FE",
+    "risk": "High",
+    "ac": [
+      "Credentials hợp lệ tạo session và đưa đúng dashboard của role server cấp.",
+      "Sai mật khẩu, account khóa/chưa xác minh và session hết hạn không truy cập dữ liệu.",
+      "Logout/thu hồi session được kiểm chứng; password/token không vào URL hoặc log."
+    ],
+    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
+    "screens": [
+      "AUTH01",
+      "SYS01",
+      "SYS02"
+    ],
+    "status": "Backlog",
+    "owner": "",
+    "targetDate": "",
+    "issueUrl": ""
+  },
+  {
+    "id": "AUTH-REGISTER",
+    "fr": "FR-001",
+    "title": "Đăng ký chủ ngựa và xác minh email",
+    "milestone": "M0",
+    "priority": "P0 Critical",
+    "area": "auth",
+    "deps": [
+      "AUTH-LOGIN"
+    ],
+    "lead": "BE + FE",
+    "risk": "High",
+    "ac": [
+      "Signup không nhận role đặc quyền hoặc ownerId tùy ý; password được xử lý an toàn.",
+      "Mã xác minh đúng một lần, hết hạn/giới hạn gửi/lần thử có kiểm chứng; email provider đã chốt.",
+      "Xác minh xong vào tài khoản chưa có ngựa; không tự gán ownership; gửi lỗi không giả thành công."
+    ],
+    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
+    "screens": [
+      "AUTH02",
+      "AUTH03",
+      "AUTH04"
+    ],
+    "status": "Backlog",
+    "owner": "",
+    "targetDate": "",
+    "issueUrl": ""
+  },
+  {
+    "id": "AUTH-RESET",
+    "fr": "FR-001",
+    "title": "Khôi phục mật khẩu",
+    "milestone": "M0",
+    "priority": "P0 Critical",
+    "area": "auth",
+    "deps": [
+      "AUTH-LOGIN"
+    ],
+    "lead": "BE + FE",
+    "risk": "High",
+    "ac": [
+      "Forgot trả thông báo chung cho email tồn tại/không tồn tại.",
+      "Reset token hết hạn/đã dùng bị từ chối; mật khẩu xác nhận sai không được lưu.",
+      "Đổi mật khẩu thành công, session xử lý theo policy và login bằng mật khẩu mới đạt E2E."
+    ],
+    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
+    "screens": [
+      "AUTH05",
+      "AUTH06",
+      "AUTH07"
+    ],
+    "status": "Backlog",
+    "owner": "",
+    "targetDate": "",
+    "issueUrl": ""
+  },
+  {
+    "id": "AUTH-STAFF",
+    "fr": "FR-001",
+    "title": "Mời nhân sự và quản lý quyền",
+    "milestone": "M0",
+    "priority": "P0 Critical",
+    "area": "auth",
+    "deps": [
+      "AUTH-LOGIN",
+      "FR-021"
+    ],
+    "lead": "BE + FE",
+    "risk": "Critical",
+    "ac": [
+      "Lời mời gắn email và role server cấp; hết hạn/thu hồi/đã dùng bị từ chối.",
+      "Chỉ người có quyền được mời/đổi role/khóa account; không mất quản trị viên cuối cùng.",
+      "Đổi quyền có audit, ảnh hưởng session theo policy; không chỉ ẩn menu."
+    ],
+    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
+    "screens": [
+      "AUTH08",
+      "M02",
+      "M03"
+    ],
+    "status": "Backlog",
+    "owner": "",
+    "targetDate": "",
+    "issueUrl": ""
+  },
+  {
+    "id": "AUTH-SCOPE",
+    "fr": "FR-001",
+    "title": "RBAC và dữ liệu theo chủ sở hữu",
+    "milestone": "M0",
+    "priority": "P0 Critical",
+    "area": "auth",
+    "deps": [
+      "AUTH-LOGIN"
+    ],
+    "lead": "BE + FE + QA",
+    "risk": "Critical",
+    "ac": [
+      "Kiểm chứng đủ năm role trên API, trang và hành động sửa; sai quyền bị 403.",
+      "Hai Owner không đọc được ngựa/lịch/bệnh án/báo cáo của nhau bằng thay ID.",
+      "Scope ownership được tái sử dụng cho export/AI; có test hồi quy khi các module đó xuất hiện."
+    ],
+    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
+    "screens": [
+      "SYS01",
+      "O01"
+    ],
+    "status": "Backlog",
+    "owner": "",
+    "targetDate": "",
+    "issueUrl": ""
+  },
+  {
+    "id": "FR-021",
+    "fr": "FR-021",
+    "title": "Nhật ký kiểm toán",
+    "milestone": "M0",
+    "priority": "P0 Critical",
+    "area": "governance",
+    "deps": [
+      "AUTH-LOGIN"
+    ],
+    "lead": "BE + FE",
+    "risk": "High",
+    "ac": [
+      "Thao tác nhạy cảm ghi tác nhân, thời gian, đối tượng, kết quả cùng thay đổi nghiệp vụ.",
+      "Không có API/UI sửa/xóa audit cho người dùng thường; không lưu credential.",
+      "Quản lý lọc/xem log; sai quyền từ chối; test failure/rollback không tạo lịch sử thành công sai."
+    ],
+    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
+    "screens": [
+      "V04",
+      "V05",
+      "M03",
+      "M04"
+    ],
+    "status": "Backlog",
+    "owner": "",
+    "targetDate": "",
+    "issueUrl": ""
+  },
+  {
+    "id": "FR-002",
+    "fr": "FR-002",
+    "title": "Hồ sơ định danh ngựa",
+    "milestone": "M1",
+    "priority": "P0 Critical",
+    "area": "horse",
+    "deps": [
+      "AUTH-SCOPE",
+      "FR-021"
+    ],
+    "lead": "BE + FE",
+    "risk": "High",
+    "ac": [
+      "Tạo/sửa/tìm theo chip; chip duy nhất kể cả hai request đồng thời.",
+      "Không xóa vật lý hồ sơ đã có lịch sử; sức khỏe và vòng đời rõ ràng.",
+      "Owner chỉ thấy ngựa liên kết đúng; hồ sơ không chứa phả hệ hay video."
+    ],
+    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
+    "screens": [
+      "H01",
+      "H02",
+      "H03",
+      "O01",
+      "M01"
+    ],
+    "status": "Backlog",
+    "owner": "",
+    "targetDate": "",
+    "issueUrl": ""
+  },
+  {
+    "id": "FR-003",
+    "fr": "FR-003",
+    "title": "Phân bổ ô chuồng",
+    "milestone": "M1",
+    "priority": "P0 Critical",
+    "area": "horse",
+    "deps": [
+      "FR-002"
+    ],
+    "lead": "BE + FE",
+    "risk": "High",
+    "ac": [
+      "Chuyển ngựa vào ô trống và gán Groom hợp lệ lưu được, giao diện cập nhật.",
+      "Hai người phân cùng ô đồng thời chỉ một thành công; không để ngựa chiếm nhiều ô ngoài quy tắc.",
+      "Groom xem đúng phạm vi phân công; xung đột được giải thích và không mất dữ liệu."
+    ],
+    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
+    "screens": [
+      "H04"
+    ],
+    "status": "Backlog",
+    "owner": "",
+    "targetDate": "",
+    "issueUrl": ""
+  },
+  {
+    "id": "FR-008",
+    "fr": "FR-008",
+    "title": "Bảng sức khỏe đàn ngựa",
+    "milestone": "M2",
+    "priority": "P0 Critical",
+    "area": "medical",
+    "deps": [
+      "FR-002"
+    ],
+    "lead": "BE + FE",
+    "risk": "Medium",
+    "ac": [
+      "Bốn trạng thái sức khỏe có màu và chữ, lọc/tìm đúng dữ liệu.",
+      "Medical Lock là thuộc tính hạn chế riêng, không suy tự động từ màu trạng thái.",
+      "Trạng thái trống/loading/lỗi và phân quyền đọc đạt kiểm tra viewport."
+    ],
+    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
+    "screens": [
+      "V01",
+      "M01"
+    ],
+    "status": "Backlog",
+    "owner": "",
+    "targetDate": "",
+    "issueUrl": ""
+  },
+  {
+    "id": "FR-009",
+    "fr": "FR-009",
+    "title": "Bệnh án và phác đồ",
+    "milestone": "M2",
+    "priority": "P0 Critical",
+    "area": "medical",
+    "deps": [
+      "FR-008",
+      "FR-021"
+    ],
+    "lead": "BE + FE",
+    "risk": "High",
+    "ac": [
+      "Vet lưu bệnh án, phác đồ/thuốc với đơn vị và lịch; người không có quyền không chỉnh được.",
+      "Validation không lưu chẩn đoán/thuốc thiếu thông tin bắt buộc; lỗi giữ form.",
+      "Lịch sử sửa có audit; chính sách trừ kho được chốt trước tích hợp vật tư."
+    ],
+    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
+    "screens": [
+      "H03",
+      "V02"
+    ],
+    "status": "Backlog",
+    "owner": "",
+    "targetDate": "",
+    "issueUrl": ""
+  },
+  {
+    "id": "FR-010",
+    "fr": "FR-010",
+    "title": "Đánh dấu chấn thương trên ảnh 2D",
+    "milestone": "M2",
+    "priority": "P0 Critical",
+    "area": "medical",
+    "deps": [
+      "FR-009",
+      "UI-V2"
+    ],
+    "lead": "FE + BE",
+    "risk": "High",
+    "ac": [
+      "Ảnh đúng SHA256 của asset người dùng; không thay bằng mô hình tự vẽ hay 3D.",
+      "Marker lưu và tải lại đúng vị trí ảnh ở 1280/1440/1920px; vùng và bên cơ thể chọn riêng.",
+      "Vet sửa, người xem chỉ đọc; keyboard chọn vùng; lỗi tải ảnh/lưu có trạng thái rõ."
+    ],
+    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
+    "screens": [
+      "V03"
+    ],
+    "status": "Backlog",
+    "owner": "",
+    "targetDate": "",
+    "issueUrl": ""
+  },
+  {
+    "id": "FR-011",
+    "fr": "FR-011",
+    "title": "Ban hành và mở khóa y tế",
+    "milestone": "M2",
+    "priority": "P0 Critical",
+    "area": "medical",
+    "deps": [
+      "FR-009",
+      "FR-021"
+    ],
+    "lead": "BE + FE",
+    "risk": "Critical",
+    "ac": [
+      "Chỉ Vet ban hành/gỡ khóa với lý do và đánh giá; ngày dự kiến không tự mở khóa.",
+      "Lệnh khóa cập nhật hạn chế và xử lý buổi tập chịu ảnh hưởng nhất quán, có audit.",
+      "Mở khóa không tự chạy lại lịch đã đình chỉ; test quyền, retry và concurrency."
+    ],
+    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
+    "screens": [
+      "T05",
+      "V04",
+      "V05"
+    ],
+    "status": "Backlog",
+    "owner": "",
+    "targetDate": "",
+    "issueUrl": ""
+  },
+  {
+    "id": "FR-004",
+    "fr": "FR-004",
+    "title": "Giáo án theo giai đoạn",
+    "milestone": "M2",
+    "priority": "P0 Critical",
+    "area": "training",
+    "deps": [
+      "FR-002",
+      "FR-011"
+    ],
+    "lead": "BE + FE",
+    "risk": "High",
+    "ac": [
+      "Lưu giai đoạn, cự ly, tốc độ, khối lượng, mặt sân với đơn vị rõ.",
+      "Thiếu/âm/sai thời gian bị từ chối; giữ form khi API lỗi.",
+      "Không áp dụng giáo án khi bị Medical Lock; không thêm ngoại lệ rehab chưa duyệt."
+    ],
+    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
+    "screens": [
+      "T01",
+      "T02"
+    ],
+    "status": "Backlog",
+    "owner": "",
+    "targetDate": "",
+    "issueUrl": ""
+  },
+  {
+    "id": "FR-005",
+    "fr": "FR-005",
+    "title": "Enforcement Medical Lock",
+    "milestone": "M2",
+    "priority": "P0 Critical",
+    "area": "medical",
+    "deps": [
+      "FR-011",
+      "FR-004"
+    ],
+    "lead": "BE + FE + QA",
+    "risk": "Critical",
+    "ac": [
+      "API chặn lập lịch/áp giáo án khi khóa (đăng ký giải để giai đoạn tùy chọn); không phụ thuộc disabled button.",
+      "Test hai giao dịch Vet khóa và HLV lưu cùng lúc không tạo lịch vi phạm.",
+      "UI nhận từ chối hiển thị lý do và link hồ sơ; không báo thành công, không cho HLV bỏ qua."
+    ],
+    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
+    "screens": [
+      "T02",
+      "T03",
+      "T05"
+    ],
+    "status": "Backlog",
+    "owner": "",
+    "targetDate": "",
+    "issueUrl": ""
+  },
+  {
+    "id": "FR-006",
+    "fr": "FR-006",
+    "title": "Lịch tập và phân công",
+    "milestone": "M2",
+    "priority": "P0 Critical",
+    "area": "training",
+    "deps": [
+      "FR-004",
+      "FR-005",
+      "FR-003"
+    ],
+    "lead": "BE + FE",
+    "risk": "High",
+    "ac": [
+      "Phân công ngựa, Groom/nài, thời gian và bài tập xuất hiện đúng lịch/ca.",
+      "Xung đột giờ/nhân sự/ngựa bị từ chối theo contract; Medical Lock kiểm tra lại khi lưu.",
+      "Website có lịch tuần và agenda; đổi/hủy lịch có evidence và không tạo role Jockey thứ sáu."
+    ],
+    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
+    "screens": [
+      "T01",
+      "T03"
+    ],
+    "status": "Backlog",
+    "owner": "",
+    "targetDate": "",
+    "issueUrl": ""
+  },
+  {
+    "id": "FR-007",
+    "fr": "FR-007",
+    "title": "Kết quả và nhật ký huấn luyện",
+    "milestone": "M2",
+    "priority": "P0 Critical",
+    "area": "training",
+    "deps": [
+      "FR-006"
+    ],
+    "lead": "BE + FE",
+    "risk": "Medium",
+    "ac": [
+      "HLV ghi kết quả và nhận xét có đơn vị; dữ liệu không hợp lệ bị chặn.",
+      "Biểu đồ dùng bản ghi đã lưu, không có dữ liệu không bịa xu hướng.",
+      "Owner xem đúng ngựa, không sửa; nhật ký thay video trên portal."
+    ],
+    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
+    "screens": [
+      "H03",
+      "T01",
+      "T04",
+      "O02"
+    ],
+    "status": "Backlog",
+    "owner": "",
+    "targetDate": "",
+    "issueUrl": ""
+  },
+  {
+    "id": "FR-012",
+    "fr": "FR-012",
+    "title": "Lịch y tế dự phòng",
+    "milestone": "M2",
+    "priority": "P1 High",
+    "area": "medical",
+    "deps": [
+      "FR-009"
+    ],
+    "lead": "BE + FE",
+    "risk": "Medium",
+    "ac": [
+      "Lưu lịch tiêm/tẩy giun/móng, nhắc trước ba ngày theo quy tắc đã thống nhất.",
+      "Múi giờ Asia/Ho_Chi_Minh, quá hạn/hoàn tất đúng; gửi lại job không lặp thông báo.",
+      "Groom đọc việc được giao, Vet cập nhật; test boundary ngày."
+    ],
+    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
+    "screens": [
+      "V06"
+    ],
+    "status": "Backlog",
+    "owner": "",
+    "targetDate": "",
+    "issueUrl": ""
+  },
+  {
+    "id": "MVP-QA",
+    "fr": "FR-001,FR-002,FR-003,FR-005,FR-010,FR-011",
+    "title": "Nghiệm thu MVP xuyên suốt",
+    "milestone": "M2",
+    "priority": "P0 Critical",
+    "area": "governance",
+    "deps": [
+      "FR-003",
+      "FR-005",
+      "FR-007",
+      "FR-010",
+      "FR-012"
+    ],
+    "lead": "QA + FE + BE",
+    "risk": "Critical",
+    "ac": [
+      "E2E signup→verify→login→horse→injury→lock→blocked scheduling→unlock→reschedule đạt.",
+      "Năm role và hai Owner kiểm tra API/UI; asset và marker đúng ở ba viewport.",
+      "CI/build/test thực được đính kèm PR; review/merge và rollback có evidence trước Done."
+    ],
+    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
+    "screens": [
+      "AUTH01",
+      "AUTH02",
+      "AUTH03",
+      "AUTH04",
+      "AUTH05",
+      "AUTH06",
+      "AUTH07",
+      "AUTH08",
+      "SYS01",
+      "SYS02",
+      "H01",
+      "H02",
+      "H03",
+      "H04",
+      "T02",
+      "T03",
+      "T05",
+      "V03",
+      "V04",
+      "V05",
+      "O01",
+      "M01",
+      "M02",
+      "M03"
+    ],
+    "status": "Backlog",
+    "owner": "",
+    "targetDate": "",
+    "issueUrl": ""
+  },
+  {
+    "id": "FR-013",
+    "fr": "FR-013",
+    "title": "Khẩu phần theo bữa",
+    "milestone": "M3",
+    "priority": "P1 High",
+    "area": "care",
+    "deps": [
+      "MVP-QA"
+    ],
+    "lead": "BE + FE",
+    "risk": "Medium",
+    "ac": [
+      "HLV/Vet lập và duyệt lượng/đơn vị từng bữa; Groom không sửa.",
+      "Ca chăm sóc chỉ dùng phiên bản đã duyệt; thay đổi có version.",
+      "Không lượng âm, thiếu dữ liệu có empty state; quyền và audit được kiểm tra."
+    ],
+    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
+    "screens": [
+      "C02"
+    ],
+    "status": "Backlog",
+    "owner": "",
+    "targetDate": "",
+    "issueUrl": ""
+  },
+  {
+    "id": "FR-014",
+    "fr": "FR-014",
+    "title": "Checklist ca chăm sóc",
+    "milestone": "M3",
+    "priority": "P1 High",
+    "area": "care",
+    "deps": [
+      "FR-013",
+      "FR-003"
+    ],
+    "lead": "BE + FE",
+    "risk": "High",
+    "ac": [
+      "Groom chỉ thao tác ca/ngựa được giao, lưu checklist và giờ hoàn tất.",
+      "Ghi chú bất thường text gửi cảnh báo đúng người; không ảnh sự cố/video.",
+      "Gửi lặp hoặc mất mạng không nhân đôi hoàn tất/trừ kho; không giả lưu thành công."
+    ],
+    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
+    "screens": [
+      "C01"
+    ],
+    "status": "Backlog",
+    "owner": "",
+    "targetDate": "",
+    "issueUrl": ""
+  },
+  {
+    "id": "FR-015",
+    "fr": "FR-015",
+    "title": "Tồn kho và đề xuất bổ sung",
+    "milestone": "M3",
+    "priority": "P1 High",
+    "area": "care",
+    "deps": [
+      "FR-014"
+    ],
+    "lead": "BE + FE",
+    "risk": "High",
+    "ac": [
+      "Tồn, đơn vị, ngưỡng cảnh báo và đề xuất được lưu/đọc đúng quyền.",
+      "Một sự kiện tiêu hao chỉ trừ một lần; test concurrency không để tồn âm.",
+      "Duyệt/từ chối có người, thời gian, lý do; lỗi không âm thầm mất đề xuất."
+    ],
+    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
+    "screens": [
+      "C03",
+      "C04"
+    ],
+    "status": "Backlog",
+    "owner": "",
+    "targetDate": "",
+    "issueUrl": ""
+  },
+  {
+    "id": "FR-016",
+    "fr": "FR-016",
+    "title": "Giải đua và đăng ký",
+    "milestone": "M3",
+    "priority": "P1 High",
+    "area": "racing",
+    "deps": [
+      "MVP-QA",
+      "FR-005"
+    ],
+    "lead": "BE + FE",
+    "risk": "Critical",
+    "ac": [
+      "Giải có điều kiện và hạn thật; ngựa không đủ điều kiện có lý do từng dòng.",
+      "API chặn trùng/hết hạn/khóa y tế, kể cả khóa đồng thời với đăng ký.",
+      "Đăng ký hợp lệ lưu và trả kết quả thật; scope vai trò được kiểm tra."
+    ],
+    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
+    "screens": [
+      "R01",
+      "R02"
+    ],
+    "status": "Backlog",
+    "owner": "",
+    "targetDate": "",
+    "issueUrl": ""
+  },
+  {
+    "id": "FR-017",
+    "fr": "FR-017",
+    "title": "Ghi nhận thành tích thi đấu",
+    "milestone": "M3",
+    "priority": "P1 High",
+    "area": "racing",
+    "deps": [
+      "FR-016"
+    ],
+    "lead": "BE + FE",
+    "risk": "Medium",
+    "ac": [
+      "Kết quả hợp lệ cập nhật hồ sơ ngựa, có nguồn và người nhập.",
+      "Thời gian/thứ hạng/tiền thưởng không hợp lệ bị chặn; sửa có lịch sử.",
+      "Owner xem đúng kết quả ngựa sở hữu; không tạo thành tích mẫu như dữ liệu thật."
+    ],
+    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
+    "screens": [
+      "H03",
+      "R03"
+    ],
+    "status": "Backlog",
+    "owner": "",
+    "targetDate": "",
+    "issueUrl": ""
+  },
+  {
+    "id": "FR-018",
+    "fr": "FR-018",
+    "title": "Báo cáo chi phí và tiền thưởng",
+    "milestone": "M3",
+    "priority": "P1 High",
+    "area": "finance",
+    "deps": [
+      "FR-017"
+    ],
+    "lead": "BE + FE",
+    "risk": "High",
+    "ac": [
+      "Quy tắc chia thưởng được chốt; tổng hợp kỳ đối soát được với chứng từ.",
+      "Owner isolation áp cả API lẫn file xuất; đổi horseId không đọc dữ liệu khác.",
+      "Kỳ chưa dữ liệu/thiếu hợp đồng/lỗi xuất hiển thị rõ; không tự điền tỷ lệ chia."
+    ],
+    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
+    "screens": [
+      "O03",
+      "M01"
+    ],
+    "status": "Backlog",
+    "owner": "",
+    "targetDate": "",
+    "issueUrl": ""
+  },
+  {
+    "id": "FR-019",
+    "fr": "FR-019",
+    "title": "Gợi ý huấn luyện có người duyệt",
+    "milestone": "M4",
+    "priority": "P2 Medium",
+    "area": "ai",
+    "deps": [
+      "MVP-QA",
+      "FR-007"
+    ],
+    "lead": "BE + FE",
+    "risk": "High",
+    "ac": [
+      "Dữ liệu đầu vào đủ theo quyết định đã chốt; thiếu thì không sinh kết luận giả.",
+      "Gợi ý có lý do, nguồn và đánh giá; không tự áp dụng giáo án/mở khóa y tế.",
+      "Owner/role scope, lỗi provider và rủi ro prompt injection được kiểm tra."
+    ],
+    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
+    "screens": [
+      "AI01"
+    ],
+    "status": "Backlog",
+    "owner": "",
+    "targetDate": "",
+    "issueUrl": ""
+  },
+  {
+    "id": "FR-020",
+    "fr": "FR-020",
+    "title": "Trợ lý tra cứu theo quyền",
+    "milestone": "M4",
+    "priority": "P2 Medium",
+    "area": "ai",
+    "deps": [
+      "FR-019",
+      "AUTH-SCOPE"
+    ],
+    "lead": "BE + FE",
+    "risk": "High",
+    "ac": [
+      "Câu trả lời dựa nguồn được cấp quyền, có nguồn/ngày và trạng thái không biết.",
+      "Không lấy dữ liệu owner khác qua prompt hoặc tài liệu truy hồi.",
+      "Không tự kê đơn, thao tác tiền hay Medical Lock; lỗi dịch vụ hiển thị trung thực."
+    ],
+    "repo": "MichaelTran1226/Racehorse_Training_Management_System_MT_BE",
+    "screens": [
+      "AI02"
+    ],
+    "status": "Backlog",
+    "owner": "",
+    "targetDate": "",
+    "issueUrl": ""
+  }
+]

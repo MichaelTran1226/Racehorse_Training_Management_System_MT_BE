@@ -1,0 +1,94 @@
+{
+  "user": {
+    "projectV2": {
+      "id": "PVT_kwHOCshm5c4Bk0j-",
+      "title": "Racehorse Training & Management System",
+      "url": "https://github.com/users/MichaelTran1226/projects/2",
+      "fields": {
+        "nodes": [
+          {
+            "id": "PVTF_lAHOCshm5c4Bk0j-zhjjvEg",
+            "name": "Title",
+            "dataType": "TITLE"
+          },
+          {
+            "id": "PVTF_lAHOCshm5c4Bk0j-zhjjvEk",
+            "name": "Assignees",
+            "dataType": "ASSIGNEES"
+          },
+          {
+            "id": "PVTSSF_lAHOCshm5c4Bk0j-zhjjvEo",
+            "name": "Status",
+            "options": [
+              {
+                "id": "f75ad846",
+                "name": "Todo"
+              },
+              {
+                "id": "47fc9ee4",
+                "name": "In Progress"
+              },
+              {
+                "id": "98236657",
+                "name": "Done"
+              }
+            ]
+          },
+          {
+            "id": "PVTF_lAHOCshm5c4Bk0j-zhjjvEs",
+            "name": "Labels",
+            "dataType": "LABELS"
+          },
+          {
+            "id": "PVTF_lAHOCshm5c4Bk0j-zhjjvEw",
+            "name": "Linked pull requests",
+            "dataType": "LINKED_PULL_REQUESTS"
+          },
+          {
+            "id": "PVTF_lAHOCshm5c4Bk0j-zhjjvE0",
+            "name": "Milestone",
+            "dataType": "MILESTONE"
+          },
+          {
+            "id": "PVTF_lAHOCshm5c4Bk0j-zhjjvE4",
+            "name": "Repository",
+            "dataType": "REPOSITORY"
+          },
+          {
+            "id": "PVTF_lAHOCshm5c4Bk0j-zhjjvFA",
+            "name": "Reviewers",
+            "dataType": "REVIEWERS"
+          },
+          {
+            "id": "PVTF_lAHOCshm5c4Bk0j-zhjjvFE",
+            "name": "Parent issue",
+            "dataType": "PARENT_ISSUE"
+          },
+          {
+            "id": "PVTF_lAHOCshm5c4Bk0j-zhjjvFI",
+            "name": "Sub-issues progress",
+            "dataType": "SUB_ISSUES_PROGRESS"
+          },
+          {
+            "id": "PVTF_lAHOCshm5c4Bk0j-zhjjvFM",
+            "name": "Created",
+            "dataType": "CREATED"
+          },
+          {
+            "id": "PVTF_lAHOCshm5c4Bk0j-zhjjvFQ",
+            "name": "Updated",
+            "dataType": "UPDATED"
+          },
+          {
+            "id": "PVTF_lAHOCshm5c4Bk0j-zhjjvFU",
+            "name": "Closed",
+            "dataType": "CLOSED"
+          }
+        ]
+      },
+      "items": {
+        "nodes": []
+      }
+    }
+  }
+}
