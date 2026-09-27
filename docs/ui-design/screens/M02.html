@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="vi"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>[GH-BE-05][AUTH-STAFF][M02] Mời nhân sự nội bộ (Manager, Trainer, Vet, Groom) &amp; Quản lý danh sách nhân sự — Nhân sự và lời mời</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "forest-deep": "#234437",
+            "error": "#ba1a1a",
+            "on-background": "#191c1b",
+            "on-error": "#ffffff",
+            "tertiary-container": "#794744",
+            "surface-bright": "#f9faf7",
+            "primary-container": "#315d4b",
+            "on-primary": "#ffffff",
+            "background": "#f9faf7",
+            "secondary": "#446557",
+            "surface-container-low": "#f3f4f1",
+            "surface-container": "#edeeeb",
+            "primary-fixed": "#bdedd6",
+            "surface-dim": "#d9dad7",
+            "on-tertiary-fixed-variant": "#693937",
+            "surface-container-highest": "#e2e3e0",
+            "secondary-fixed": "#c6ebd8",
+            "primary-fixed-dim": "#a2d1ba",
+            "critical-text": "#922D3C",
+            "on-primary-container": "#a5d4bd",
+            "primary": "#184535",
+            "error-container": "#ffdad6",
+            "ink": "#202B28",
+            "muted": "#65716B",
+            "outline": "#717974",
+            "on-secondary-fixed-variant": "#2c4d40",
+            "on-tertiary-fixed": "#34100e",
+            "secondary-container": "#c6ebd8",
+            "positive-text": "#276442",
+            "on-primary-fixed-variant": "#224f3d",
+            "on-error-container": "#93000a",
+            "on-secondary": "#ffffff",
+            "quarantine-text": "#65517D",
+            "on-tertiary": "#ffffff",
+            "on-surface-variant": "#414944",
+            "critical-bg": "#FAE9EB",
+            "on-primary-fixed": "#002115",
+            "tertiary": "#5e312e",
+            "on-surface": "#191c1b",
+            "forest": "#315D4B",
+            "quarantine-bg": "#F1EDF6",
+            "surface-container-high": "#e7e8e6",
+            "forest-wash": "#EAF1EC",
+            "on-secondary-fixed": "#002116",
+            "surface": "#FFFFFF",
+            "tertiary-fixed-dim": "#f9b6b1",
+            "tertiary-fixed": "#ffdad7",
+            "secondary-fixed-dim": "#aacfbd",
+            "positive-bg": "#E8F3EB",
+            "inverse-primary": "#a2d1ba",
+            "surface-variant": "#e2e3e0",
+            "inverse-on-surface": "#f0f1ee",
+            "warning-text": "#875B15",
+            "surface-tint": "#3b6754",
+            "surface-container-lowest": "#ffffff",
+            "outline-variant": "#c0c8c2",
+            "canvas": "#F5F6F3",
+            "on-tertiary-container": "#fcb9b4",
+            "inverse-surface": "#2e312f",
+            "border": "#DCE3DD",
+            "warning-bg": "#FFF4DD",
+            "on-secondary-container": "#4a6b5d"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "panel": "10px",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-xs": "4px",
+            "space-sm": "8px",
+            "space-md": "16px",
+            "space-lg": "24px",
+            "space-xl": "32px",
+            "gutter": "24px",
+            "margin": "32px"
+          },
+          "fontFamily": {
+            "section-heading": ["Manrope"],
+            "label": ["Manrope"],
+            "body-lg": ["Manrope"],
+            "page-title": ["Manrope"],
+            "body": ["Manrope"],
+            "auth-heading": ["Manrope"],
+            "metadata": ["Manrope"]
+          },
+          "fontSize": {
+            "section-heading": ["18px", { "lineHeight": "26px", "fontWeight": "650" }],
+            "label": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "page-title": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "body": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "auth-heading": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+            "metadata": ["12px", { "lineHeight": "18px", "fontWeight": "400" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      line-height: 1;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    body {
+      background-color: #F5F6F3;
+      color: #202B28;
+      font-family: 'Manrope', sans-serif;
+    }
+    .panel-card {
+      border-radius: 10px;
+      border: 1px solid #DCE3DD;
+      background-color: #FFFFFF;
+    }
+  </style>
+<style id="equiflow-reviewed-layout">
+   html,body{max-width:100%;} .ef-sidebar{width:224px!important;min-width:224px;background:#fff!important;border-right:1px solid #dce3dd;padding:24px 14px!important;display:flex;flex-direction:column;gap:24px}.ef-brand{font:700 24px/1.2 Manrope,'Segoe UI',sans-serif;color:#315d4b}.ef-brand small{display:block;font:11px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin-top:8px}.ef-role-nav{display:flex;flex-direction:column;gap:5px}.ef-role-nav a{padding:11px 12px;min-height:44px;border-radius:6px;font:500 14px/22px Manrope,'Segoe UI',sans-serif;color:#3e4e45;text-decoration:none;white-space:normal}.ef-role-nav a:hover,.ef-role-nav a[aria-current=page]{background:#eaf1ec;color:#315d4b}.ef-role-label{margin-top:auto;font-size:12px;color:#65716b}.ef-role-label a{display:block;padding-top:12px;color:#315d4b}.ef-sample-notice{font:12px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin:0 0 14px}.ef-mobile-nav{display:none}input,select,textarea{max-width:100%}button,a,input,select,textarea{touch-action:manipulation}
+   @media(max-width:1023px){[data-review-kind=app] header,[data-review-kind=app] main .flex{flex-wrap:wrap}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important}[data-review-kind=app] .flex-1{min-width:0}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{max-width:100%;min-width:0}[data-review-kind=app] header>div{max-width:100%;flex-wrap:wrap}}
+   @media(max-width:767px){body[data-review-kind=app]{display:block!important;height:auto!important;min-height:100dvh}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important;height:auto}}
+   @media(max-width:767px){.ef-sidebar{display:none!important}.ef-mobile-nav{display:block;position:relative;z-index:200;background:white;border-bottom:1px solid #dce3dd;padding:12px 16px}.ef-mobile-nav summary{min-height:44px;cursor:pointer;display:flex;align-items:center;font-weight:700;color:#315d4b}.ml-56,.ml-64,[class~='ml-[224px]'],[class~='ml-[240px]'],main[style*='margin-left']{margin-left:0!important}main{min-width:0!important;max-width:100%!important}header{flex-wrap:wrap!important;gap:8px!important;height:auto!important}footer{flex-wrap:wrap!important;gap:12px}h1{overflow-wrap:anywhere}.ef-role-nav{max-width:100%}[data-review-kind=app] .grid{grid-template-columns:minmax(0,1fr)!important}[data-review-kind=app] .flex{min-width:0;flex-wrap:wrap}[data-review-kind=app] table,[data-review-kind=app] tbody,[data-review-kind=app] tr{display:block;width:100%}[data-review-kind=app] thead{display:none}[data-review-kind=app] tr{padding:12px 0;border-bottom:1px solid #dce3dd}[data-review-kind=app] td{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;white-space:normal!important;padding:8px 12px;min-width:0;overflow-wrap:anywhere}[data-review-kind=app] td:before{content:attr(data-label);color:#65716b;font-size:12px;flex:0 0 35%}[data-review-kind=app] td>*{min-width:0;max-width:100%}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{width:100%}}
+  </style></head>
+<body class="bg-canvas text-ink antialiased min-h-screen flex" data-review-kind="app">
+<!-- ================= SIDEBAR NAVIGATION (224px / w-56) ================= -->
+<aside class="w-56 h-screen sticky top-0 flex flex-col justify-between p-space-sm z-30 bg-surface border-r border-border shrink-0 ef-sidebar"><div class="ef-brand">EquiFlow<small>Quản lý huấn luyện ngựa đua</small></div><nav class="ef-role-nav" aria-label="Điều hướng Quản lý CLB"><a href="M01.html">Tổng quan</a><a href="H01.html">Hồ sơ ngựa</a><a href="H04.html">Ô chuồng</a><a href="V01.html">Sức khỏe</a><a href="M02.html" aria-current="page">Nhân sự</a><a href="M04.html">Nhật ký hệ thống</a></nav><div class="ef-role-label">Quản lý CLB<a href="AUTH01.html">Đăng xuất</a></div></aside>
+<!-- ================= MAIN LAYOUT CANVAS ================= -->
+<div class="flex-1 flex flex-col min-w-0">
+<!-- Top Bar Navigation (64px / h-16) -->
+<header class="h-16 w-full flex items-center justify-between px-space-xl sticky top-0 z-20 bg-surface border-b border-border shrink-0">
+<div class="flex items-center gap-space-md w-96">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-[18px]">search</span>
+<input class="w-full pl-9 pr-3 py-1.5 h-10 bg-canvas border border-border rounded-lg text-ink font-body text-body placeholder-muted focus:outline-none focus:border-forest text-sm" placeholder="Tìm theo tên, email, vai trò..." type="text">
+</div>
+</div>
+<div class="flex items-center gap-space-md">
+<!-- Actions & Notifications -->
+<button class="w-9 h-9 rounded-lg border border-border flex items-center justify-center text-muted hover:text-ink hover:bg-forest-wash transition-colors">
+<span class="material-symbols-outlined text-[20px]">calendar_today</span>
+</button>
+<div class="relative">
+<button class="w-9 h-9 rounded-lg border border-border flex items-center justify-center text-muted hover:text-ink hover:bg-forest-wash transition-colors">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+</button>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-forest"></span>
+</div>
+<div class="h-6 w-px bg-border mx-1"></div>
+<!-- Stable & User Identity -->
+<div class="flex items-center gap-space-sm">
+<div class="w-9 h-9 rounded-full bg-forest-wash border border-border flex items-center justify-center text-forest font-label font-bold text-sm">
+            NA
+          </div>
+<div class="flex flex-col text-left">
+<span class="font-label text-label text-ink leading-tight">Nguyễn Văn An</span>
+<span class="font-metadata text-metadata text-muted leading-tight">Quản lý CLB · Tân Phú Racing</span>
+</div>
+</div>
+</div>
+</header>
+<!-- Page Content Container -->
+<main class="flex-1 p-space-xl overflow-y-auto space-y-space-lg"><p class="ef-sample-notice">Dữ liệu minh họa · Bản thiết kế giao diện</p>
+<!-- Page Header & Action CTA -->
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-space-md">
+<div>
+<h2 class="font-page-title text-page-title text-ink font-bold tracking-tight">Quản lý nhân sự &amp; Lời mời</h2>
+<p class="font-body text-body text-muted mt-1">Quản lý danh sách nhân sự vận hành chuồng trại và điều phối thư mời gia nhập theo chuẩn phân quyền RBAC.</p>
+</div>
+<div>
+<button class="h-11 px-space-md bg-forest hover:bg-forest-deep text-on-primary font-label text-label rounded-[7px] flex items-center gap-2 shadow-sm transition-colors duration-150" onclick="openInviteModal()">
+<span class="material-symbols-outlined text-[20px]">add</span>
+<span>+ Mời nhân sự mới</span>
+</button>
+</div>
+</div>
+<!-- Quick Stats Metric Bento -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+<div class="panel-card p-space-md flex items-center justify-between">
+<div class="space-y-1">
+<span class="font-metadata text-metadata text-muted uppercase tracking-wider">Tổng nhân sự</span>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-bold font-page-title text-ink">18</span>
+<span class="font-body text-body text-muted">thành viên</span>
+</div>
+<p class="font-metadata text-metadata text-muted">Bao gồm 4 bộ phận chuyên môn</p>
+</div>
+<div class="w-11 h-11 rounded-lg bg-canvas border border-border flex items-center justify-center text-forest">
+<span class="material-symbols-outlined text-[24px]">group</span>
+</div>
+</div>
+<div class="panel-card p-space-md flex items-center justify-between">
+<div class="space-y-1">
+<span class="font-metadata text-metadata text-muted uppercase tracking-wider">Đang hoạt động</span>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-bold font-page-title text-positive-text">15</span>
+<span class="font-body text-body text-muted">tài khoản</span>
+</div>
+<p class="font-metadata text-metadata text-positive-text flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> 83.3% sẵn sàng trực chuồng
+            </p>
+</div>
+<div class="w-11 h-11 rounded-lg bg-positive-bg border border-border flex items-center justify-center text-positive-text">
+<span class="material-symbols-outlined text-[24px]">how_to_reg</span>
+</div>
+</div>
+<div class="panel-card p-space-md flex items-center justify-between">
+<div class="space-y-1">
+<span class="font-metadata text-metadata text-muted uppercase tracking-wider">Lời mời chờ kích hoạt</span>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-bold font-page-title text-warning-text">3</span>
+<span class="font-body text-body text-muted">yêu cầu</span>
+</div>
+<p class="font-metadata text-metadata text-warning-text flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">schedule</span> Thời hạn phản hồi trung bình 5 ngày
+            </p>
+</div>
+<div class="w-11 h-11 rounded-lg bg-warning-bg border border-border flex items-center justify-center text-warning-text">
+<span class="material-symbols-outlined text-[24px]">mark_email_unread</span>
+</div>
+</div>
+</section>
+<!-- Section: Danh sách nhân sự hiện tại -->
+<section class="panel-card overflow-hidden">
+<div class="p-space-md border-b border-border flex flex-col md:flex-row md:items-center justify-between gap-3 bg-surface">
+<div>
+<h3 class="font-section-heading text-section-heading text-ink font-semibold">Danh sách nhân sự hiện tại</h3>
+<p class="font-metadata text-metadata text-muted mt-0.5">Phân quyền chức năng và giám sát ca trực chuồng trại</p>
+</div>
+<!-- Filters & Filter Controls -->
+<div class="flex flex-wrap items-center gap-2">
+<div class="relative min-w-[200px]">
+<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-muted text-[16px]">search</span>
+<input class="w-full pl-8 pr-3 py-1.5 h-9 bg-canvas border border-border rounded-lg text-ink font-body text-body text-xs focus:outline-none focus:border-forest" placeholder="Lọc theo tên..." type="text">
+</div>
+<select class="h-9 px-3 bg-canvas border border-border rounded-lg text-ink font-label text-xs focus:outline-none focus:border-forest">
+<option value="">Tất cả vai trò</option>
+<option value="vet">Bác sĩ thú y</option>
+<option value="trainer">Huấn luyện viên trưởng</option>
+<option value="groom">Nhân viên chăm sóc Groom</option>
+<option value="manager">Quản lý CLB</option>
+</select>
+<select class="h-9 px-3 bg-canvas border border-border rounded-lg text-ink font-label text-xs focus:outline-none focus:border-forest">
+<option value="">Trạng thái: Tất cả</option>
+<option value="active">Đang hoạt động</option>
+<option value="locked">Tạm khóa</option>
+</select>
+</div>
+</div>
+<!-- Table View -->
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-border bg-canvas text-muted font-metadata text-metadata">
+<th class="py-3 px-space-md font-semibold">Họ tên &amp; Thông tin</th>
+<th class="py-3 px-space-md font-semibold">Email công vụ</th>
+<th class="py-3 px-space-md font-semibold">Vai trò chuyên môn</th>
+<th class="py-3 px-space-md font-semibold">Trạng thái</th>
+<th class="py-3 px-space-md font-semibold">Ngày tham gia</th>
+<th class="py-3 px-space-md text-right font-semibold">Thao tác</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border text-ink font-body text-body">
+<!-- Row 1 -->
+<tr class="hover:bg-forest-wash transition-colors h-14">
+<td class="py-2.5 px-space-md" data-label="Họ tên &amp; Thông tin">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-forest text-on-primary font-bold text-xs flex items-center justify-center shrink-0">
+                      TH
+                    </div>
+<div>
+<div class="font-label text-label font-semibold text-ink">BS. Lê Thanh Hà</div>
+<div class="font-metadata text-metadata text-muted">Khu vực: Phòng Y tế &amp; Cách ly</div>
+</div>
+</div>
+</td>
+<td class="py-2.5 px-space-md font-metadata text-metadata text-ink" data-label="Email công vụ">ha.lethanh@tanphuracing.vn</td>
+<td class="py-2.5 px-space-md" data-label="Vai trò chuyên môn">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-forest-wash text-forest font-label text-xs">
+<span class="material-symbols-outlined text-[14px]">medical_services</span> Bác sĩ thú y trưởng
+                  </span>
+</td>
+<td class="py-2.5 px-space-md" data-label="Trạng thái">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-label bg-positive-bg text-positive-text">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> Đang hoạt động
+                  </span>
+</td>
+<td class="py-2.5 px-space-md font-metadata text-metadata text-muted" data-label="Ngày tham gia">12/01/2023</td>
+<td class="py-2.5 px-space-md text-right" data-label="Thao tác">
+<div class="inline-flex items-center gap-1">
+<button class="p-1 rounded text-muted hover:text-forest hover:bg-canvas" title="Điều chỉnh quyền">
+<span class="material-symbols-outlined text-[18px]">manage_accounts</span>
+</button>
+<button class="p-1 rounded text-muted hover:text-forest hover:bg-canvas" title="Tùy chọn khác">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-forest-wash transition-colors h-14">
+<td class="py-2.5 px-space-md" data-label="Họ tên &amp; Thông tin">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-secondary text-on-secondary font-bold text-xs flex items-center justify-center shrink-0">
+                      VH
+                    </div>
+<div>
+<div class="font-label text-label font-semibold text-ink">HLV. Nguyễn Văn Hòa</div>
+<div class="font-metadata text-metadata text-muted">Khu vực: Đường đua chính &amp; Vòng tập 1</div>
+</div>
+</div>
+</td>
+<td class="py-2.5 px-space-md font-metadata text-metadata text-ink" data-label="Email công vụ">hoa.nguyenvan@tanphuracing.vn</td>
+<td class="py-2.5 px-space-md" data-label="Vai trò chuyên môn">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-forest-wash text-forest font-label text-xs">
+<span class="material-symbols-outlined text-[14px]">sports_score</span> Huấn luyện viên trưởng
+                  </span>
+</td>
+<td class="py-2.5 px-space-md" data-label="Trạng thái">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-label bg-positive-bg text-positive-text">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> Đang hoạt động
+                  </span>
+</td>
+<td class="py-2.5 px-space-md font-metadata text-metadata text-muted" data-label="Ngày tham gia">15/03/2023</td>
+<td class="py-2.5 px-space-md text-right" data-label="Thao tác">
+<div class="inline-flex items-center gap-1">
+<button class="p-1 rounded text-muted hover:text-forest hover:bg-canvas" title="Điều chỉnh quyền">
+<span class="material-symbols-outlined text-[18px]">manage_accounts</span>
+</button>
+<button class="p-1 rounded text-muted hover:text-forest hover:bg-canvas" title="Tùy chọn khác">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-forest-wash transition-colors h-14">
+<td class="py-2.5 px-space-md" data-label="Họ tên &amp; Thông tin">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-high text-forest font-bold text-xs flex items-center justify-center shrink-0 border border-border">
+                      VN
+                    </div>
+<div>
+<div class="font-label text-label font-semibold text-ink">Trần Văn Nam</div>
+<div class="font-metadata text-metadata text-muted">Khu vực: Dãy chuồng A (Ô 01-12)</div>
+</div>
+</div>
+</td>
+<td class="py-2.5 px-space-md font-metadata text-metadata text-ink" data-label="Email công vụ">nam.tranvan@tanphuracing.vn</td>
+<td class="py-2.5 px-space-md" data-label="Vai trò chuyên môn">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-canvas text-secondary font-label text-xs border border-border">
+<span class="material-symbols-outlined text-[14px]">cleaning_services</span> Groom phụ trách Dãy A
+                  </span>
+</td>
+<td class="py-2.5 px-space-md" data-label="Trạng thái">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-label bg-positive-bg text-positive-text">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> Đang hoạt động
+                  </span>
+</td>
+<td class="py-2.5 px-space-md font-metadata text-metadata text-muted" data-label="Ngày tham gia">05/06/2023</td>
+<td class="py-2.5 px-space-md text-right" data-label="Thao tác">
+<div class="inline-flex items-center gap-1">
+<button class="p-1 rounded text-muted hover:text-forest hover:bg-canvas" title="Điều chỉnh quyền">
+<span class="material-symbols-outlined text-[18px]">manage_accounts</span>
+</button>
+<button class="p-1 rounded text-muted hover:text-forest hover:bg-canvas" title="Tùy chọn khác">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-forest-wash transition-colors h-14">
+<td class="py-2.5 px-space-md" data-label="Họ tên &amp; Thông tin">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-forest-deep text-on-primary font-bold text-xs flex items-center justify-center shrink-0">
+                      VT
+                    </div>
+<div>
+<div class="font-label text-label font-semibold text-ink">Đặng Văn Thành</div>
+<div class="font-metadata text-metadata text-muted">Khu vực: Kho thức ăn &amp; Chuồng B</div>
+</div>
+</div>
+</td>
+<td class="py-2.5 px-space-md font-metadata text-metadata text-ink" data-label="Email công vụ">thanh.dangvan@tanphuracing.vn</td>
+<td class="py-2.5 px-space-md" data-label="Vai trò chuyên môn">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-canvas text-secondary font-label text-xs border border-border">
+<span class="material-symbols-outlined text-[14px]">warehouse</span> Quản lý CLB
+                  </span>
+</td>
+<td class="py-2.5 px-space-md" data-label="Trạng thái">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-label bg-surface-container-high text-muted">
+<span class="material-symbols-outlined text-[14px]">lock</span> Tạm khóa
+                  </span>
+</td>
+<td class="py-2.5 px-space-md font-metadata text-metadata text-muted" data-label="Ngày tham gia">20/08/2023</td>
+<td class="py-2.5 px-space-md text-right" data-label="Thao tác">
+<div class="inline-flex items-center gap-1">
+<button class="p-1 rounded text-muted hover:text-forest hover:bg-canvas" title="Mở khóa tài khoản">
+<span class="material-symbols-outlined text-[18px]">lock_open</span>
+</button>
+<button class="p-1 rounded text-muted hover:text-forest hover:bg-canvas" title="Tùy chọn khác">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="hover:bg-forest-wash transition-colors h-14">
+<td class="py-2.5 px-space-md" data-label="Họ tên &amp; Thông tin">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-low text-ink font-bold text-xs flex items-center justify-center shrink-0 border border-border">
+                      HL
+                    </div>
+<div>
+<div class="font-label text-label font-semibold text-ink">Lê Hoàng Long</div>
+<div class="font-metadata text-metadata text-muted">Khu vực: Dãy kiểm tra sơ bộ</div>
+</div>
+</div>
+</td>
+<td class="py-2.5 px-space-md font-metadata text-metadata text-ink" data-label="Email công vụ">long.lehoang@tanphuracing.vn</td>
+<td class="py-2.5 px-space-md" data-label="Vai trò chuyên môn">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-forest-wash text-forest font-label text-xs">
+<span class="material-symbols-outlined text-[14px]">medical_services</span> Bác sĩ thú y
+                  </span>
+</td>
+<td class="py-2.5 px-space-md" data-label="Trạng thái">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-label bg-positive-bg text-positive-text">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> Đang hoạt động
+                  </span>
+</td>
+<td class="py-2.5 px-space-md font-metadata text-metadata text-muted" data-label="Ngày tham gia">14/11/2023</td>
+<td class="py-2.5 px-space-md text-right" data-label="Thao tác">
+<div class="inline-flex items-center gap-1">
+<button class="p-1 rounded text-muted hover:text-forest hover:bg-canvas" title="Điều chỉnh quyền">
+<span class="material-symbols-outlined text-[18px]">manage_accounts</span>
+</button>
+<button class="p-1 rounded text-muted hover:text-forest hover:bg-canvas" title="Tùy chọn khác">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Footer / Result Count -->
+<div class="p-space-md border-t border-border flex items-center justify-between text-muted font-metadata text-metadata bg-surface">
+<span>Hiển thị 5 trên 18 nhân sự · <em class="not-italic text-ink font-medium">Dữ liệu minh họa</em></span>
+<div class="flex items-center gap-1">
+<button class="px-2.5 py-1 border border-border rounded bg-surface hover:bg-canvas text-ink text-xs disabled:opacity-50" disabled="">Trước</button>
+<button class="px-2.5 py-1 border border-border rounded bg-forest text-on-primary text-xs font-semibold">1</button>
+<button class="px-2.5 py-1 border border-border rounded bg-surface hover:bg-canvas text-ink text-xs">2</button>
+<button class="px-2.5 py-1 border border-border rounded bg-surface hover:bg-canvas text-ink text-xs">3</button>
+<button class="px-2.5 py-1 border border-border rounded bg-surface hover:bg-canvas text-ink text-xs">Sau</button>
+</div>
+</div>
+</section>
+<!-- Section: Danh sách lời mời đã gửi (Pending Invitations) -->
+<section class="panel-card overflow-hidden">
+<div class="p-space-md border-b border-border flex items-center justify-between bg-surface">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-warning-text text-[20px]">outgoing_mail</span>
+<div>
+<h3 class="font-section-heading text-section-heading text-ink font-semibold">Danh sách lời mời đã gửi (Pending Invitations)</h3>
+<p class="font-metadata text-metadata text-muted mt-0.5">Các thư mời gia nhập gửi qua hệ thống đang chờ nhân sự xác thực</p>
+</div>
+</div>
+<span class="px-2.5 py-1 rounded bg-warning-bg text-warning-text font-label text-xs">
+            3 lời mời đang chờ
+          </span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-border bg-canvas text-muted font-metadata text-metadata">
+<th class="py-3 px-space-md font-semibold">Email người nhận</th>
+<th class="py-3 px-space-md font-semibold">Vai trò đề xuất</th>
+<th class="py-3 px-space-md font-semibold">Ngày gửi</th>
+<th class="py-3 px-space-md font-semibold">Thời hạn lời mời</th>
+<th class="py-3 px-space-md font-semibold">Người mời</th>
+<th class="py-3 px-space-md text-right font-semibold">Thao tác</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border text-ink font-body text-body">
+<!-- Pending 1 -->
+<tr class="hover:bg-forest-wash transition-colors h-14">
+<td class="py-2.5 px-space-md font-label text-label font-medium text-ink" data-label="Email người nhận">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-muted text-[18px]">mail</span>
+<span>bs.phamquocanh@tanphuracing.vn</span>
+</div>
+</td>
+<td class="py-2.5 px-space-md" data-label="Vai trò đề xuất">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-forest-wash text-forest font-label text-xs">
+<span class="material-symbols-outlined text-[14px]">medical_services</span> Bác sĩ thú y
+                  </span>
+</td>
+<td class="py-2.5 px-space-md font-metadata text-metadata text-muted" data-label="Ngày gửi">26/02/2025</td>
+<td class="py-2.5 px-space-md" data-label="Thời hạn lời mời">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-label bg-warning-bg text-warning-text">
+<span class="material-symbols-outlined text-[14px]">timer</span> Còn 4 ngày
+                  </span>
+</td>
+<td class="py-2.5 px-space-md font-metadata text-metadata text-ink" data-label="Người mời">Nguyễn Văn An</td>
+<td class="py-2.5 px-space-md text-right" data-label="Thao tác">
+<div class="inline-flex items-center gap-2">
+<button class="h-8 px-2.5 rounded border border-border bg-surface hover:bg-forest-wash text-forest font-label text-xs flex items-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[14px]">send</span> Gửi lại
+                    </button>
+<button class="h-8 px-2.5 rounded border border-critical-text/40 bg-critical-bg text-critical-text hover:bg-critical-text hover:text-on-primary font-label text-xs flex items-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[14px]">cancel</span> Thu hồi
+                    </button>
+</div>
+</td>
+</tr>
+<!-- Pending 2 -->
+<tr class="hover:bg-forest-wash transition-colors h-14">
+<td class="py-2.5 px-space-md font-label text-label font-medium text-ink" data-label="Email người nhận">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-muted text-[18px]">mail</span>
+<span>groom.nguyenhung@tanphuracing.vn</span>
+</div>
+</td>
+<td class="py-2.5 px-space-md" data-label="Vai trò đề xuất">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-canvas text-secondary font-label text-xs border border-border">
+<span class="material-symbols-outlined text-[14px]">cleaning_services</span> Nhân viên chăm sóc Groom
+                  </span>
+</td>
+<td class="py-2.5 px-space-md font-metadata text-metadata text-muted" data-label="Ngày gửi">27/02/2025</td>
+<td class="py-2.5 px-space-md" data-label="Thời hạn lời mời">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-label bg-warning-bg text-warning-text">
+<span class="material-symbols-outlined text-[14px]">timer</span> Còn 5 ngày
+                  </span>
+</td>
+<td class="py-2.5 px-space-md font-metadata text-metadata text-ink" data-label="Người mời">Nguyễn Văn An</td>
+<td class="py-2.5 px-space-md text-right" data-label="Thao tác">
+<div class="inline-flex items-center gap-2">
+<button class="h-8 px-2.5 rounded border border-border bg-surface hover:bg-forest-wash text-forest font-label text-xs flex items-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[14px]">send</span> Gửi lại
+                    </button>
+<button class="h-8 px-2.5 rounded border border-critical-text/40 bg-critical-bg text-critical-text hover:bg-critical-text hover:text-on-primary font-label text-xs flex items-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[14px]">cancel</span> Thu hồi
+                    </button>
+</div>
+</td>
+</tr>
+<!-- Pending 3 -->
+<tr class="hover:bg-forest-wash transition-colors h-14">
+<td class="py-2.5 px-space-md font-label text-label font-medium text-ink" data-label="Email người nhận">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-muted text-[18px]">mail</span>
+<span>hlv.tranduc@tanphuracing.vn</span>
+</div>
+</td>
+<td class="py-2.5 px-space-md" data-label="Vai trò đề xuất">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-forest-wash text-forest font-label text-xs">
+<span class="material-symbols-outlined text-[14px]">sports_score</span> Huấn luyện viên trưởng
+                  </span>
+</td>
+<td class="py-2.5 px-space-md font-metadata text-metadata text-muted" data-label="Ngày gửi">28/02/2025</td>
+<td class="py-2.5 px-space-md" data-label="Thời hạn lời mời">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-label bg-warning-bg text-warning-text">
+<span class="material-symbols-outlined text-[14px]">timer</span> Còn 6 ngày
+                  </span>
+</td>
+<td class="py-2.5 px-space-md font-metadata text-metadata text-ink" data-label="Người mời">Nguyễn Văn An</td>
+<td class="py-2.5 px-space-md text-right" data-label="Thao tác">
+<div class="inline-flex items-center gap-2">
+<button class="h-8 px-2.5 rounded border border-border bg-surface hover:bg-forest-wash text-forest font-label text-xs flex items-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[14px]">send</span> Gửi lại
+                    </button>
+<button class="h-8 px-2.5 rounded border border-critical-text/40 bg-critical-bg text-critical-text hover:bg-critical-text hover:text-on-primary font-label text-xs flex items-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[14px]">cancel</span> Thu hồi
+                    </button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</main>
+</div>
+<!-- ================= MODAL MỜI NHÂN SỰ MỚI ================= -->
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs transition-opacity duration-200" id="inviteModal">
+<div class="w-full max-w-lg bg-surface rounded-panel border border-border shadow-xl overflow-hidden m-4 animate-in fade-in zoom-in-95">
+<!-- Modal Header -->
+<div class="px-space-lg py-4 border-b border-border flex items-center justify-between bg-canvas">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-forest-wash text-forest flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">person_add</span>
+</div>
+<div>
+<h3 class="font-section-heading text-section-heading font-bold text-ink">Mời nhân sự mới</h3>
+<p class="font-metadata text-metadata text-muted">Cấp quyền vận hành theo 4 vai trò tiêu chuẩn chuồng trại</p>
+</div>
+</div>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:text-ink hover:bg-surface-container-high transition-colors" onclick="closeInviteModal()">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<!-- Modal Body (Form) -->
+<form class="p-space-lg space-y-space-md" onsubmit="event.preventDefault(); closeInviteModal();">
+<!-- Input: Email -->
+<div class="space-y-1.5">
+<label class="block font-label text-label text-ink">
+            Email nhân sự <span class="text-error">*</span>
+</label>
+<input class="w-full h-11 px-3.5 bg-surface border border-border rounded-lg text-ink font-body text-body placeholder-muted focus:outline-none focus:border-forest text-sm" placeholder="nhanvien@tanphuracing.vn" required="" type="email">
+<p class="font-metadata text-metadata text-muted">Hệ thống sẽ gửi link xác thực kích hoạt tài khoản vào hòm thư này.</p>
+</div>
+<!-- Input: Họ và tên -->
+<div class="space-y-1.5">
+<label class="block font-label text-label text-ink">
+            Họ và tên <span class="font-metadata text-muted font-normal">(Tùy chọn)</span>
+</label>
+<input class="w-full h-11 px-3.5 bg-surface border border-border rounded-lg text-ink font-body text-body placeholder-muted focus:outline-none focus:border-forest text-sm" placeholder="Nguyễn Văn B" type="text">
+</div>
+<!-- Select: Vai trò được cấp phép (Strict 4 roles) -->
+<div class="space-y-1.5">
+<label class="block font-label text-label text-ink">
+            Vai trò phân quyền <span class="text-error">*</span>
+</label>
+<select class="w-full h-11 px-3.5 bg-surface border border-border rounded-lg text-ink font-body text-body focus:outline-none focus:border-forest text-sm" required="">
+<option disabled="" selected="" value="">Chọn 1 trong 4 vai trò vận hành...</option>
+<option value="club_manager">Quản lý CLB (Club Manager)</option>
+<option value="veterinarian">Bác sĩ thú y (Veterinarian)</option>
+<option value="trainer">Huấn luyện viên trưởng (Head Trainer)</option>
+<option value="groom">Nhân viên chăm sóc Groom</option>
+</select>
+<p class="font-metadata text-metadata text-muted">Tuân thủ nghiêm ngặt ma trận RBAC nội bộ CLB.</p>
+</div>
+<!-- Input: Ghi chú phân công -->
+<div class="space-y-1.5">
+<label class="block font-label text-label text-ink">
+            Ghi chú phân công chuồng trại phụ trách
+          </label>
+<textarea class="w-full p-3 bg-surface border border-border rounded-lg text-ink font-body text-body placeholder-muted focus:outline-none focus:border-forest text-sm resize-none" placeholder="Ví dụ: Phụ trách dãy chuồng A, hỗ trợ kiểm tra sức khỏe đàn ngựa thi đấu đợt 1..." rows="3"></textarea>
+</div>
+<!-- Modal Footer Actions -->
+<div class="pt-4 border-t border-border flex items-center justify-end gap-3">
+<button class="h-11 px-space-md rounded-[7px] border border-border text-muted hover:text-ink hover:bg-canvas font-label text-label transition-colors" onclick="closeInviteModal()" type="button">
+            Hủy
+          </button>
+<button class="h-11 px-space-lg rounded-[7px] bg-forest hover:bg-forest-deep text-on-primary font-label text-label flex items-center gap-2 shadow-sm transition-colors" type="submit">
+<span class="material-symbols-outlined text-[18px]">send</span>
+<span>Gửi thư mời kích hoạt</span>
+</button>
+</div>
+</form>
+</div>
+</div>
+<!-- Micro-interactions Script -->
+<script>
+    function openInviteModal() {
+      const modal = document.getElementById('inviteModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeInviteModal() {
+      const modal = document.getElementById('inviteModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    // Modal is initially shown as requested by prompt to display full layout & modal area clearly
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeInviteModal();
+    });
+  </script>
+</body></html>

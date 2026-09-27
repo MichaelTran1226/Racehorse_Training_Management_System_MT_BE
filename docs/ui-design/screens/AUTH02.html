@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html class="light" lang="vi"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>[GH-BE-03][AUTH-REGISTER][AUTH02] Đăng ký tài khoản Chủ sở hữu ngựa (Horse Owner) &amp; Xác thực OTP qua Email — Đăng ký chủ ngựa</title>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "primary-container": "#315d4b",
+            "tertiary-container": "#794744",
+            "on-secondary-fixed-variant": "#2c4d40",
+            "forest": "#315D4B",
+            "secondary-fixed": "#c6ebd8",
+            "on-background": "#191c1b",
+            "ink": "#202B28",
+            "surface-container-lowest": "#ffffff",
+            "forest-deep": "#234437",
+            "quarantine-bg": "#F1EDF6",
+            "positive-bg": "#E8F3EB",
+            "on-error": "#ffffff",
+            "surface-container": "#edeeeb",
+            "on-secondary-fixed": "#002116",
+            "muted": "#65716B",
+            "surface-bright": "#f9faf7",
+            "tertiary-fixed-dim": "#f9b6b1",
+            "positive-text": "#276442",
+            "outline": "#717974",
+            "on-error-container": "#93000a",
+            "surface-container-high": "#e7e8e6",
+            "surface-dim": "#d9dad7",
+            "surface-container-highest": "#e2e3e0",
+            "on-tertiary": "#ffffff",
+            "canvas": "#F5F6F3",
+            "error-container": "#ffdad6",
+            "tertiary-fixed": "#ffdad7",
+            "on-tertiary-fixed": "#34100e",
+            "quarantine-text": "#65517D",
+            "primary-fixed": "#bdedd6",
+            "on-primary-container": "#a5d4bd",
+            "surface-variant": "#e2e3e0",
+            "critical-bg": "#FAE9EB",
+            "on-surface-variant": "#414944",
+            "on-primary-fixed": "#002115",
+            "on-primary": "#ffffff",
+            "warning-text": "#875B15",
+            "on-secondary": "#ffffff",
+            "warning-bg": "#FFF4DD",
+            "on-tertiary-fixed-variant": "#693937",
+            "critical-text": "#922D3C",
+            "inverse-surface": "#2e312f",
+            "primary-fixed-dim": "#a2d1ba",
+            "on-secondary-container": "#4a6b5d",
+            "on-surface": "#191c1b",
+            "secondary": "#446557",
+            "inverse-on-surface": "#f0f1ee",
+            "primary": "#184535",
+            "tertiary": "#5e312e",
+            "secondary-fixed-dim": "#aacfbd",
+            "inverse-primary": "#a2d1ba",
+            "surface": "#FFFFFF",
+            "on-tertiary-container": "#fcb9b4",
+            "background": "#f9faf7",
+            "outline-variant": "#c0c8c2",
+            "on-primary-fixed-variant": "#224f3d",
+            "surface-tint": "#3b6754",
+            "error": "#ba1a1a",
+            "secondary-container": "#c6ebd8",
+            "forest-wash": "#EAF1EC",
+            "border": "#DCE3DD",
+            "surface-container-low": "#f3f4f1"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-md": "16px",
+            "margin": "32px",
+            "space-sm": "8px",
+            "space-xs": "4px",
+            "space-lg": "24px",
+            "gutter": "24px",
+            "space-xl": "32px"
+          },
+          "fontFamily": {
+            "section-heading": ["Manrope"],
+            "metadata": ["Manrope"],
+            "auth-heading": ["Manrope"],
+            "body-lg": ["Manrope"],
+            "body": ["Manrope"],
+            "label": ["Manrope"],
+            "page-title": ["Manrope"]
+          },
+          "fontSize": {
+            "section-heading": ["18px", { "lineHeight": "26px", "fontWeight": "650" }],
+            "metadata": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "auth-heading": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "body": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "label": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "page-title": ["28px", { "lineHeight": "36px", "fontWeight": "700" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+    }
+    input::placeholder {
+      color: #9AA39E;
+    }
+  </style>
+<style id="equiflow-reviewed-layout">
+   html,body{max-width:100%;} .ef-sidebar{width:224px!important;min-width:224px;background:#fff!important;border-right:1px solid #dce3dd;padding:24px 14px!important;display:flex;flex-direction:column;gap:24px}.ef-brand{font:700 24px/1.2 Manrope,'Segoe UI',sans-serif;color:#315d4b}.ef-brand small{display:block;font:11px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin-top:8px}.ef-role-nav{display:flex;flex-direction:column;gap:5px}.ef-role-nav a{padding:11px 12px;min-height:44px;border-radius:6px;font:500 14px/22px Manrope,'Segoe UI',sans-serif;color:#3e4e45;text-decoration:none;white-space:normal}.ef-role-nav a:hover,.ef-role-nav a[aria-current=page]{background:#eaf1ec;color:#315d4b}.ef-role-label{margin-top:auto;font-size:12px;color:#65716b}.ef-role-label a{display:block;padding-top:12px;color:#315d4b}.ef-sample-notice{font:12px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin:0 0 14px}.ef-mobile-nav{display:none}input,select,textarea{max-width:100%}button,a,input,select,textarea{touch-action:manipulation}
+   @media(max-width:1023px){[data-review-kind=app] header,[data-review-kind=app] main .flex{flex-wrap:wrap}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important}[data-review-kind=app] .flex-1{min-width:0}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{max-width:100%;min-width:0}[data-review-kind=app] header>div{max-width:100%;flex-wrap:wrap}}
+   @media(max-width:767px){body[data-review-kind=app]{display:block!important;height:auto!important;min-height:100dvh}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important;height:auto}}
+   @media(max-width:767px){.ef-sidebar{display:none!important}.ef-mobile-nav{display:block;position:relative;z-index:200;background:white;border-bottom:1px solid #dce3dd;padding:12px 16px}.ef-mobile-nav summary{min-height:44px;cursor:pointer;display:flex;align-items:center;font-weight:700;color:#315d4b}.ml-56,.ml-64,[class~='ml-[224px]'],[class~='ml-[240px]'],main[style*='margin-left']{margin-left:0!important}main{min-width:0!important;max-width:100%!important}header{flex-wrap:wrap!important;gap:8px!important;height:auto!important}footer{flex-wrap:wrap!important;gap:12px}h1{overflow-wrap:anywhere}.ef-role-nav{max-width:100%}[data-review-kind=app] .grid{grid-template-columns:minmax(0,1fr)!important}[data-review-kind=app] .flex{min-width:0;flex-wrap:wrap}[data-review-kind=app] table,[data-review-kind=app] tbody,[data-review-kind=app] tr{display:block;width:100%}[data-review-kind=app] thead{display:none}[data-review-kind=app] tr{padding:12px 0;border-bottom:1px solid #dce3dd}[data-review-kind=app] td{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;white-space:normal!important;padding:8px 12px;min-width:0;overflow-wrap:anywhere}[data-review-kind=app] td:before{content:attr(data-label);color:#65716b;font-size:12px;flex:0 0 35%}[data-review-kind=app] td>*{min-width:0;max-width:100%}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{width:100%}}
+  </style></head>
+<body class="bg-canvas text-ink font-body text-body antialiased min-h-screen flex flex-col justify-between selection:bg-forest-wash selection:text-forest">
+<!-- Top Navigation Header (Shared Anchor Component) -->
+<header class="w-full h-16 px-gutter flex justify-between items-center bg-surface border-b border-border z-50 sticky top-0">
+<div class="flex items-center gap-space-md">
+<div class="flex items-center gap-space-sm cursor-pointer">
+<span class="w-8 h-8 rounded-xl bg-forest flex items-center justify-center text-surface shadow-sm">
+<span class="material-symbols-outlined text-[20px]" data-icon="sports_score">sports_score</span>
+</span>
+<div class="flex flex-col">
+<span class="font-section-heading text-section-heading font-bold text-ink tracking-tight">EquiFlow</span>
+<span class="text-[10px] leading-tight text-muted tracking-wider uppercase font-semibold">Vietnam Racehorse Ecosystem</span>
+</div>
+</div>
+<span class="h-4 w-[1px] bg-border mx-space-xs hidden sm:block"></span>
+<span class="font-metadata text-metadata text-muted hidden sm:inline-block">Dành riêng cho Chủ ngựa &amp; Cổ đông đua</span>
+</div>
+<div class="flex items-center gap-space-lg">
+
+<div class="flex items-center gap-space-sm pl-space-md border-l border-border">
+<span class="material-symbols-outlined text-[18px] text-muted" data-icon="language">language</span>
+<span class="font-label text-label text-muted hover:text-forest transition-colors duration-150 cursor-pointer">Ngôn ngữ: Tiếng Việt</span>
+</div>
+</div>
+</header>
+<!-- Main Container: Strict Split Layout (44% Form, 56% Editorial Brand Canvas) -->
+<main class="flex-1 w-full max-w-[1440px] mx-auto flex flex-col lg:flex-row bg-surface">
+<!-- LEFT COLUMN: Registration Form Canvas (44% on Desktop) -->
+<div class="w-full lg:w-[44%] p-6 sm:p-10 lg:p-12 flex flex-col justify-between border-r border-border bg-surface">
+<div class="w-full max-w-[500px] mx-auto flex flex-col gap-y-6">
+<!-- Stepper Progress Bar -->
+<div class="w-full">
+<div class="flex items-center justify-between pb-3">
+<div class="flex items-center gap-space-xs">
+<span class="w-6 h-6 rounded-full bg-forest text-surface font-label text-metadata flex items-center justify-center">1</span>
+<span class="font-label text-metadata font-semibold text-forest">Tạo tài khoản</span>
+</div>
+<div class="h-[1px] flex-1 mx-3 bg-border"></div>
+<div class="flex items-center gap-space-xs">
+<span class="w-6 h-6 rounded-full bg-canvas text-muted border border-border font-label text-metadata flex items-center justify-center">2</span>
+<span class="font-metadata text-metadata text-muted">Xác minh email</span>
+</div>
+<div class="h-[1px] flex-1 mx-3 bg-border"></div>
+<div class="flex items-center gap-space-xs">
+<span class="w-6 h-6 rounded-full bg-canvas text-muted border border-border font-label text-metadata flex items-center justify-center">3</span>
+<span class="font-metadata text-metadata text-muted">Hoàn tất</span>
+</div>
+</div>
+</div>
+<!-- Role Assurance Banner & Title -->
+<div>
+<div class="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-forest-wash text-forest mb-3 border border-border">
+<span class="material-symbols-outlined text-[16px]" data-icon="verified_user">verified_user</span>
+<span class="font-metadata text-metadata font-semibold">Cổng đăng ký chuẩn hóa: CHỦ NGỰA (Horse Owner)</span>
+</div>
+<h1 class="font-auth-heading text-auth-heading text-ink tracking-tight">Đăng ký tài khoản</h1>
+<p class="font-body text-body text-muted mt-1">Đăng ký quyền sở hữu, theo dõi sức khỏe và thành tích thi đấu chuyên nghiệp của chiến mã.</p>
+</div>
+<!-- Form Elements -->
+<form class="flex flex-col gap-y-4" onsubmit="event.preventDefault(); triggerValidationDemo();">
+<!-- Field: Full Name -->
+<div>
+<label class="block font-label text-label text-ink mb-1.5" for="fullName">Họ và tên đầy đủ <span class="text-error">*</span></label>
+<div class="relative">
+<input class="w-full h-11 px-3.5 pl-10 rounded-lg border border-border text-ink bg-surface focus:outline-none focus:ring-1 focus:ring-forest focus:border-forest text-body" id="fullName" placeholder="Nhập họ và tên trên giấy tờ định danh" required="" type="text" value="Nguyễn Văn Minh">
+<span class="material-symbols-outlined absolute left-3 top-3 text-[18px] text-muted pointer-events-none" data-icon="person">person</span>
+</div>
+<span class="font-metadata text-metadata text-muted mt-1 block">Dữ liệu minh họa: Trần Minh Quân / Nguyễn Văn Minh</span>
+</div>
+<!-- Field: Email -->
+<div>
+<div class="flex justify-between items-center mb-1.5">
+<label class="block font-label text-label text-ink" for="email">Địa chỉ Email liên hệ <span class="text-error">*</span></label>
+<span class="hidden text-[11px] font-medium text-positive-text bg-positive-bg px-2 py-0.5 rounded" id="emailStatusBadge">Hợp lệ</span>
+</div>
+<div class="relative">
+<input class="w-full h-11 px-3.5 pl-10 rounded-lg border border-border text-ink bg-surface focus:outline-none focus:ring-1 focus:ring-forest focus:border-forest text-body" id="email" placeholder="chu.ngua@example.com" required="" type="email" value="minh.nguyen@saigonracehorse.vn">
+<span class="material-symbols-outlined absolute left-3 top-3 text-[18px] text-muted pointer-events-none" data-icon="mail">mail</span>
+</div>
+<div class="hidden mt-1 text-critical-text font-metadata text-metadata flex items-center gap-1" id="emailErrorMsg">
+<span class="material-symbols-outlined text-[14px]" data-icon="error">error</span>
+<span>Email không hợp lệ hoặc đã tồn tại trên hệ thống EquiFlow.</span>
+</div>
+</div>
+<!-- Field: Phone Number -->
+<!-- Field: Password & Strength Checklist -->
+<div>
+<label class="block font-label text-label text-ink mb-1.5" for="password">Mật khẩu <span class="text-error">*</span></label>
+<div class="relative">
+<input class="w-full h-11 px-3.5 pl-10 pr-10 rounded-lg border border-border text-ink bg-surface focus:outline-none focus:ring-1 focus:ring-forest focus:border-forest text-body" id="password" placeholder="••••••••••••" required="" type="password" value="EquiRace#2025">
+<span class="material-symbols-outlined absolute left-3 top-3 text-[18px] text-muted pointer-events-none" data-icon="lock">lock</span>
+<button aria-label="Hiện hoặc ẩn mật khẩu" class="absolute right-3 top-3 text-muted hover:text-ink focus:outline-none" onclick="togglePasswordVisibility('password', this)" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="visibility">visibility</span>
+</button>
+</div>
+<!-- Password Guideline Box -->
+<div class="mt-2.5 p-3 rounded-lg bg-canvas border border-border">
+<p class="font-metadata text-metadata font-semibold text-ink mb-1.5">Yêu cầu tiêu chuẩn an toàn EquiFlow:</p>
+<div class="grid grid-cols-2 gap-1.5 font-metadata text-metadata">
+<div class="flex items-center gap-1.5 text-positive-text">
+<span class="material-symbols-outlined text-[14px]" data-icon="check_circle">check_circle</span>
+<span>Tối thiểu 8 ký tự</span>
+</div>
+<div class="flex items-center gap-1.5 text-positive-text">
+<span class="material-symbols-outlined text-[14px]" data-icon="check_circle">check_circle</span>
+<span>Ít nhất 1 chữ hoa (A-Z)</span>
+</div>
+<div class="flex items-center gap-1.5 text-positive-text">
+<span class="material-symbols-outlined text-[14px]" data-icon="check_circle">check_circle</span>
+<span>Ít nhất 1 số (0-9)</span>
+</div>
+<div class="flex items-center gap-1.5 text-positive-text">
+<span class="material-symbols-outlined text-[14px]" data-icon="check_circle">check_circle</span>
+<span>1 ký tự đặc biệt (@#$%)</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Field: Confirm Password -->
+<div>
+<label class="block font-label text-label text-ink mb-1.5" for="confirmPassword">Xác nhận mật khẩu <span class="text-error">*</span></label>
+<div class="relative">
+<input class="w-full h-11 px-3.5 pl-10 pr-10 rounded-lg border border-border text-ink bg-surface focus:outline-none focus:ring-1 focus:ring-forest focus:border-forest text-body" id="confirmPassword" placeholder="Nhập lại mật khẩu vừa đặt" required="" type="password" value="EquiRace#2025">
+<span class="material-symbols-outlined absolute left-3 top-3 text-[18px] text-muted pointer-events-none" data-icon="lock_reset">lock_reset</span>
+<button aria-label="Hiện hoặc ẩn mật khẩu" class="absolute right-3 top-3 text-muted hover:text-ink focus:outline-none" onclick="togglePasswordVisibility('confirmPassword', this)" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="visibility">visibility</span>
+</button>
+</div>
+<div class="hidden mt-1 text-critical-text font-metadata text-metadata flex items-center gap-1" id="mismatchAlert">
+<span class="material-symbols-outlined text-[14px]" data-icon="error">error</span>
+<span>Mật khẩu xác nhận không trùng khớp.</span>
+</div>
+</div>
+<!-- Policy Agreement Checkbox -->
+<!-- Interactive Error Demo Switchers (Design Constraint Showcase) -->
+<!-- Error Alert Banner (Hidden by default, triggered via JS) -->
+<div class="hidden p-3 rounded-lg bg-critical-bg border border-error-container text-critical-text text-body flex items-start gap-2.5" id="generalErrorBanner">
+<span class="material-symbols-outlined text-[20px] text-error flex-shrink-0" data-icon="report">report</span>
+<div class="flex-1">
+<p class="font-label text-label font-semibold" id="generalErrorTitle">Vui lòng hoàn thiện biểu mẫu</p>
+<p class="font-metadata text-metadata" id="generalErrorDesc">Hãy kiểm tra các thông tin báo đỏ bên trên trước khi chuyển tiếp.</p>
+</div>
+</div>
+<!-- Success / Step AUTH03 Transition State Box (Interactive) -->
+<div class="hidden p-3.5 rounded-lg bg-positive-bg border border-secondary-container text-positive-text flex items-start gap-2.5" id="transitionBanner">
+<span class="material-symbols-outlined text-[20px] text-positive-text flex-shrink-0" data-icon="task_alt">task_alt</span>
+<div>
+<p class="font-label text-label font-semibold">Tạo tài khoản thành công!</p>
+<p class="font-metadata text-metadata">Đang chuyển tiếp bảo mật sang bước <strong>AUTH03: Xác thực mã OTP Email</strong>...</p>
+</div>
+</div>
+<!-- Action Button -->
+<button class="w-full h-11 bg-forest hover:bg-forest-deep text-surface font-label text-label rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm font-semibold mt-1" id="submitBtn" type="submit">
+<span>Tiếp tục: Tạo tài khoản</span>
+<span class="material-symbols-outlined text-[18px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+<!-- Back to Login Link -->
+<div class="text-center pt-2">
+<p class="font-body text-body text-muted">
+              Đã có tài khoản? 
+              <a class="text-forest hover:text-forest-deep font-semibold underline ml-1" href="#">Đăng nhập ngay</a>
+</p>
+</div>
+</form>
+<!-- Role Governance Notice -->
+</div>
+</div>
+<!-- RIGHT COLUMN: Calm Equestrian Brand Editorial Area (56% on Desktop) -->
+<div class="w-full lg:w-[56%] bg-canvas flex flex-col justify-between p-8 sm:p-12 lg:p-16 relative overflow-hidden border-t lg:border-t-0 border-border">
+<!-- Top Brand Statement & Quote -->
+<div class="relative z-10 max-w-xl">
+<div class="flex items-center gap-2 mb-4">
+<span class="w-2 h-2 rounded-full bg-forest"></span>
+<span class="font-label text-metadata tracking-wider uppercase text-forest font-bold">KỶ NGUYÊN ĐUA NGỰA CHUYÊN NGHIỆP</span>
+</div>
+<h2 class="font-page-title text-page-title text-ink tracking-tight font-bold">
+          "Kỷ luật hôm nay,<br>những chiến thắng ngày mai."
+        </h2>
+<p class="font-body-lg text-body-lg text-muted mt-3">Theo dõi hồ sơ, sức khỏe, lịch huấn luyện và thành tích của những chiến mã thuộc sở hữu của bạn.</p>
+</div>
+<!-- Feature Visual Bento Grid (Editorial Cards) -->
+<div class="my-8 relative z-10 flex flex-col gap-3"><div class="rounded-xl overflow-hidden border border-border bg-surface shadow-sm h-72 md:h-96 w-full"><img class="w-full h-full object-cover" data-alt="A dignified Vietnamese thoroughbred racehorse standing serenely inside a bright equestrian stable yard, sunlit morning atmosphere, realistic photography, subtle green and earthy tones matching EquiFlow interface" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBwJGB2V7fcuNHczBE-XqNxkletGqdeeacrpNMCAWLQ-aSohMJ9l83fKcgThZ32jwWKrdRkOVsB0Yva33Tt8JtvlPpROUsMk38qUOCxWtgrhR2x5rD9xREDA7CQoWomHtXeQ-LG3ub8pA1bi9WCSNMpbKs1T8lObXugPuHNjxuAYnFWeUmmK2CcWBvJCKM6T61VSRFHyrRTfulGbElJ5F771exyEM8-iNB0FKWwjLIqiasNUYKAgY_V8d3yIEa6m646RLRjSrFJwQ"></div><p class="font-metadata text-metadata text-muted italic text-center">EquiFlow — Đồng hành cùng các chủ ngựa và chiến mã trường đua</p></div>
+<!-- Trust Badges & Editorial Footer Note -->
+<div class="relative z-10 pt-4 border-t border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-muted">
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-forest" data-icon="lock">lock</span>
+<span class="font-metadata text-metadata">Mã hóa RSA-4096</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-forest" data-icon="hub">hub</span>
+<span class="font-metadata text-metadata">Liên đoàn Đua Ngựa VN</span>
+</div>
+</div>
+<div class="font-metadata text-metadata italic">
+          Bản quyền thuộc EquiFlow Platform · 2025
+        </div>
+</div>
+<!-- Subtle Geometric Background Watermark -->
+<div class="absolute -right-20 -bottom-20 w-96 h-96 rounded-full bg-forest-wash/40 pointer-events-none blur-3xl"></div>
+</div>
+</main>
+<!-- Global Footer Component (Shared Anchor Component) -->
+<footer class="w-full py-space-md px-gutter flex flex-col md:flex-row justify-between items-center text-center md:text-left gap-space-sm border-t border-border bg-canvas">
+<div class="flex flex-col sm:flex-row items-center gap-space-sm">
+<span class="font-label text-label font-bold text-ink">EquiFlow</span>
+<span class="hidden sm:inline text-muted">|</span>
+<span class="font-metadata text-metadata text-muted">© 2025 EquiFlow - Hệ thống Quản lý &amp; Huấn luyện Ngựa đua Việt Nam. Bảo lưu mọi quyền.</span>
+</div>
+<div class="flex items-center gap-space-md">
+<a class="text-muted font-metadata text-metadata hover:text-forest transition-colors duration-150" href="#">Chính sách bảo mật</a>
+<span class="text-border">•</span>
+<a class="text-muted font-metadata text-metadata hover:text-forest transition-colors duration-150" href="#">Điều khoản sử dụng</a>
+<span class="text-border">•</span>
+<a class="text-muted font-metadata text-metadata hover:text-forest transition-colors duration-150" href="#">Liên hệ hỗ trợ</a>
+</div>
+</footer>
+<!-- Interactive Validation Engine Scripts -->
+<script>
+    function togglePasswordVisibility(fieldId, btn) {
+      const field = document.getElementById(fieldId);
+      const icon = btn.querySelector('.material-symbols-outlined');
+      if (field.type === 'password') {
+        field.type = 'text';
+        icon.textContent = 'visibility_off';
+      } else {
+        field.type = 'password';
+        icon.textContent = 'visibility';
+      }
+    }
+
+    function showState(state) {
+      const emailInput = document.getElementById('email');
+      const emailErr = document.getElementById('emailErrorMsg');
+      const emailBadge = document.getElementById('emailStatusBadge');
+      const pwInput = document.getElementById('password');
+      const confirmInput = document.getElementById('confirmPassword');
+      const mismatchErr = document.getElementById('mismatchAlert');
+      const genBanner = document.getElementById('generalErrorBanner');
+      const genTitle = document.getElementById('generalErrorTitle');
+      const genDesc = document.getElementById('generalErrorDesc');
+      const transBanner = document.getElementById('transitionBanner');
+      const nameInput = document.getElementById('fullName');
+
+      // Reset styles
+      emailInput.classList.remove('border-error', 'border-forest');
+      confirmInput.classList.remove('border-error');
+      nameInput.classList.remove('border-error');
+      emailErr.classList.add('hidden');
+      emailBadge.classList.add('hidden');
+      mismatchErr.classList.add('hidden');
+      genBanner.classList.add('hidden');
+      transBanner.classList.add('hidden');
+
+      if (state === 'clean') {
+        emailInput.value = 'minh.nguyen@saigonracehorse.vn';
+        emailBadge.classList.remove('hidden');
+        confirmInput.value = 'EquiRace#2025';
+        pwInput.value = 'EquiRace#2025';
+      } else if (state === 'email_dup') {
+        emailInput.value = 'ton_tai_da_dang_ky@equiflow.vn';
+        emailInput.classList.add('border-error');
+        emailErr.classList.remove('hidden');
+        genBanner.classList.remove('hidden');
+        genTitle.textContent = "Email đã tồn tại";
+        genDesc.textContent = "Địa chỉ email này đã liên kết với một tài khoản Chủ ngựa khác. Vui lòng đăng nhập hoặc sử dụng email khác.";
+      } else if (state === 'pw_mismatch') {
+        confirmInput.value = 'EquiRace#2024Khac';
+        confirmInput.classList.add('border-error');
+        mismatchErr.classList.remove('hidden');
+        genBanner.classList.remove('hidden');
+        genTitle.textContent = "Mật khẩu xác nhận không khớp";
+        genDesc.textContent = "Vui lòng nhập lại chính xác mật khẩu đã đặt ở ô phía trên.";
+      } else if (state === 'missing') {
+        nameInput.value = '';
+        nameInput.classList.add('border-error');
+        genBanner.classList.remove('hidden');
+        genTitle.textContent = "Thiếu trường bắt buộc";
+        genDesc.textContent = "Họ và tên đầy đủ không được để trống theo quy định kiểm tra chủ sở hữu.";
+      }
+    }
+
+    function triggerValidationDemo() {
+      const transBanner = document.getElementById('transitionBanner');
+      const genBanner = document.getElementById('generalErrorBanner');
+      genBanner.classList.add('hidden');
+      transBanner.classList.remove('hidden');
+      
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+      submitBtn.classList.add('opacity-75');
+      submitBtn.innerHTML = `
+        <span class="material-symbols-outlined text-[18px] animate-spin" data-icon="sync">sync</span>
+        <span>Đang gửi mã xác minh...</span>
+      `;
+
+      setTimeout(() => {
+        submitBtn.innerHTML = `
+          <span class="material-symbols-outlined text-[18px]" data-icon="check">check</span>
+          <span>Đã chuyển sang bước 2 (AUTH03)</span>
+        `;
+      }, 1500);
+    }
+  </script>
+</body></html>

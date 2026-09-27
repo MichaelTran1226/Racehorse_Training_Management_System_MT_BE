@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html class="h-full bg-canvas text-ink" lang="vi"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>[GH-BE-07][FR-021][M04] Hệ thống Nhật ký kiểm toán bất biến (Audit Trail Logging) — Nhật ký kiểm toán</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "forest-deep": "#234437",
+            "error": "#ba1a1a",
+            "on-background": "#191c1b",
+            "on-error": "#ffffff",
+            "tertiary-container": "#794744",
+            "surface-bright": "#f9faf7",
+            "primary-container": "#315d4b",
+            "on-primary": "#ffffff",
+            "background": "#f9faf7",
+            "secondary": "#446557",
+            "surface-container-low": "#f3f4f1",
+            "surface-container": "#edeeeb",
+            "primary-fixed": "#bdedd6",
+            "surface-dim": "#d9dad7",
+            "on-tertiary-fixed-variant": "#693937",
+            "surface-container-highest": "#e2e3e0",
+            "secondary-fixed": "#c6ebd8",
+            "primary-fixed-dim": "#a2d1ba",
+            "critical-text": "#922D3C",
+            "on-primary-container": "#a5d4bd",
+            "primary": "#184535",
+            "error-container": "#ffdad6",
+            "ink": "#202B28",
+            "muted": "#65716B",
+            "outline": "#717974",
+            "on-secondary-fixed-variant": "#2c4d40",
+            "on-tertiary-fixed": "#34100e",
+            "secondary-container": "#c6ebd8",
+            "positive-text": "#276442",
+            "on-primary-fixed-variant": "#224f3d",
+            "on-error-container": "#93000a",
+            "on-secondary": "#ffffff",
+            "quarantine-text": "#65517D",
+            "on-tertiary": "#ffffff",
+            "on-surface-variant": "#414944",
+            "critical-bg": "#FAE9EB",
+            "on-primary-fixed": "#002115",
+            "tertiary": "#5e312e",
+            "on-surface": "#191c1b",
+            "forest": "#315D4B",
+            "quarantine-bg": "#F1EDF6",
+            "surface-container-high": "#e7e8e6",
+            "forest-wash": "#EAF1EC",
+            "on-secondary-fixed": "#002116",
+            "surface": "#FFFFFF",
+            "tertiary-fixed-dim": "#f9b6b1",
+            "tertiary-fixed": "#ffdad7",
+            "secondary-fixed-dim": "#aacfbd",
+            "positive-bg": "#E8F3EB",
+            "inverse-primary": "#a2d1ba",
+            "surface-variant": "#e2e3e0",
+            "inverse-on-surface": "#f0f1ee",
+            "warning-text": "#875B15",
+            "surface-tint": "#3b6754",
+            "surface-container-lowest": "#ffffff",
+            "outline-variant": "#c0c8c2",
+            "canvas": "#F5F6F3",
+            "on-tertiary-container": "#fcb9b4",
+            "inverse-surface": "#2e312f",
+            "border": "#DCE3DD",
+            "warning-bg": "#FFF4DD",
+            "on-secondary-container": "#4a6b5d"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-sm": "8px",
+            "space-xl": "32px",
+            "space-lg": "24px",
+            "space-xs": "4px",
+            "gutter": "24px",
+            "space-md": "16px",
+            "margin": "32px"
+          },
+          "fontFamily": {
+            "section-heading": ["Manrope"],
+            "label": ["Manrope"],
+            "body-lg": ["Manrope"],
+            "page-title": ["Manrope"],
+            "body": ["Manrope"],
+            "auth-heading": ["Manrope"],
+            "metadata": ["Manrope"]
+          },
+          "fontSize": {
+            "section-heading": ["18px", { "lineHeight": "26px", "fontWeight": "650" }],
+            "label": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "page-title": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "body": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "auth-heading": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+            "metadata": ["12px", { "lineHeight": "18px", "fontWeight": "400" }]
+          }
+        },
+      },
+    }
+  </script>
+<style id="equiflow-reviewed-layout">
+   html,body{max-width:100%;} .ef-sidebar{width:224px!important;min-width:224px;background:#fff!important;border-right:1px solid #dce3dd;padding:24px 14px!important;display:flex;flex-direction:column;gap:24px}.ef-brand{font:700 24px/1.2 Manrope,'Segoe UI',sans-serif;color:#315d4b}.ef-brand small{display:block;font:11px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin-top:8px}.ef-role-nav{display:flex;flex-direction:column;gap:5px}.ef-role-nav a{padding:11px 12px;min-height:44px;border-radius:6px;font:500 14px/22px Manrope,'Segoe UI',sans-serif;color:#3e4e45;text-decoration:none;white-space:normal}.ef-role-nav a:hover,.ef-role-nav a[aria-current=page]{background:#eaf1ec;color:#315d4b}.ef-role-label{margin-top:auto;font-size:12px;color:#65716b}.ef-role-label a{display:block;padding-top:12px;color:#315d4b}.ef-sample-notice{font:12px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin:0 0 14px}.ef-mobile-nav{display:none}input,select,textarea{max-width:100%}button,a,input,select,textarea{touch-action:manipulation}
+   @media(max-width:1023px){[data-review-kind=app] header,[data-review-kind=app] main .flex{flex-wrap:wrap}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important}[data-review-kind=app] .flex-1{min-width:0}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{max-width:100%;min-width:0}[data-review-kind=app] header>div{max-width:100%;flex-wrap:wrap}}
+   @media(max-width:767px){body[data-review-kind=app]{display:block!important;height:auto!important;min-height:100dvh}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important;height:auto}}
+   @media(max-width:767px){.ef-sidebar{display:none!important}.ef-mobile-nav{display:block;position:relative;z-index:200;background:white;border-bottom:1px solid #dce3dd;padding:12px 16px}.ef-mobile-nav summary{min-height:44px;cursor:pointer;display:flex;align-items:center;font-weight:700;color:#315d4b}.ml-56,.ml-64,[class~='ml-[224px]'],[class~='ml-[240px]'],main[style*='margin-left']{margin-left:0!important}main{min-width:0!important;max-width:100%!important}header{flex-wrap:wrap!important;gap:8px!important;height:auto!important}footer{flex-wrap:wrap!important;gap:12px}h1{overflow-wrap:anywhere}.ef-role-nav{max-width:100%}[data-review-kind=app] .grid{grid-template-columns:minmax(0,1fr)!important}[data-review-kind=app] .flex{min-width:0;flex-wrap:wrap}[data-review-kind=app] table,[data-review-kind=app] tbody,[data-review-kind=app] tr{display:block;width:100%}[data-review-kind=app] thead{display:none}[data-review-kind=app] tr{padding:12px 0;border-bottom:1px solid #dce3dd}[data-review-kind=app] td{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;white-space:normal!important;padding:8px 12px;min-width:0;overflow-wrap:anywhere}[data-review-kind=app] td:before{content:attr(data-label);color:#65716b;font-size:12px;flex:0 0 35%}[data-review-kind=app] td>*{min-width:0;max-width:100%}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{width:100%}}
+  </style></head>
+<body class="h-full flex overflow-hidden font-body text-body bg-canvas text-ink antialiased" data-review-kind="app">
+<!-- SIDEBAR (Fixed 224px w-56, Semantic Shell mapping strictly to Shared Components JSON) -->
+<aside class="w-56 h-screen sticky top-0 flex flex-col justify-between p-space-sm z-30 shrink-0 bg-surface dark:bg-inverse-surface border-r border-border dark:border-outline-variant select-none ef-sidebar"><div class="ef-brand">EquiFlow<small>Quản lý huấn luyện ngựa đua</small></div><nav class="ef-role-nav" aria-label="Điều hướng Quản lý CLB"><a href="M01.html">Tổng quan</a><a href="H01.html">Hồ sơ ngựa</a><a href="H04.html">Ô chuồng</a><a href="V01.html">Sức khỏe</a><a href="M02.html">Nhân sự</a><a href="M04.html" aria-current="page">Nhật ký hệ thống</a></nav><div class="ef-role-label">Quản lý CLB<a href="AUTH01.html">Đăng xuất</a></div></aside>
+<!-- MAIN WRAPPER: Top Bar + Content Canvas -->
+<div class="flex-1 flex flex-col h-screen min-w-0 overflow-hidden">
+<!-- TOP BAR (64px standard docked header) -->
+<header class="h-16 w-full flex items-center justify-between px-gutter sticky top-0 z-20 shrink-0 bg-surface dark:bg-inverse-surface border-b border-border dark:border-outline-variant">
+<!-- Search on Left with Club Name Breadcrumb -->
+<div class="flex items-center gap-space-md flex-1 max-w-xl">
+<span class="font-section-heading text-section-heading font-bold text-forest dark:text-inverse-primary whitespace-nowrap hidden sm:inline-block">
+          Thống Nhất Equine Club
+        </span>
+<span class="text-border hidden sm:inline-block">|</span>
+<div class="relative w-full max-w-sm">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-[18px]" data-icon="search">search</span>
+<input class="w-full h-10 pl-9 pr-3 rounded-md bg-canvas border border-border text-ink placeholder:text-muted font-body text-body focus:outline-none focus:border-forest text-sm" placeholder="Tra cứu bản ghi, mã sự kiện, người dùng..." type="text">
+</div>
+</div>
+<!-- Trailing Action Cluster -->
+<div class="flex items-center gap-space-md">
+<!-- Icon Actions -->
+<button class="w-10 h-10 rounded-lg flex items-center justify-center text-muted hover:text-ink hover:bg-forest-wash transition-colors duration-150 relative" title="Lịch hoạt động">
+<span class="material-symbols-outlined text-[20px]" data-icon="calendar_today">calendar_today</span>
+</button>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center text-muted hover:text-ink hover:bg-forest-wash transition-colors duration-150 relative" title="Thông báo hệ thống">
+<span class="material-symbols-outlined text-[20px]" data-icon="notifications">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-error"></span>
+</button>
+<!-- Primary Action -->
+<button class="h-10 px-4 bg-forest hover:bg-forest-deep text-on-primary font-label text-label rounded-lg flex items-center gap-2 transition-colors duration-150 shadow-sm text-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="post_add">post_add</span>
+<span>Thêm ghi nhận</span>
+</button>
+<div class="h-6 w-px bg-border"></div>
+<!-- User Profile Pill -->
+<div class="flex items-center gap-2.5 pl-1 cursor-pointer">
+<div class="w-9 h-9 rounded-full bg-forest-wash border border-border flex items-center justify-center font-label font-bold text-forest text-sm">
+            NA
+          </div>
+<div class="hidden lg:flex flex-col text-left">
+<span class="font-label text-sm leading-tight text-ink">Nguyễn Văn An</span>
+<span class="font-metadata text-metadata text-muted leading-tight">Quản lý CLB</span>
+</div>
+</div>
+</div>
+</header>
+<!-- MAIN SCROLLABLE WORKSPACE (28-32px padding) -->
+<main class="flex-1 overflow-y-auto p-space-xl space-y-6"><p class="ef-sample-notice">Dữ liệu minh họa · Bản thiết kế giao diện</p>
+<!-- 1. Header Section: Title & Security Badge -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div>
+<div class="flex items-center gap-3">
+<h1 class="font-page-title text-page-title text-ink font-bold tracking-tight">
+              Nhật ký kiểm toán hệ thống
+            </h1>
+<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-positive-bg text-positive-text border border-positive-text/20 inline-flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px]" data-icon="verified_user">verified_user</span>
+              Chế độ chỉ đọc (Read-only) · Bản ghi ký số SHA-256
+            </span>
+</div>
+<p class="font-body-lg text-body text-muted mt-1">
+            Bản ghi bất biến giám sát toàn bộ hoạt động nghiệp vụ, thay đổi phân quyền và can thiệp y tế chuồng trại.
+          </p>
+</div>
+<!-- Export Utility -->
+<div class="flex items-center gap-2 shrink-0">
+<button class="h-11 px-4 bg-surface hover:bg-forest-wash border border-border text-ink font-label text-label rounded-[7px] flex items-center gap-2 transition-colors duration-150 shadow-sm">
+<span class="material-symbols-outlined text-forest text-[18px]" data-icon="download">download</span>
+<span>Xuất báo cáo kiểm toán (CSV/PDF)</span>
+</button>
+</div>
+</div>
+<!-- 2. Multi-Criteria Filter Bar -->
+<div class="bg-surface rounded-[10px] border border-border p-4 shadow-sm">
+<form class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3.5 items-end">
+<!-- Tác nhân / Người thực hiện -->
+<div>
+<label class="block font-label text-xs text-muted mb-1.5">Tác nhân / Người thực hiện</label>
+<div class="relative">
+<select class="w-full h-11 px-3 appearance-none rounded-[6px] border border-border bg-canvas text-ink font-body text-sm focus:outline-none focus:border-forest pr-8">
+<option selected="">Tất cả tác nhân</option>
+<option>BS. Lê Thanh Hà (Thú y)</option>
+<option>HLV. Nguyễn Văn Hòa (Huấn luyện)</option>
+<option>Nguyễn Văn An (Quản lý CLB)</option>
+<option>Groom Trần Văn Nam (Chăm sóc)</option>
+<option>Khách vô danh / Ngoại vi</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none text-[18px]" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+<!-- Loại hành động -->
+<div>
+<label class="block font-label text-xs text-muted mb-1.5">Loại hành động nghiệp vụ</label>
+<div class="relative">
+<select class="w-full h-11 px-3 appearance-none rounded-[6px] border border-border bg-canvas text-ink font-body text-sm focus:outline-none focus:border-forest pr-8">
+<option selected="">Tất cả hành động</option>
+<option>Kích hoạt Khóa y tế (Lock)</option>
+<option>Mở khóa an toàn y tế</option>
+<option>Cập nhật phân quyền (RBAC)</option>
+<option>Phân bổ ô chuồng trại</option>
+<option>Kê đơn &amp; chẩn đoán điều trị</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none text-[18px]" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+<!-- Đối tượng / Chiến mã -->
+<div>
+<label class="block font-label text-xs text-muted mb-1.5">Đối tượng / Chiến mã</label>
+<div class="relative">
+<select class="w-full h-11 px-3 appearance-none rounded-[6px] border border-border bg-canvas text-ink font-body text-sm focus:outline-none focus:border-forest pr-8">
+<option selected="">Tất cả đối tượng</option>
+<option>Hồng Ngọc (HN-003 / A03)</option>
+<option>Phong Vũ (PV-2021 / A01)</option>
+<option>Bạch Mã (BM-102 / A02)</option>
+<option>Lê Hoàng Long (Tài khoản)</option>
+<option>Hồ sơ bệnh án ngoại vi</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none text-[18px]" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+<!-- Khoảng thời gian -->
+<div>
+<label class="block font-label text-xs text-muted mb-1.5">Khoảng thời gian</label>
+<div class="relative">
+<select class="w-full h-11 px-3 appearance-none rounded-[6px] border border-border bg-canvas text-ink font-body text-sm focus:outline-none focus:border-forest pr-8">
+<option>Hôm nay (24h qua)</option>
+<option selected="">7 ngày qua</option>
+<option>30 ngày qua</option>
+<option>Tùy chỉnh ngày...</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none text-[18px]" data-icon="calendar_month">calendar_month</span>
+</div>
+</div>
+<!-- Nhóm nút hành động lọc -->
+<div class="flex items-center gap-2">
+<button class="flex-1 h-11 bg-forest hover:bg-forest-deep text-on-primary font-label text-sm rounded-[7px] flex items-center justify-center gap-1.5 transition-colors duration-150 shadow-sm" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="filter_alt">filter_alt</span>
+<span>Áp dụng lọc</span>
+</button>
+<button class="h-11 px-3 bg-canvas hover:bg-forest-wash text-muted hover:text-ink font-label text-sm rounded-[7px] border border-border flex items-center justify-center transition-colors duration-150" title="Đặt lại bộ lọc" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="refresh">refresh</span>
+</button>
+</div>
+</form>
+</div>
+<!-- 3. Bảng nhật ký kiểm toán chính (Audit Log Table) -->
+<div class="bg-surface rounded-[10px] border border-border shadow-sm overflow-hidden flex flex-col">
+<div class="overflow-x-auto">
+<table class="w-full border-collapse text-left text-sm">
+<thead>
+<tr class="bg-surface-container-low border-b border-border text-muted font-label text-xs uppercase tracking-wider">
+<th class="py-3.5 px-4 font-semibold">Dấu thời gian (ISO GMT+7)</th>
+<th class="py-3.5 px-4 font-semibold">Tác nhân</th>
+<th class="py-3.5 px-4 font-semibold">Hành vi nghiệp vụ</th>
+<th class="py-3.5 px-4 font-semibold">Đối tượng tác động</th>
+<th class="py-3.5 px-4 font-semibold">Địa chỉ IP &amp; Thiết bị</th>
+<th class="py-3.5 px-4 font-semibold">Kết quả</th>
+<th class="py-3.5 px-4 font-semibold text-right">Chi tiết</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border font-body">
+<!-- Dòng 1: Khóa y tế (Badge Đỏ) -->
+<tr class="hover:bg-forest-wash/60 transition-colors duration-150 group">
+<td class="py-4 px-4 whitespace-nowrap" data-label="Dấu thời gian (ISO GMT+7)">
+<div class="flex flex-col">
+<span class="font-medium text-ink">14:32:05</span>
+<span class="text-xs text-muted font-mono">2025-03-29 (UTC+7)</span>
+</div>
+</td>
+<td class="py-4 px-4 whitespace-nowrap" data-label="Tác nhân">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-full bg-forest-wash text-forest flex items-center justify-center font-bold text-xs">
+                      LH
+                    </div>
+<div>
+<p class="font-semibold text-ink">BS. Lê Thanh Hà</p>
+<p class="text-xs text-muted">Bác sĩ thú y</p>
+</div>
+</div>
+</td>
+<td class="py-4 px-4 whitespace-nowrap" data-label="Hành vi nghiệp vụ">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-critical-bg text-critical-text border border-critical-text/20">
+<span class="material-symbols-outlined text-[15px]" data-icon="lock">lock</span>
+                    KHÓA AN TOÀN Y TẾ
+                  </span>
+</td>
+<td class="py-4 px-4 whitespace-nowrap" data-label="Đối tượng tác động">
+<div class="flex items-center gap-2">
+<span class="font-medium text-ink">Hồng Ngọc</span>
+<span class="text-xs px-2 py-0.5 rounded bg-surface-container font-mono text-muted">A03</span>
+</div>
+</td>
+<td class="py-4 px-4 whitespace-nowrap" data-label="Địa chỉ IP &amp; Thiết bị">
+<div class="flex flex-col text-xs font-mono text-muted">
+<span class="text-ink">192.168.1.45</span>
+<span class="text-[11px]">iPadOS · Safari 17.4</span>
+</div>
+</td>
+<td class="py-4 px-4 whitespace-nowrap" data-label="Kết quả">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-positive-bg text-positive-text">
+<span class="material-symbols-outlined text-[14px]" data-icon="check_circle">check_circle</span>
+                    Thành công
+                  </span>
+</td>
+<td class="py-4 px-4 whitespace-nowrap text-right" data-label="Chi tiết">
+<button class="h-8 px-3 rounded-[6px] text-xs font-label text-forest hover:bg-forest-wash border border-border transition-colors">
+                    Xem chi tiết
+                  </button>
+</td>
+</tr>
+<!-- Dòng 2: Cập nhật phân quyền (Badge Vàng / Selected Active Diff) -->
+<tr class="bg-forest-wash/80 hover:bg-forest-wash transition-colors duration-150 border-l-4 border-l-forest">
+<td class="py-4 px-4 whitespace-nowrap" data-label="Dấu thời gian (ISO GMT+7)">
+<div class="flex flex-col">
+<span class="font-medium text-ink">11:15:20</span>
+<span class="text-xs text-muted font-mono">2025-03-29 (UTC+7)</span>
+</div>
+</td>
+<td class="py-4 px-4 whitespace-nowrap" data-label="Tác nhân">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-full bg-forest text-on-primary flex items-center justify-center font-bold text-xs">
+                      NA
+                    </div>
+<div>
+<p class="font-semibold text-ink">Nguyễn Văn An</p>
+<p class="text-xs text-muted">Quản lý CLB</p>
+</div>
+</div>
+</td>
+<td class="py-4 px-4 whitespace-nowrap" data-label="Hành vi nghiệp vụ">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-warning-bg text-warning-text border border-warning-text/20">
+<span class="material-symbols-outlined text-[15px]" data-icon="admin_panel_settings">admin_panel_settings</span>
+                    CẬP NHẬT PHÂN QUYỀN
+                  </span>
+</td>
+<td class="py-4 px-4 whitespace-nowrap" data-label="Đối tượng tác động">
+<div class="flex items-center gap-2">
+<span class="font-medium text-ink">Lê Hoàng Long</span>
+<span class="text-xs px-2 py-0.5 rounded bg-surface-container font-medium text-muted">Bác sĩ thú y</span>
+</div>
+</td>
+<td class="py-4 px-4 whitespace-nowrap" data-label="Địa chỉ IP &amp; Thiết bị">
+<div class="flex flex-col text-xs font-mono text-muted">
+<span class="text-ink">192.168.1.12</span>
+<span class="text-[11px]">macOS · Chrome 123.0</span>
+</div>
+</td>
+<td class="py-4 px-4 whitespace-nowrap" data-label="Kết quả">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-positive-bg text-positive-text">
+<span class="material-symbols-outlined text-[14px]" data-icon="check_circle">check_circle</span>
+                    Thành công
+                  </span>
+</td>
+<td class="py-4 px-4 whitespace-nowrap text-right" data-label="Chi tiết">
+<button class="h-8 px-3 rounded-[6px] text-xs font-label bg-forest text-on-primary hover:bg-forest-deep shadow-xs transition-colors">
+                    Đang xem
+                  </button>
+</td>
+</tr>
+<!-- Dòng 3: Vận hành / Tập tốc độ cao (Badge Xanh) -->
+<tr class="hover:bg-forest-wash/60 transition-colors duration-150 group">
+<td class="py-4 px-4 whitespace-nowrap" data-label="Dấu thời gian (ISO GMT+7)">
+<div class="flex flex-col">
+<span class="font-medium text-ink">09:40:18</span>
+<span class="text-xs text-muted font-mono">2025-03-29 (UTC+7)</span>
+</div>
+</td>
+<td class="py-4 px-4 whitespace-nowrap" data-label="Tác nhân">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-full bg-forest-wash text-forest flex items-center justify-center font-bold text-xs">
+                      VH
+                    </div>
+<div>
+<p class="font-semibold text-ink">HLV. Nguyễn Văn Hòa</p>
+<p class="text-xs text-muted">HLV trưởng</p>
+</div>
+</div>
+</td>
+<td class="py-4 px-4 whitespace-nowrap" data-label="Hành vi nghiệp vụ">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-positive-bg text-positive-text border border-positive-text/20">
+<span class="material-symbols-outlined text-[15px]" data-icon="sprint">sprint</span>
+                    XẾP LỊCH TẬP TỐC ĐỘ CAO
+                  </span>
+</td>
+<td class="py-4 px-4 whitespace-nowrap" data-label="Đối tượng tác động">
+<div class="flex items-center gap-2">
+<span class="font-medium text-ink">Phong Vũ</span>
+<span class="text-xs px-2 py-0.5 rounded bg-surface-container font-mono text-muted">A01</span>
+</div>
+</td>
+<td class="py-4 px-4 whitespace-nowrap" data-label="Địa chỉ IP &amp; Thiết bị">
+<div class="flex flex-col text-xs font-mono text-muted">
+<span class="text-ink">192.168.1.28</span>
+<span class="text-[11px]">iOS 17.2 · App EquiFlow</span>
+</div>
+</td>
+<td class="py-4 px-4 whitespace-nowrap" data-label="Kết quả">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-positive-bg text-positive-text">
+<span class="material-symbols-outlined text-[14px]" data-icon="check_circle">check_circle</span>
+                    Thành công
+                  </span>
+</td>
+<td class="py-4 px-4 whitespace-nowrap text-right" data-label="Chi tiết">
+<button class="h-8 px-3 rounded-[6px] text-xs font-label text-forest hover:bg-forest-wash border border-border transition-colors">
+                    Xem chi tiết
+                  </button>
+</td>
+</tr>
+<!-- Dòng 4: Phân bổ ô chuồng (Badge Vận hành) -->
+<tr class="hover:bg-forest-wash/60 transition-colors duration-150 group">
+<td class="py-4 px-4 whitespace-nowrap" data-label="Dấu thời gian (ISO GMT+7)">
+<div class="flex flex-col">
+<span class="font-medium text-ink">08:22:45</span>
+<span class="text-xs text-muted font-mono">2025-03-29 (UTC+7)</span>
+</div>
+</td>
+<td class="py-4 px-4 whitespace-nowrap" data-label="Tác nhân">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-full bg-forest-wash text-forest flex items-center justify-center font-bold text-xs">
+                      VN
+                    </div>
+<div>
+<p class="font-semibold text-ink">Groom Trần Văn Nam</p>
+<p class="text-xs text-muted">Groom chăm sóc</p>
+</div>
+</div>
+</td>
+<td class="py-4 px-4 whitespace-nowrap" data-label="Hành vi nghiệp vụ">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-forest-wash text-forest border border-forest/20">
+<span class="material-symbols-outlined text-[15px]" data-icon="warehouse">warehouse</span>
+                    PHÂN BỔ Ô CHUỒNG
+                  </span>
+</td>
+<td class="py-4 px-4 whitespace-nowrap" data-label="Đối tượng tác động">
+<div class="flex items-center gap-2">
+<span class="font-medium text-ink">Bạch Mã</span>
+<span class="text-xs px-2 py-0.5 rounded bg-surface-container font-mono text-muted">A02</span>
+</div>
+</td>
+<td class="py-4 px-4 whitespace-nowrap" data-label="Địa chỉ IP &amp; Thiết bị">
+<div class="flex flex-col text-xs font-mono text-muted">
+<span class="text-ink">192.168.1.50</span>
+<span class="text-[11px]">Android 14 · Firefox Mobile</span>
+</div>
+</td>
+<td class="py-4 px-4 whitespace-nowrap" data-label="Kết quả">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-positive-bg text-positive-text">
+<span class="material-symbols-outlined text-[14px]" data-icon="check_circle">check_circle</span>
+                    Thành công
+                  </span>
+</td>
+<td class="py-4 px-4 whitespace-nowrap text-right" data-label="Chi tiết">
+<button class="h-8 px-3 rounded-[6px] text-xs font-label text-forest hover:bg-forest-wash border border-border transition-colors">
+                    Xem chi tiết
+                  </button>
+</td>
+</tr>
+<!-- Dòng 5: Truy cập ngoại vi bị từ chối (Badge Đỏ & Result 403) -->
+<tr class="hover:bg-forest-wash/60 transition-colors duration-150 group">
+<td class="py-4 px-4 whitespace-nowrap" data-label="Dấu thời gian (ISO GMT+7)">
+<div class="flex flex-col">
+<span class="font-medium text-ink">07:10:02</span>
+<span class="text-xs text-muted font-mono">2025-03-29 (UTC+7)</span>
+</div>
+</td>
+<td class="py-4 px-4 whitespace-nowrap" data-label="Tác nhân">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-full bg-surface-container text-muted flex items-center justify-center font-bold text-xs">
+                      ?
+                    </div>
+<div>
+<p class="font-semibold text-ink">Khách vô danh</p>
+<p class="text-xs text-error font-medium">Ngoại vi không xác thực</p>
+</div>
+</div>
+</td>
+<td class="py-4 px-4 whitespace-nowrap" data-label="Hành vi nghiệp vụ">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-critical-bg text-critical-text border border-critical-text/20">
+<span class="material-symbols-outlined text-[15px]" data-icon="warning">warning</span>
+                    TRUY CẬP HỒ SƠ NGOẠI VI
+                  </span>
+</td>
+<td class="py-4 px-4 whitespace-nowrap font-mono text-xs text-muted" data-label="Đối tượng tác động">
+                  /clinical/records/EQU-4091
+                </td>
+<td class="py-4 px-4 whitespace-nowrap" data-label="Địa chỉ IP &amp; Thiết bị">
+<div class="flex flex-col text-xs font-mono text-muted">
+<span class="text-error font-medium">14.161.22.90</span>
+<span class="text-[11px]">Linux x86_64 · curl/8.4</span>
+</div>
+</td>
+<td class="py-4 px-4 whitespace-nowrap" data-label="Kết quả">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-critical-bg text-critical-text">
+<span class="material-symbols-outlined text-[14px]" data-icon="cancel">cancel</span>
+                    Bị từ chối 403
+                  </span>
+</td>
+<td class="py-4 px-4 whitespace-nowrap text-right" data-label="Chi tiết">
+<button class="h-8 px-3 rounded-[6px] text-xs font-label text-forest hover:bg-forest-wash border border-border transition-colors">
+                    Xem chi tiết
+                  </button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination Bar -->
+<div class="h-14 px-4 bg-surface border-t border-border flex items-center justify-between">
+<p class="text-xs text-muted">
+            Hiển thị <span class="font-semibold text-ink">1–5</span> của <span class="font-semibold text-ink">128</span> bản ghi kiểm toán
+          </p>
+<div class="flex items-center gap-1">
+<button class="w-8 h-8 rounded border border-border flex items-center justify-center text-muted disabled:opacity-40" disabled="">
+<span class="material-symbols-outlined text-[18px]" data-icon="chevron_left">chevron_left</span>
+</button>
+<button class="w-8 h-8 rounded bg-forest text-on-primary font-label text-xs font-semibold flex items-center justify-center">1</button>
+<button class="w-8 h-8 rounded border border-border text-ink hover:bg-forest-wash font-label text-xs flex items-center justify-center">2</button>
+<button class="w-8 h-8 rounded border border-border text-ink hover:bg-forest-wash font-label text-xs flex items-center justify-center">3</button>
+<span class="px-1 text-muted text-xs">...</span>
+<button class="w-8 h-8 rounded border border-border text-ink hover:bg-forest-wash font-label text-xs flex items-center justify-center">26</button>
+<button class="w-8 h-8 rounded border border-border flex items-center justify-center text-ink hover:bg-forest-wash">
+<span class="material-symbols-outlined text-[18px]" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- 4. Audit Diff Panel (Khung chi tiết so sánh Before / After & Che giấu dữ liệu) -->
+<div class="bg-surface rounded-[10px] border border-border p-6 shadow-sm space-y-5">
+<!-- Panel Header -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-border gap-2">
+<div class="flex items-center gap-3">
+<span class="w-8 h-8 rounded bg-forest-wash text-forest flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]" data-icon="difference">difference</span>
+</span>
+<div>
+<h2 class="font-section-heading text-section-heading text-ink font-bold">
+                Chi tiết thay đổi bản ghi #AUD-202503-0842
+              </h2>
+<p class="text-xs text-muted">
+                Tác nhân: <strong class="text-ink">Nguyễn Văn An</strong> (Quản lý CLB) · Hành động: <strong class="text-ink">Cập nhật phân quyền</strong> · Thực hiện lúc: 11:15:20 GMT+7
+              </p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-mono text-xs text-muted px-2.5 py-1 rounded bg-canvas border border-border">
+              Hash: 9b10...d482 (Khóa chuỗi SHA-256)
+            </span>
+</div>
+</div>
+<!-- Before / After Two-Column Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Cột Trước thay đổi (Before) -->
+<div class="p-4 rounded-[8px] bg-canvas border border-border space-y-3">
+<div class="flex items-center justify-between">
+<span class="font-label text-xs uppercase tracking-wider text-muted font-bold flex items-center gap-1.5">
+<span class="material-symbols-outlined text-muted text-[16px]" data-icon="history">history</span>
+                Trước thay đổi (Before)
+              </span>
+<span class="text-xs px-2 py-0.5 rounded bg-surface border border-border text-muted">Snapshot 11:14:59</span>
+</div>
+<div class="space-y-2 text-sm">
+<div class="flex justify-between items-center py-1.5 border-b border-border/60">
+<span class="text-muted text-xs">Vai trò:</span>
+<span class="font-medium text-ink bg-white px-2 py-0.5 rounded border border-border">Tài khoản chờ kích hoạt</span>
+</div>
+<div class="flex justify-between items-center py-1.5 border-b border-border/60">
+<span class="text-muted text-xs">Quyền hạn y tế:</span>
+<span class="font-medium text-ink bg-white px-2 py-0.5 rounded border border-border">Không có</span>
+</div>
+<div class="flex justify-between items-center py-1.5">
+<span class="text-muted text-xs">Trạng thái:</span>
+<span class="px-2 py-0.5 rounded text-xs font-semibold bg-warning-bg text-warning-text border border-warning-text/20">Pending</span>
+</div>
+</div>
+</div>
+<!-- Cột Sau thay đổi (After) -->
+<div class="p-4 rounded-[8px] bg-forest-wash/40 border border-forest/20 space-y-3">
+<div class="flex items-center justify-between">
+<span class="font-label text-xs uppercase tracking-wider text-forest font-bold flex items-center gap-1.5">
+<span class="material-symbols-outlined text-forest text-[16px]" data-icon="update">update</span>
+                Sau thay đổi (After)
+              </span>
+<span class="text-xs px-2 py-0.5 rounded bg-forest text-on-primary font-medium">Bản ghi có hiệu lực</span>
+</div>
+<div class="space-y-2 text-sm">
+<div class="flex justify-between items-center py-1.5 border-b border-border/60">
+<span class="text-muted text-xs">Vai trò:</span>
+<span class="font-semibold text-forest bg-white px-2 py-0.5 rounded border border-forest/30">Bác sĩ thú y lâm sàng</span>
+</div>
+<div class="flex justify-between items-center py-1.5 border-b border-border/60">
+<span class="text-muted text-xs">Quyền hạn y tế:</span>
+<span class="font-semibold text-forest bg-white px-2 py-0.5 rounded border border-forest/30">Cấp 2 (Kê đơn &amp; chẩn đoán)</span>
+</div>
+<div class="flex justify-between items-center py-1.5">
+<span class="text-muted text-xs">Trạng thái:</span>
+<span class="px-2 py-0.5 rounded text-xs font-semibold bg-positive-bg text-positive-text border border-positive-text/20">Active</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Data Masking / Security Layer -->
+<div class="p-4 rounded-[8px] bg-surface-container-low border border-border flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-muted text-[22px]" data-icon="vpn_key">vpn_key</span>
+<div>
+<p class="font-label text-xs font-bold text-ink uppercase tracking-wider">
+                Che giấu an toàn dữ liệu nhạy cảm (Data Masking)
+              </p>
+<p class="text-xs text-muted">
+                Các trường dữ liệu xác thực danh tính được ẩn lập tức tại tầng gateway và không lưu trữ bản rõ.
+              </p>
+</div>
+</div>
+<div class="flex flex-wrap items-center gap-3 font-mono text-xs">
+<div class="px-2.5 py-1 rounded bg-surface border border-border text-muted">
+              Mật khẩu: <span class="font-bold text-ink">[BẢO MẬT - KHÔNG GHI NHẬN]</span>
+</div>
+<div class="px-2.5 py-1 rounded bg-surface border border-border text-muted">
+              Access Token: <span class="tracking-widest font-bold text-ink">••••••••••••••••</span>
+</div>
+<div class="px-2.5 py-1 rounded bg-surface border border-border text-muted">
+              Mã xác thực: <span class="text-forest font-bold">[MÃ HÓA SHA-256]</span>
+</div>
+</div>
+</div>
+<!-- Compliance & Regulatory Footer -->
+<div class="flex items-center justify-between text-xs text-muted pt-2 border-t border-border">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-forest text-[16px]" data-icon="policy">policy</span>
+<span>Hệ thống nhật ký kiểm toán vận hành tự động theo chuẩn bảo mật ISO/IEC 27001 &amp; RBAC. Không có thao tác chỉnh sửa hoặc xóa bỏ bản ghi.</span>
+</div>
+<span class="font-medium text-muted/80">Dữ liệu minh họa</span>
+</div>
+</div>
+</main>
+</div>
+</body></html>

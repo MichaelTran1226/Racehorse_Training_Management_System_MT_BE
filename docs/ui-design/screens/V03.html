@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="vi"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>[GH-BE-12][FR-010][V03] Bản đồ chấn thương 2D trên mô hình hệ xương giải phẫu (2D Skeletal Injury Mapper) — Sơ đồ giải phẫu 2D và chấn thương</title>
+<!-- Google Fonts: Manrope -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;650;700&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS with Forms and Container Queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-primary": "#ffffff",
+            "on-surface-variant": "#414944",
+            "primary-fixed-dim": "#a2d1ba",
+            "critical-text": "#922D3C",
+            "positive-text": "#276442",
+            "on-tertiary-fixed": "#34100e",
+            "tertiary-fixed": "#ffdad7",
+            "secondary-fixed-dim": "#aacfbd",
+            "inverse-surface": "#2e312f",
+            "border": "#DCE3DD",
+            "on-primary-container": "#a5d4bd",
+            "quarantine-text": "#65517D",
+            "primary-container": "#315d4b",
+            "on-error": "#ffffff",
+            "on-secondary-fixed-variant": "#2c4d40",
+            "secondary-fixed": "#c6ebd8",
+            "warning-text": "#875B15",
+            "on-background": "#191c1b",
+            "canvas": "#F5F6F3",
+            "outline": "#717974",
+            "on-surface": "#191c1b",
+            "surface-container": "#edeeeb",
+            "on-error-container": "#93000a",
+            "secondary-container": "#c6ebd8",
+            "on-primary-fixed": "#002115",
+            "inverse-primary": "#a2d1ba",
+            "background": "#f9faf7",
+            "error": "#ba1a1a",
+            "surface-container-lowest": "#ffffff",
+            "on-secondary-fixed": "#002116",
+            "on-tertiary": "#ffffff",
+            "error-container": "#ffdad6",
+            "critical-bg": "#FAE9EB",
+            "positive-bg": "#E8F3EB",
+            "primary-fixed": "#bdedd6",
+            "ink": "#202B28",
+            "surface-variant": "#e2e3e0",
+            "surface-container-low": "#f3f4f1",
+            "on-primary-fixed-variant": "#224f3d",
+            "inverse-on-surface": "#f0f1ee",
+            "warning-bg": "#FFF4DD",
+            "surface": "#FFFFFF",
+            "primary": "#184535",
+            "surface-bright": "#f9faf7",
+            "secondary": "#446557",
+            "surface-container-highest": "#e2e3e0",
+            "muted": "#65716B",
+            "on-secondary": "#ffffff",
+            "forest": "#315D4B",
+            "tertiary-fixed-dim": "#f9b6b1",
+            "surface-tint": "#3b6754",
+            "on-tertiary-container": "#fcb9b4",
+            "forest-deep": "#234437",
+            "surface-dim": "#d9dad7",
+            "on-tertiary-fixed-variant": "#693937",
+            "forest-wash": "#EAF1EC",
+            "tertiary": "#5e312e",
+            "surface-container-high": "#e7e8e6",
+            "outline-variant": "#c0c8c2",
+            "quarantine-bg": "#F1EDF6",
+            "on-secondary-container": "#4a6b5d",
+            "tertiary-container": "#794744"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem",
+            "panel": "10px",
+            "btn": "7px",
+            "inp": "6px"
+          },
+          "spacing": {
+            "space-xl": "32px",
+            "gutter": "24px",
+            "space-lg": "24px",
+            "space-xs": "4px",
+            "space-sm": "8px",
+            "space-md": "16px",
+            "margin": "32px"
+          },
+          "fontFamily": {
+            "section-heading": ["Manrope"],
+            "page-title": ["Manrope"],
+            "auth-heading": ["Manrope"],
+            "metadata": ["Manrope"],
+            "body-lg": ["Manrope"],
+            "body": ["Manrope"],
+            "label": ["Manrope"]
+          },
+          "fontSize": {
+            "section-heading": ["18px", { "lineHeight": "26px", "fontWeight": "650" }],
+            "page-title": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "auth-heading": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+            "metadata": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "body": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "label": ["14px", { "lineHeight": "20px", "fontWeight": "600" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body {
+      font-family: 'Manrope', sans-serif;
+      background-color: #F5F6F3;
+      color: #202B28;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      line-height: 1;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #DCE3DD;
+      border-radius: 4px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    @keyframes pulse-pin {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(146, 45, 60, 0.6);
+      }
+      50% {
+        transform: scale(1.08);
+        box-shadow: 0 0 0 6px rgba(146, 45, 60, 0);
+      }
+    }
+    .injury-pin-active {
+      animation: pulse-pin 2.2s infinite ease-in-out;
+    }
+  </style>
+<style id="equiflow-reviewed-layout">
+   html,body{max-width:100%;} .ef-sidebar{width:224px!important;min-width:224px;background:#fff!important;border-right:1px solid #dce3dd;padding:24px 14px!important;display:flex;flex-direction:column;gap:24px}.ef-brand{font:700 24px/1.2 Manrope,'Segoe UI',sans-serif;color:#315d4b}.ef-brand small{display:block;font:11px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin-top:8px}.ef-role-nav{display:flex;flex-direction:column;gap:5px}.ef-role-nav a{padding:11px 12px;min-height:44px;border-radius:6px;font:500 14px/22px Manrope,'Segoe UI',sans-serif;color:#3e4e45;text-decoration:none;white-space:normal}.ef-role-nav a:hover,.ef-role-nav a[aria-current=page]{background:#eaf1ec;color:#315d4b}.ef-role-label{margin-top:auto;font-size:12px;color:#65716b}.ef-role-label a{display:block;padding-top:12px;color:#315d4b}.ef-sample-notice{font:12px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin:0 0 14px}.ef-mobile-nav{display:none}input,select,textarea{max-width:100%}button,a,input,select,textarea{touch-action:manipulation}
+   @media(max-width:1023px){[data-review-kind=app] header,[data-review-kind=app] main .flex{flex-wrap:wrap}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important}[data-review-kind=app] .flex-1{min-width:0}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{max-width:100%;min-width:0}[data-review-kind=app] header>div{max-width:100%;flex-wrap:wrap}}
+   @media(max-width:767px){body[data-review-kind=app]{display:block!important;height:auto!important;min-height:100dvh}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important;height:auto}}
+   @media(max-width:767px){.ef-sidebar{display:none!important}.ef-mobile-nav{display:block;position:relative;z-index:200;background:white;border-bottom:1px solid #dce3dd;padding:12px 16px}.ef-mobile-nav summary{min-height:44px;cursor:pointer;display:flex;align-items:center;font-weight:700;color:#315d4b}.ml-56,.ml-64,[class~='ml-[224px]'],[class~='ml-[240px]'],main[style*='margin-left']{margin-left:0!important}main{min-width:0!important;max-width:100%!important}header{flex-wrap:wrap!important;gap:8px!important;height:auto!important}footer{flex-wrap:wrap!important;gap:12px}h1{overflow-wrap:anywhere}.ef-role-nav{max-width:100%}[data-review-kind=app] .grid{grid-template-columns:minmax(0,1fr)!important}[data-review-kind=app] .flex{min-width:0;flex-wrap:wrap}[data-review-kind=app] table,[data-review-kind=app] tbody,[data-review-kind=app] tr{display:block;width:100%}[data-review-kind=app] thead{display:none}[data-review-kind=app] tr{padding:12px 0;border-bottom:1px solid #dce3dd}[data-review-kind=app] td{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;white-space:normal!important;padding:8px 12px;min-width:0;overflow-wrap:anywhere}[data-review-kind=app] td:before{content:attr(data-label);color:#65716b;font-size:12px;flex:0 0 35%}[data-review-kind=app] td>*{min-width:0;max-width:100%}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{width:100%}}
+  </style></head>
+<body class="bg-canvas text-ink antialiased flex h-screen overflow-hidden selection:bg-forest-wash selection:text-forest" data-review-kind="app">
+<!-- ========================================== -->
+<!-- 1. SIDEBAR NAVIGATION (224px / w-56)        -->
+<!-- ========================================== -->
+<aside class="w-56 h-screen sticky top-0 flex flex-col justify-between p-space-sm z-30 shrink-0 bg-surface border-r border-border ef-sidebar"><div class="ef-brand">EquiFlow<small>Quản lý huấn luyện ngựa đua</small></div><nav class="ef-role-nav" aria-label="Điều hướng Bác sĩ thú y"><a href="V01.html">Sức khỏe đàn ngựa</a><a href="V02.html">Bệnh án</a><a href="V03.html" aria-current="page">Sơ đồ giải phẫu 2D</a><a href="V06.html">Lịch y tế dự phòng</a></nav><div class="ef-role-label">Bác sĩ thú y<a href="AUTH01.html">Đăng xuất</a></div></aside>
+<!-- ========================================== -->
+<!-- 2. MAIN CONTENT AREA (Full-Width Flex-1)   -->
+<!-- ========================================== -->
+<div class="flex-1 flex flex-col h-screen min-w-0 overflow-hidden bg-canvas">
+<!-- Top Navigation Bar (64px / h-16) -->
+<header class="h-16 w-full flex items-center justify-between px-space-lg bg-surface border-b border-border sticky top-0 z-20 shrink-0">
+<!-- Search Bar & Hospital Context -->
+<div class="flex items-center gap-4 flex-1 max-w-xl">
+<div class="flex items-center gap-2 text-forest shrink-0">
+<span class="font-section-heading text-section-heading font-bold tracking-tight">Thống Nhất Equine Club</span>
+<span class="text-border">|</span>
+<span class="font-metadata text-metadata text-muted hidden md:inline">Khoa Thú Y Lâm Sàng</span>
+</div>
+<div class="relative w-full max-w-xs">
+<label class="sr-only" for="top-search">Tìm kiếm hồ sơ ngựa hoặc mã vi chip</label>
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted">
+<span class="material-symbols-outlined text-lg" data-icon="search">search</span>
+</div>
+<input class="w-full pl-9 pr-3 py-1.5 h-9 rounded-inp border border-border bg-canvas text-ink placeholder:text-muted/70 font-body text-body focus:bg-surface focus:outline-none focus:ring-1 focus:ring-forest focus:border-forest transition-colors text-xs" id="top-search" placeholder="Tìm ngựa, mã chip, bệnh án..." type="search">
+</div>
+</div>
+<!-- Trailing Action Icons & Doctor Profile -->
+<div class="flex items-center gap-3 shrink-0">
+<!-- New Log Entry Action Button -->
+<button class="h-9 px-3.5 bg-forest hover:bg-forest-deep text-on-primary font-label text-label rounded-btn flex items-center gap-1.5 transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-base" data-icon="post_add">post_add</span>
+<span>Thêm ghi nhận</span>
+</button>
+<div class="h-6 w-px bg-border mx-1"></div>
+<!-- Notification Icon -->
+<button class="p-2 text-muted hover:text-ink hover:bg-forest-wash rounded-lg transition-colors relative" title="Thông báo y tế" type="button">
+<span class="material-symbols-outlined text-xl" data-icon="notifications">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-critical-text"></span>
+</button>
+<!-- Calendar Schedule Icon -->
+<button class="p-2 text-muted hover:text-ink hover:bg-forest-wash rounded-lg transition-colors" title="Lịch trực và thăm khám" type="button">
+<span class="material-symbols-outlined text-xl" data-icon="calendar_today">calendar_today</span>
+</button>
+<div class="h-6 w-px bg-border mx-1"></div>
+<!-- User Profile Avatar & Role Context -->
+<div class="flex items-center gap-2.5 pl-1">
+<div class="w-9 h-9 rounded-full bg-forest-wash border border-forest/30 flex items-center justify-center text-forest font-bold text-sm shrink-0">
+            TH
+          </div>
+<div class="flex flex-col text-left">
+<span class="font-label text-[13px] leading-tight text-ink font-semibold">BS. Lê Thanh Hà</span>
+<div class="flex items-center gap-1">
+<span class="font-metadata text-[11px] leading-tight text-muted">Trưởng khoa Thú y</span>
+
+</div>
+</div>
+</div>
+</div>
+</header>
+<!-- Scrollable Workspace Canvas -->
+<main class="flex-1 overflow-y-auto custom-scroll p-6 md:p-space-lg flex flex-col gap-5"><p class="ef-sample-notice">Dữ liệu minh họa · Bản thiết kế giao diện</p>
+<!-- Breadcrumbs & Screen Top Anchor -->
+<section class="flex flex-col gap-2">
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-muted font-metadata text-metadata">
+<a class="hover:text-forest transition-colors" href="#">Y tế &amp; Thú y</a>
+<span class="material-symbols-outlined text-xs" data-icon="chevron_right">chevron_right</span>
+<a class="hover:text-forest transition-colors" href="#">Hồ sơ bệnh án &amp; Chấn thương</a>
+<span class="material-symbols-outlined text-xs" data-icon="chevron_right">chevron_right</span>
+<span class="text-ink font-medium">Sơ đồ giải phẫu 2D</span>
+<span class="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-surface-container text-muted border border-border">Dữ liệu minh họa</span>
+</nav>
+<!-- Title Row with Quick Controls -->
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+<div>
+<h1 class="font-page-title text-page-title text-ink font-bold tracking-tight">Sơ đồ giải phẫu 2D &amp; Điểm chấn thương</h1>
+<p class="font-body text-body text-muted mt-0.5">Xác định vị trí tổn thương cơ - xương - khớp trên sơ đồ giải phẫu chuẩn xác và cập nhật lệnh cách ly vận động.</p>
+</div>
+<div class="flex items-center gap-2 self-start lg:self-auto">
+<button class="h-11 px-4 bg-surface hover:bg-forest-wash border border-border text-ink font-label text-label rounded-btn flex items-center gap-2 transition-colors" type="button">
+<span class="material-symbols-outlined text-lg text-muted" data-icon="history">history</span>
+<span>Lịch sử tổn thương</span>
+</button>
+<button class="h-11 px-4 bg-forest hover:bg-forest-deep text-on-primary font-label text-label rounded-btn flex items-center gap-2 transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-lg" data-icon="print">print</span>
+<span>Xuất phiếu chấn thương</span>
+</button>
+</div>
+</div>
+<!-- Equine Identity Context Bar & Medical Lock Banner -->
+<div class="bg-surface rounded-panel border border-border p-3.5 flex flex-wrap items-center justify-between gap-4 mt-1">
+<!-- Equine Selector Dropdown & Identification -->
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-forest border border-border shrink-0">
+<span class="material-symbols-outlined text-2xl" data-icon="pets">pets</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-label text-base font-bold text-ink">Hồng Ngọc</span>
+<span class="font-metadata text-metadata text-muted font-mono bg-canvas px-1.5 py-0.5 rounded border border-border">Mã chip: VNM-246813579024</span>
+<span class="inline-flex items-center gap-1 font-metadata text-metadata text-muted">
+<span class="material-symbols-outlined text-sm" data-icon="meeting_room">meeting_room</span>
+                  Chuồng A03 · Ô tĩnh dưỡng
+                </span>
+</div>
+<div class="font-metadata text-metadata text-muted mt-0.5">
+                Giống: Thoroughbred (Thuần chủng Anh) · 6 tuổi · Ngựa đua cấp độ II · Cân nặng: 512 kg
+              </div>
+</div>
+</div>
+<!-- Medical Lock Status Pill -->
+<div class="flex items-center gap-2 bg-critical-bg text-critical-text border border-critical-text/30 px-3.5 py-2 rounded-lg font-label text-xs">
+<span class="material-symbols-outlined text-base" data-icon="lock" data-weight="fill" style="font-variation-settings: 'FILL' 1;">lock</span>
+<span class="font-bold tracking-wide">MEDICAL LOCK ACTIVE:</span>
+<span>Cấm vận động mạnh do tổn thương gân chi trước</span>
+</div>
+</div>
+</section>
+<!-- ======================================================== -->
+<!-- 3. MAIN WORKSPACE: 62% LEFT (2D DIAGRAM) & 38% RIGHT FORM -->
+<!-- ======================================================== -->
+<section class="grid grid-cols-1 lg:grid-cols-100 gap-5 items-start pb-8" style="grid-template-columns: minmax(0px, 62fr) minmax(0px, 38fr);">
+<!-- ============================================ -->
+<!-- LEFT COLUMN: SKELETAL 2D DIAGRAM (62%)       -->
+<!-- ============================================ -->
+<div class="lg:col-span-62 flex flex-col gap-4" style="grid-column: auto;">
+<div class="bg-surface rounded-panel border border-border flex flex-col overflow-hidden shadow-xs">
+<!-- Anatomical Viewer Header -->
+<div class="p-4 border-b border-border flex flex-wrap items-center justify-between gap-3 bg-canvas/40">
+<div>
+<div class="flex items-center gap-2">
+<h2 class="font-section-heading text-section-heading text-ink font-bold">Sơ đồ giải phẫu nguyên bản — 2D hệ xương</h2>
+<span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-forest-wash text-forest border border-forest/20">Góc nghiêng</span>
+</div>
+<p class="font-metadata text-metadata text-muted mt-0.5">
+                  Nhấp vào sơ đồ hoặc chọn vùng giải phẫu từ danh mục để định vị điểm chấn thương.
+                </p>
+</div>
+<!-- View Aspect Indicators -->
+<div class="flex items-center gap-1.5 bg-surface p-1 rounded-lg border border-border font-metadata text-xs">
+<span class="px-2.5 py-1 rounded bg-forest-wash text-forest font-semibold">Góc nghiêng toàn thân</span>
+<span class="px-2.5 py-1 rounded text-muted hover:text-ink cursor-not-allowed">Chi trước (Phóng to)</span>
+</div>
+</div>
+<!-- Skeletal Canvas Display Area (Strict 900:600 Aspect Ratio) -->
+<div class="relative w-full bg-[#f8f9fa] flex items-center justify-center p-3 select-none overflow-hidden group" style="aspect-ratio: 900 / 600;">
+<!-- Original Raw Anatomical Diagram Image (Retaining original grid & clarity) -->
+<img alt="Sơ đồ giải phẫu 2D hệ xương ngựa — ảnh nguyên bản" class="w-full h-full object-contain pointer-events-none" data-alt="An authentic, high-resolution scientific veterinary 2D skeletal anatomy chart of a thoroughbred horse in side lateral view, displaying full bone structure against a subtle technical graph background. Clean, precise veterinary reference with crisp bone contours and clinical medical clarity." src="https://lh3.googleusercontent.com/aida/AEtjO1VrEtk4hYhoSlI4tDw1sl53MdOEH7RqbZZNeR7kSkPZC5hdfX_xIlDE-Zi37HJMvSQFoPzSLL4V9g-f8qPOn_fFbBDL2b692OfnBafHk6jOLtvRZz3BdaxMB-IY41foHIVowG0ZqzKSh61LU04LwpVOmLwkxrwgIzi730TzU7PkZcE1OFe3qOr-0qBeOVWSHc-byN80f8XHQr40fpm0PNOsBIZUr9Fy9shD7OnZulWCFtvfVNqY9Vrw2Caka0-O27UAxrYh5b2h=s0" style="object-fit: contain; width: 100%; height: auto; aspect-ratio: 3 / 2;">
+<!-- OVERLAY PIN 1: Active Metacarpal / Tendon Strain (CRITICAL - RED) -->
+<!-- Positioned precisely over the Left Forelimb Metacarpus (cannon bone) area -->
+<div class="absolute cursor-pointer transition-transform duration-200 z-10" style="top: 72%; left: 34%;" title="Điểm 1: Viêm gân gập nông SDFT chi trước trái">
+<!-- Outer Pulse Glow -->
+<div class="relative flex items-center justify-center">
+<div class="w-8 h-8 rounded-full bg-critical-text text-on-primary font-bold text-xs flex items-center justify-center shadow-lg border-2 border-surface injury-pin-active">
+                    1
+                  </div>
+<!-- Tooltip Tag -->
+<div class="absolute left-9 top-1/2 -translate-y-1/2 bg-surface/95 backdrop-blur-sm border border-critical-text/40 rounded-md px-2 py-1 shadow-md whitespace-nowrap pointer-events-none z-20">
+<p class="font-label text-[11px] text-critical-text font-bold leading-tight">#1 Metacarpal (SDFT Strain)</p>
+<p class="font-metadata text-[10px] text-muted leading-tight">Độ II · Khóa y tế</p>
+</div>
+</div>
+</div>
+<!-- OVERLAY PIN 2: Secondary Inspection Point (Hock / Tarsus - Observation - YELLOW) -->
+<!-- Positioned over the Hindlimb Tarsus (Hock joint) area -->
+<div class="absolute cursor-pointer transition-transform duration-200 z-10 hover:scale-110" style="top: 60%; left: 74%;" title="Điểm 2: Khớp cổ chân sau (Tarsus) - Theo dõi tràn dịch nhẹ">
+<div class="relative flex items-center justify-center">
+<div class="w-7 h-7 rounded-full bg-warning-text text-on-primary font-bold text-xs flex items-center justify-center shadow-md border-2 border-surface">
+                    2
+                  </div>
+<!-- Tooltip Tag -->
+<div class="absolute right-8 top-1/2 -translate-y-1/2 bg-surface/95 backdrop-blur-sm border border-warning-text/40 rounded-md px-2 py-1 shadow-md whitespace-nowrap pointer-events-none z-20">
+<p class="font-label text-[11px] text-warning-text font-bold leading-tight">#2 Khớp Cổ Chân Sau</p>
+<p class="font-metadata text-[10px] text-muted leading-tight">Theo dõi viêm màng dịch</p>
+</div>
+</div>
+</div>
+<!-- Subtle Technical Coordinate Crosshair Marker (Passive Reference) -->
+<div class="absolute bottom-3 left-4 font-mono text-[10px] text-muted/80 bg-surface/80 px-2 py-0.5 rounded border border-border/60">
+                Tọa độ chuẩn: 34.2°X · 72.8°Y (Forelimb Left)
+              </div>
+</div>
+<!-- Viewer Tooling & Status Legend Toolbar -->
+<div class="p-3 border-t border-border bg-surface flex flex-wrap items-center justify-between gap-3">
+<!-- Interactive Zoom & Reset Tools -->
+<div class="flex items-center gap-1">
+<button class="w-8 h-8 rounded-btn border border-border hover:bg-forest-wash text-muted hover:text-ink flex items-center justify-center transition-colors" title="Thu nhỏ" type="button">
+<span class="material-symbols-outlined text-base" data-icon="remove">remove</span>
+</button>
+<span class="px-2 font-mono text-xs text-muted font-medium select-none">100%</span>
+<button class="w-8 h-8 rounded-btn border border-border hover:bg-forest-wash text-muted hover:text-ink flex items-center justify-center transition-colors" title="Phóng to" type="button">
+<span class="material-symbols-outlined text-base" data-icon="add">add</span>
+</button>
+<div class="h-4 w-px bg-border mx-1"></div>
+<button class="px-2.5 h-8 rounded-btn border border-border hover:bg-forest-wash text-muted hover:text-ink flex items-center gap-1 font-label text-xs transition-colors" title="Căn giữa sơ đồ" type="button">
+<span class="material-symbols-outlined text-sm" data-icon="crop_free">crop_free</span>
+<span>Căn giữa</span>
+</button>
+</div>
+<!-- Color Severity Meaning Legend -->
+<div class="flex items-center gap-4 text-xs font-label">
+<div class="flex items-center gap-1.5">
+<span class="w-2.5 h-2.5 rounded-full bg-critical-text"></span>
+<span class="text-ink">Chấn thương nặng / Khóa y tế</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-2.5 h-2.5 rounded-full bg-warning-text"></span>
+<span class="text-ink">Viêm / Theo dõi</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-2.5 h-2.5 rounded-full bg-positive-text"></span>
+<span class="text-muted">Đã bình phục</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Anatomical Quick Reference Guide for Clinicians -->
+<div class="bg-surface rounded-panel border border-border p-4">
+<h3 class="font-section-heading text-sm font-bold text-ink mb-2 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-forest text-base" data-icon="info">info</span>
+              Nguyên tắc định vị giải phẫu học thú y
+            </h3>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-3 font-metadata text-metadata text-muted">
+<div class="p-2.5 rounded bg-canvas border border-border/80">
+<strong class="text-ink block mb-0.5">Metacarpus &amp; SDFT:</strong>
+                Vùng chịu lực chính khi phi nước đại; nguy cơ rách bao gân gấp ngón nông cao nhất.
+              </div>
+<div class="p-2.5 rounded bg-canvas border border-border/80">
+<strong class="text-ink block mb-0.5">Fetlock (Khớp cổ chân):</strong>
+                Biên độ uốn tối đa; kiểm tra vi chấn thương xương vừng và dây chằng treo.
+              </div>
+<div class="p-2.5 rounded bg-canvas border border-border/80">
+<strong class="text-ink block mb-0.5">Tarsus (Hock sau):</strong>
+                Trục trợ lực đẩy phía sau; theo dõi viêm sụn thoái hóa sớm và tràn dịch bao khớp.
+              </div>
+</div>
+</div>
+</div>
+<!-- ============================================ -->
+<!-- RIGHT COLUMN: CLINICAL RECORD FORM (38%)     -->
+<!-- ============================================ -->
+<div class="lg:col-span-38 flex flex-col gap-4" style="grid-column: auto;">
+<!-- Section 1: Active Registered Injuries List -->
+<div class="bg-surface rounded-panel border border-border p-4">
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-critical-text text-xl" data-icon="clinical_notes">clinical_notes</span>
+<h3 class="font-section-heading text-sm font-bold text-ink">Điểm tổn thương đang ghi nhận (02)</h3>
+</div>
+<span class="text-xs font-semibold px-2 py-0.5 rounded bg-critical-bg text-critical-text border border-critical-text/20">
+                01 Ca khóa y tế
+              </span>
+</div>
+<!-- List Cards -->
+<div class="flex flex-col gap-2.5">
+<!-- Selected Card (Point 1) -->
+<div class="p-3 rounded-lg border-2 border-critical-text/70 bg-critical-bg/25 flex flex-col gap-2 cursor-pointer transition-colors">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-2">
+<span class="w-5 h-5 rounded-full bg-critical-text text-on-primary font-bold text-xs flex items-center justify-center shrink-0">1</span>
+<span class="font-label text-sm font-bold text-critical-text">Chi trước trái — Xương đốt bàn (Cannon)</span>
+</div>
+<span class="font-metadata text-[11px] font-semibold text-critical-text bg-critical-bg px-2 py-0.5 rounded border border-critical-text/30">
+                    Độ II (Nặng)
+                  </span>
+</div>
+<p class="font-body text-xs text-ink">
+                  Viêm căng gân gấp ngón nông (SDFT Strain), phù nề 4cm dưới gối, nhiệt độ cục bộ +1.8°C.
+                </p>
+<div class="flex items-center justify-between font-metadata text-[11px] text-muted pt-1 border-t border-border/60">
+<span>Khám: 15/03/2025 · BS. Lê Thanh Hà</span>
+<span class="text-critical-text font-bold">LỆNH CÁCH LY CHẠY</span>
+</div>
+</div>
+<!-- Point 2 (Observation) -->
+<div class="p-3 rounded-lg border border-border bg-surface hover:bg-forest-wash/40 flex flex-col gap-2 cursor-pointer transition-colors">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-2">
+<span class="w-5 h-5 rounded-full bg-warning-text text-on-primary font-bold text-xs flex items-center justify-center shrink-0">2</span>
+<span class="font-label text-sm font-bold text-ink">Chi sau phải — Khớp cổ chân (Tarsus)</span>
+</div>
+<span class="font-metadata text-[11px] font-semibold text-warning-text bg-warning-bg px-2 py-0.5 rounded border border-warning-text/30">
+                    Độ I (Theo dõi)
+                  </span>
+</div>
+<p class="font-body text-xs text-muted">
+                  Tràn dịch nhẹ màng hoạt dịch khớp sau đợt tập nước rút; không có dấu hiệu đi khập khiễng rõ rệt.
+                </p>
+<div class="flex items-center justify-between font-metadata text-[11px] text-muted pt-1 border-t border-border/40">
+<span>Khám: 18/03/2025 · BS. Lê Thanh Hà</span>
+<span class="text-forest font-medium">Băng ép lạnh</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Section 2: Clinical Detail & Update Form -->
+<div class="bg-surface rounded-panel border border-border p-4 shadow-xs">
+<div class="flex items-center justify-between pb-3 border-b border-border mb-4">
+<div>
+<h3 class="font-section-heading text-section-heading text-ink font-bold">Cập nhật tổn thương đang chọn</h3>
+<p class="font-metadata text-metadata text-muted">Chỉnh sửa tham số lâm sàng và phác đồ điều trị của Điểm #1</p>
+</div>
+<button class="text-xs text-forest hover:underline font-label flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-sm" data-icon="add_circle">add_circle</span>
+                Tạo điểm mới
+              </button>
+</div>
+<!-- Form Content -->
+<form class="flex flex-col gap-3.5" onsubmit="event.preventDefault();">
+<!-- 1. Body Region (Vùng giải phẫu) -->
+<div>
+<label class="block font-label text-xs text-ink font-semibold mb-1" for="injury-region">
+                  Vùng giải phẫu (Body Region) <span class="text-critical-text">*</span>
+</label>
+<div class="relative">
+<select class="w-full h-11 px-3 bg-surface border border-border rounded-inp font-body text-body text-ink focus:outline-none focus:ring-1 focus:ring-forest focus:border-forest text-xs" id="injury-region">
+<option selected="">Xương đốt bàn chân / Metacarpal (Cannon) Bone — Chi trước</option>
+<option>Khớp cổ chân trước / Carpus (Knee Joint)</option>
+<option>Khớp bàn ngón chân / Fetlock Joint</option>
+<option>Xương ngón chân / Pastern &amp; Coffin Bone</option>
+<option>Khớp cổ chân sau / Tarsus (Hock Joint)</option>
+<option>Vùng vai và xương bả vai / Scapula</option>
+</select>
+</div>
+</div>
+<!-- 2. Anatomical Side (Bên cơ thể) -->
+<div>
+<label class="block font-label text-xs text-ink font-semibold mb-1">
+                  Bên cơ thể (Anatomical Side) <span class="text-critical-text">*</span>
+</label>
+<div class="grid grid-cols-3 gap-2">
+<button class="h-11 rounded-inp border border-forest bg-forest-wash text-forest font-label text-xs font-bold flex items-center justify-center gap-1" type="button">
+<span class="material-symbols-outlined text-sm" data-icon="check">check</span>
+                    Trái (Left)
+                  </button>
+<button class="h-11 rounded-inp border border-border bg-surface text-muted hover:text-ink font-label text-xs flex items-center justify-center" type="button">
+                    Phải (Right)
+                  </button>
+<button class="h-11 rounded-inp border border-border bg-surface text-muted hover:text-ink font-label text-xs flex items-center justify-center" type="button">
+                    Giữa (Medial)
+                  </button>
+</div>
+</div>
+<!-- 3. Severity Level & Date of Onset (2 Cols) -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+<div>
+<label class="block font-label text-xs text-ink font-semibold mb-1" for="injury-severity">
+                    Mức độ nghiêm trọng <span class="text-critical-text">*</span>
+</label>
+<select class="w-full h-11 px-2.5 bg-surface border border-critical-text text-critical-text font-label text-xs rounded-inp focus:outline-none focus:ring-1 focus:ring-critical-text" id="injury-severity">
+<option>Độ I (Nhẹ - Cảnh báo)</option>
+<option selected="">Độ II (Trung bình - Khóa y tế)</option>
+<option>Độ III (Rất nặng - Cách ly tĩnh)</option>
+</select>
+</div>
+<div>
+<label class="block font-label text-xs text-ink font-semibold mb-1" for="injury-date">
+                    Ngày phát hiện chấn thương
+                  </label>
+<input class="w-full h-11 px-3 bg-surface border border-border rounded-inp font-body text-body text-ink text-xs focus:outline-none focus:ring-1 focus:ring-forest focus:border-forest" id="injury-date" type="date" value="2025-03-15">
+</div>
+</div>
+<!-- 4. Clinical Description (Mô tả lâm sàng chuyên môn) -->
+<div>
+<label class="block font-label text-xs text-ink font-semibold mb-1" for="clinical-notes">
+                  Mô tả lâm sàng chuyên môn
+                </label>
+<textarea class="w-full p-2.5 bg-surface border border-border rounded-inp font-body text-xs text-ink focus:outline-none focus:ring-1 focus:ring-forest focus:border-forest resize-none" id="clinical-notes" placeholder="Ghi nhận phản ứng ấn chẩn, nhiệt độ mô, mức độ sưng nề..." rows="3">Phát hiện sưng nề khu trú 3-5cm tại 1/3 giữa gân gấp ngón nông chi trước trái (SDFT). Ấn chẩn có phản ứng đau rõ rệt (+2), thân nhiệt chi tăng đáng kể so với chi đối diện. Đã chỉ định siêu âm Doppler xác nhận tổn thương rách vi sợi gân độ II.</textarea>
+</div>
+<!-- 5. Treatment Protocol & Recovery Plan -->
+<div>
+<label class="block font-label text-xs text-ink font-semibold mb-1" for="treatment-plan">
+                  Phác đồ điều trị dự kiến &amp; Kế hoạch hồi phục
+                </label>
+<textarea class="w-full p-2.5 bg-surface border border-border rounded-inp font-body text-xs text-ink focus:outline-none focus:ring-1 focus:ring-forest focus:border-forest resize-none" id="treatment-plan" placeholder="Thuốc, băng ép lạnh, thời gian nghỉ ngơi chuồng..." rows="2">Băng ép nén kết hợp chườm đá lạnh 3 lần/ngày. Tiêm kháng viêm NSAID 5 ngày. Nghỉ tĩnh dưỡng tại chuồng A03 tối thiểu 21 ngày, không tham gia chạy nước rút trước lần siêu âm kiểm tra tiếp theo.</textarea>
+</div>
+<!-- Medical Lock Active Re-confirmation Box -->
+<div class="p-2.5 rounded-lg bg-critical-bg/50 border border-critical-text/30 flex items-start gap-2">
+<span class="material-symbols-outlined text-critical-text text-lg shrink-0 mt-0.5" data-icon="warning" data-weight="fill" style="font-variation-settings: 'FILL' 1;">warning</span>
+<div class="text-[11px] leading-tight">
+<span class="font-bold text-critical-text">Kích hoạt lệnh cấm xuất chuồng:</span>
+<p class="text-muted mt-0.5">Trạng thái này sẽ chặn mọi yêu cầu cấp phát lịch tập luyện hoặc đua đối với cá thể ngựa Hồng Ngọc trên toàn hệ thống.</p>
+</div>
+</div>
+<!-- Form Action Buttons -->
+<div class="flex items-center justify-end gap-2.5 pt-2">
+<button class="h-11 px-4 bg-surface hover:bg-canvas border border-border text-muted hover:text-ink font-label text-label rounded-btn transition-colors" type="button">
+                  Hủy bỏ
+                </button>
+<button class="h-11 px-5 bg-critical-text hover:bg-[#7d2532] text-on-primary font-label text-label rounded-btn flex items-center gap-1.5 transition-colors shadow-sm" type="submit">Lưu điểm chấn thương</button>
+</div>
+</form>
+</div>
+</div>
+</section>
+</main>
+</div>
+</body></html>

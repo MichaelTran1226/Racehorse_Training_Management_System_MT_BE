@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html class="h-full bg-canvas" lang="vi"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>[GH-BE-18][FR-012][V06] Quản lý Lịch trình y tế dự phòng (Tiêm phòng vaccine, tẩy giun, kiểm tra móng Farrier) — Lịch chăm sóc y tế dự phòng</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS with Forms and Container Queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "primary-fixed-dim": "#a2d1ba",
+            "error": "#ba1a1a",
+            "positive-bg": "#E8F3EB",
+            "surface-variant": "#e2e3e0",
+            "quarantine-text": "#65517D",
+            "on-primary": "#ffffff",
+            "primary-fixed": "#bdedd6",
+            "surface-dim": "#d9dad7",
+            "surface-bright": "#f9faf7",
+            "surface-container-low": "#f3f4f1",
+            "primary": "#184535",
+            "critical-bg": "#FAE9EB",
+            "surface-container-high": "#e7e8e6",
+            "positive-text": "#276442",
+            "quarantine-bg": "#F1EDF6",
+            "critical-text": "#922D3C",
+            "surface": "#FFFFFF",
+            "on-surface": "#191c1b",
+            "on-background": "#191c1b",
+            "inverse-on-surface": "#f0f1ee",
+            "tertiary-fixed": "#ffdad7",
+            "on-secondary-fixed": "#002116",
+            "surface-container-lowest": "#ffffff",
+            "surface-container-highest": "#e2e3e0",
+            "primary-container": "#315d4b",
+            "inverse-primary": "#a2d1ba",
+            "inverse-surface": "#2e312f",
+            "on-error-container": "#93000a",
+            "secondary-fixed": "#c6ebd8",
+            "surface-tint": "#3b6754",
+            "background": "#f9faf7",
+            "on-primary-fixed": "#002115",
+            "secondary-container": "#c6ebd8",
+            "canvas": "#F5F6F3",
+            "ink": "#202B28",
+            "warning-bg": "#FFF4DD",
+            "on-primary-container": "#a5d4bd",
+            "secondary-fixed-dim": "#aacfbd",
+            "on-secondary": "#ffffff",
+            "on-surface-variant": "#414944",
+            "on-tertiary-fixed": "#34100e",
+            "on-error": "#ffffff",
+            "tertiary": "#5e312e",
+            "outline": "#717974",
+            "warning-text": "#875B15",
+            "secondary": "#446557",
+            "forest-deep": "#234437",
+            "tertiary-fixed-dim": "#f9b6b1",
+            "forest-wash": "#EAF1EC",
+            "error-container": "#ffdad6",
+            "on-tertiary": "#ffffff",
+            "forest": "#315D4B",
+            "on-secondary-fixed-variant": "#2c4d40",
+            "outline-variant": "#c0c8c2",
+            "border": "#DCE3DD",
+            "tertiary-container": "#794744",
+            "on-primary-fixed-variant": "#224f3d",
+            "muted": "#65716B",
+            "on-tertiary-container": "#fcb9b4",
+            "surface-container": "#edeeeb",
+            "on-tertiary-fixed-variant": "#693937",
+            "on-secondary-container": "#4a6b5d"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem",
+            "panel": "10px",
+            "button": "7px",
+            "input": "6px"
+          },
+          "spacing": {
+            "space-md": "16px",
+            "space-lg": "24px",
+            "margin": "32px",
+            "gutter": "24px",
+            "space-xs": "4px",
+            "space-sm": "8px",
+            "space-xl": "32px"
+          },
+          "fontFamily": {
+            "section-heading": ["Manrope", "sans-serif"],
+            "label": ["Manrope", "sans-serif"],
+            "page-title": ["Manrope", "sans-serif"],
+            "metadata": ["Manrope", "sans-serif"],
+            "body-lg": ["Manrope", "sans-serif"],
+            "body": ["Manrope", "sans-serif"],
+            "auth-heading": ["Manrope", "sans-serif"]
+          },
+          "fontSize": {
+            "section-heading": ["18px", { "lineHeight": "26px", "fontWeight": "650" }],
+            "label": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "page-title": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "metadata": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "body": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "auth-heading": ["32px", { "lineHeight": "40px", "fontWeight": "700" }]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #F5F6F3;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #DCE3DD;
+      border-radius: 4px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: #c0c8c2;
+    }
+  </style>
+<style id="equiflow-reviewed-layout">
+   html,body{max-width:100%;} .ef-sidebar{width:224px!important;min-width:224px;background:#fff!important;border-right:1px solid #dce3dd;padding:24px 14px!important;display:flex;flex-direction:column;gap:24px}.ef-brand{font:700 24px/1.2 Manrope,'Segoe UI',sans-serif;color:#315d4b}.ef-brand small{display:block;font:11px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin-top:8px}.ef-role-nav{display:flex;flex-direction:column;gap:5px}.ef-role-nav a{padding:11px 12px;min-height:44px;border-radius:6px;font:500 14px/22px Manrope,'Segoe UI',sans-serif;color:#3e4e45;text-decoration:none;white-space:normal}.ef-role-nav a:hover,.ef-role-nav a[aria-current=page]{background:#eaf1ec;color:#315d4b}.ef-role-label{margin-top:auto;font-size:12px;color:#65716b}.ef-role-label a{display:block;padding-top:12px;color:#315d4b}.ef-sample-notice{font:12px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin:0 0 14px}.ef-mobile-nav{display:none}input,select,textarea{max-width:100%}button,a,input,select,textarea{touch-action:manipulation}
+   @media(max-width:1023px){[data-review-kind=app] header,[data-review-kind=app] main .flex{flex-wrap:wrap}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important}[data-review-kind=app] .flex-1{min-width:0}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{max-width:100%;min-width:0}[data-review-kind=app] header>div{max-width:100%;flex-wrap:wrap}}
+   @media(max-width:767px){body[data-review-kind=app]{display:block!important;height:auto!important;min-height:100dvh}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important;height:auto}}
+   @media(max-width:767px){.ef-sidebar{display:none!important}.ef-mobile-nav{display:block;position:relative;z-index:200;background:white;border-bottom:1px solid #dce3dd;padding:12px 16px}.ef-mobile-nav summary{min-height:44px;cursor:pointer;display:flex;align-items:center;font-weight:700;color:#315d4b}.ml-56,.ml-64,[class~='ml-[224px]'],[class~='ml-[240px]'],main[style*='margin-left']{margin-left:0!important}main{min-width:0!important;max-width:100%!important}header{flex-wrap:wrap!important;gap:8px!important;height:auto!important}footer{flex-wrap:wrap!important;gap:12px}h1{overflow-wrap:anywhere}.ef-role-nav{max-width:100%}[data-review-kind=app] .grid{grid-template-columns:minmax(0,1fr)!important}[data-review-kind=app] .flex{min-width:0;flex-wrap:wrap}[data-review-kind=app] table,[data-review-kind=app] tbody,[data-review-kind=app] tr{display:block;width:100%}[data-review-kind=app] thead{display:none}[data-review-kind=app] tr{padding:12px 0;border-bottom:1px solid #dce3dd}[data-review-kind=app] td{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;white-space:normal!important;padding:8px 12px;min-width:0;overflow-wrap:anywhere}[data-review-kind=app] td:before{content:attr(data-label);color:#65716b;font-size:12px;flex:0 0 35%}[data-review-kind=app] td>*{min-width:0;max-width:100%}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{width:100%}}
+  </style></head>
+<body class="h-full bg-canvas text-ink font-body text-body antialiased flex overflow-hidden" data-review-kind="app">
+<!-- SIDEBAR (Fixed 224px / w-56 from Shared Components JSON) -->
+<aside class="w-56 h-screen sticky top-0 flex flex-col justify-between p-space-sm z-30 bg-surface border-r border-border shrink-0 ef-sidebar"><div class="ef-brand">EquiFlow<small>Quản lý huấn luyện ngựa đua</small></div><nav class="ef-role-nav" aria-label="Điều hướng Bác sĩ thú y"><a href="V01.html">Sức khỏe đàn ngựa</a><a href="V02.html">Bệnh án</a><a href="V03.html">Sơ đồ giải phẫu 2D</a><a href="V06.html" aria-current="page">Lịch y tế dự phòng</a></nav><div class="ef-role-label">Bác sĩ thú y<a href="AUTH01.html">Đăng xuất</a></div></aside>
+<!-- MAIN CANVAS AREA -->
+<div class="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+<!-- TOP NAVBAR (64px / h-16) -->
+<header class="h-16 w-full flex items-center justify-between px-space-lg bg-surface border-b border-border sticky top-0 z-20 shrink-0">
+<!-- Search on Left -->
+<div class="flex items-center gap-4 w-96">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-[19px]">search</span>
+<input class="w-full h-10 pl-9 pr-3 rounded-[6px] border border-border bg-canvas text-ink font-body text-body focus:bg-surface focus:border-forest focus:ring-1 focus:ring-forest outline-none transition-colors" placeholder="Tìm theo tên ngựa, mã chip (RFID), số ô..." type="text">
+</div>
+</div>
+<!-- Center System Context -->
+<div class="hidden lg:flex items-center gap-2 text-muted font-metadata text-metadata">
+<span class="material-symbols-outlined text-forest text-base">local_hospital</span>
+<span>Hệ thống Quản lý Y tế Dự phòng Đàn Equine</span>
+<span class="inline-block w-1 h-1 rounded-full bg-border"></span>
+<span class="text-ink font-medium">Thống Nhất Equine Club</span>
+</div>
+<!-- Trailing Action Cluster -->
+<div class="flex items-center gap-space-md">
+<!-- Date indicator -->
+<button class="w-10 h-10 flex items-center justify-center rounded-lg text-muted hover:bg-forest-wash hover:text-forest transition-colors relative" title="Lịch hoạt động">
+<span class="material-symbols-outlined text-[20px]">calendar_today</span>
+</button>
+<!-- Notifications with active badge -->
+<button class="w-10 h-10 flex items-center justify-center rounded-lg text-muted hover:bg-forest-wash hover:text-forest transition-colors relative" title="Thông báo y tế">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-critical-text ring-2 ring-surface"></span>
+</button>
+<div class="h-6 w-px bg-border mx-1"></div>
+<!-- Primary Action Button -->
+<button class="h-10 px-4 rounded-[7px] bg-forest text-on-primary font-label text-label flex items-center gap-2 hover:bg-forest-deep transition-colors shadow-xs">
+<span class="material-symbols-outlined text-[19px]">add</span>
+<span>Thêm ghi nhận</span>
+</button>
+<!-- User Profile Avatar & Role -->
+<div class="flex items-center gap-2.5 pl-2 border-l border-border">
+<img class="w-9 h-9 rounded-full object-cover border border-border shrink-0" data-alt="A clean, professional headshot portrait of an Asian male equine veterinarian wearing a neat forest green clinical collar, smiling gently against an out-of-focus modern stable clinic background with neutral light tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCg8gPti8SrtnaGuh3TbT5vdwv4nxYVQnpik9MNgmtEEmIyUfVkTL0rVx2m9q1dZx4vfNIDRnJh_G2kS0u6VhHUWTwleoXyEQKRE-DOWmylLkVWKatAX4KNVHtGkSMn8_RUS6XaXdYBa5VPL5yq3OUr3G5Cf74pix2nroKYM2K0kCLiR0aECwxfYezJntMZw8tBiPuNHF_UW1a1DxOU4vj1pxwdreVG1bnpII_Yh7_aOkfP35LNUhjhh4j7K94tQ5zhKRXnVQWqnA">
+<div class="hidden xl:block text-left">
+<div class="font-label text-label text-ink leading-tight">BS. Lê Thanh Hà</div>
+<div class="font-metadata text-metadata text-muted leading-tight">Trưởng khoa Thú y</div>
+</div>
+</div>
+</div>
+</header>
+<!-- CONTENT SCROLLABLE CANVAS -->
+<main class="flex-1 overflow-y-auto custom-scroll p-space-lg lg:p-space-xl space-y-6"><p class="ef-sample-notice">Dữ liệu minh họa · Bản thiết kế giao diện</p>
+<!-- SECTION: PAGE HEADER & ACTION CONTROLS -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div>
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-forest-wash text-forest font-metadata text-metadata font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-forest"></span>
+              Phác đồ Định kỳ 2025
+            </span>
+<span class="font-metadata text-metadata text-muted">Cập nhật: Hôm nay, 08:30</span>
+</div>
+<h1 class="font-page-title text-page-title text-ink mt-1 tracking-tight">Lịch chăm sóc y tế dự phòng</h1>
+<p class="font-body text-body text-muted mt-0.5">
+            Kế hoạch tiêm phòng vắc-xin, tẩy giun định kỳ và kiểm tra chăm sóc móng cho toàn đàn
+          </p>
+</div>
+<!-- Top Right Actions -->
+<div class="flex items-center gap-2.5 shrink-0">
+<button class="h-10 px-3.5 rounded-[7px] border border-border bg-surface text-ink hover:bg-forest-wash hover:text-forest font-label text-label flex items-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-[19px]">file_download</span>
+<span>Xuất lịch tuần</span>
+</button>
+<a class="h-10 px-4 rounded-[7px] bg-forest text-on-primary hover:bg-forest-deep font-label text-label flex items-center gap-2 transition-colors" href="V06-CREATE.html">Lập lịch y tế mới</a>
+</div>
+</div>
+<!-- SECTION: SUMMARY KPI METRIC CARDS (Bento Grid) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- Metric 1: Quá hạn cần xử lý -->
+<div class="bg-surface rounded-panel border border-border p-4 flex flex-col justify-between transition-all hover:border-forest/40">
+<div class="flex items-center justify-between">
+<span class="font-label text-label text-muted">Quá hạn cần xử lý</span>
+<span class="w-8 h-8 rounded-lg bg-surface-container-high text-muted flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">alarm_off</span>
+</span>
+</div>
+<div class="mt-3">
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-bold font-page-title text-ink">0</span>
+<span class="font-metadata text-metadata text-muted">ca trễ hạn</span>
+</div>
+<div class="mt-2 flex items-center gap-1.5 font-metadata text-metadata text-positive-text bg-positive-bg px-2 py-0.5 rounded w-fit">
+<span class="material-symbols-outlined text-[14px]">verified</span>
+<span>Đạt tiêu chuẩn an toàn sinh học</span>
+</div>
+</div>
+</div>
+<!-- Metric 2: Đến hạn trong 3 ngày (Quy chuẩn Blueprint nhắc trước 3 ngày) -->
+<div class="bg-surface rounded-panel border-2 border-[#E5A83B] p-4 flex flex-col justify-between transition-all relative overflow-hidden bg-gradient-to-br from-surface to-warning-bg/30">
+<div class="flex items-center justify-between">
+<span class="font-label text-label text-warning-text font-bold">Đến hạn trong 7 ngày</span>
+<span class="w-8 h-8 rounded-lg bg-warning-bg text-warning-text flex items-center justify-center">
+<span class="material-symbols-outlined text-[19px]">notification_important</span>
+</span>
+</div>
+<div class="mt-3">
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-bold font-page-title text-[#875B15]">3</span>
+<span class="font-metadata text-metadata text-warning-text font-semibold">ca ưu tiên cao</span>
+</div>
+<div class="mt-2 flex items-center gap-1.5 font-metadata text-metadata text-warning-text">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+<span>Cảnh báo sớm cho Groom &amp; Bác sĩ</span>
+</div>
+</div>
+</div>
+<!-- Metric 3: Hoàn tất tuần này -->
+<div class="bg-surface rounded-panel border border-border p-4 flex flex-col justify-between transition-all hover:border-forest/40">
+<div class="flex items-center justify-between">
+<span class="font-label text-label text-muted">Hoàn tất tuần này</span>
+<span class="w-8 h-8 rounded-lg bg-positive-bg text-positive-text flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+</span>
+</div>
+<div class="mt-3">
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-bold font-page-title text-ink">15</span>
+<span class="font-metadata text-metadata text-positive-text font-medium">/ 18 chỉ định</span>
+</div>
+<div class="mt-2 flex items-center gap-1.5 font-metadata text-metadata text-muted">
+<span class="material-symbols-outlined text-[14px] text-positive-text">trending_up</span>
+<span>Tiến độ đạt 83.3% kế hoạch</span>
+</div>
+</div>
+</div>
+<!-- Metric 4: Tổng kế hoạch tháng -->
+<div class="bg-surface rounded-panel border border-border p-4 flex flex-col justify-between transition-all hover:border-forest/40">
+<div class="flex items-center justify-between">
+<span class="font-label text-label text-muted">Tổng kế hoạch tháng</span>
+<span class="w-8 h-8 rounded-lg bg-forest-wash text-forest flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">calendar_month</span>
+</span>
+</div>
+<div class="mt-3">
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-bold font-page-title text-ink">32</span>
+<span class="font-metadata text-metadata text-muted">mũi &amp; lượt chăm sóc</span>
+</div>
+<div class="mt-2 flex items-center gap-1.5 font-metadata text-metadata text-muted">
+<span class="material-symbols-outlined text-[14px]">tune</span>
+<span>Bao gồm tiêm phòng, tẩy giun, farrier</span>
+</div>
+</div>
+</div>
+</div>
+<!-- SECTION: TOOLBAR & FILTER CONTROLS -->
+<div class="bg-surface rounded-panel border border-border p-3.5 space-y-3">
+<div class="flex flex-wrap items-center justify-between gap-3">
+<!-- Category Tabs -->
+<div class="flex items-center gap-1 p-1 bg-canvas rounded-lg border border-border/80">
+<button class="px-3.5 py-1.5 rounded-[6px] bg-surface text-forest font-label text-label shadow-xs font-semibold">
+              Tất cả dịch vụ (32)
+            </button>
+<button class="px-3.5 py-1.5 rounded-[6px] text-muted hover:text-ink hover:bg-surface/60 font-label text-label transition-colors">
+              Tiêm phòng Vắc-xin (12)
+            </button>
+<button class="px-3.5 py-1.5 rounded-[6px] text-muted hover:text-ink hover:bg-surface/60 font-label text-label transition-colors">
+              Tẩy giun định kỳ (10)
+            </button>
+<button class="px-3.5 py-1.5 rounded-[6px] text-muted hover:text-ink hover:bg-surface/60 font-label text-label transition-colors">
+              Kiểm tra &amp; Gọt móng (Farrier) (10)
+            </button>
+</div>
+<!-- Secondary Filters & Search -->
+<div class="flex items-center gap-2.5 flex-1 sm:flex-initial justify-end">
+<!-- Barn Selector -->
+<div class="flex items-center gap-1.5 text-muted font-metadata text-metadata">
+<span class="font-medium text-ink">Khu vực:</span>
+<div class="inline-flex rounded-lg border border-border bg-canvas p-0.5">
+<button class="px-2.5 py-1 text-xs font-semibold rounded bg-surface text-forest shadow-xs">Toàn trại</button>
+<button class="px-2.5 py-1 text-xs font-medium rounded text-muted hover:text-ink">Dãy A</button>
+<button class="px-2.5 py-1 text-xs font-medium rounded text-muted hover:text-ink">Dãy B</button>
+</div>
+</div>
+<!-- Horse Quick Filter -->
+<div class="relative w-52">
+<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-muted text-[17px]">filter_alt</span>
+<select class="w-full h-8 pl-8 pr-7 py-0 rounded-[6px] border border-border bg-canvas text-ink font-metadata text-metadata focus:border-forest focus:ring-0 cursor-pointer">
+<option>Lọc theo trạng thái</option>
+<option>Sắp tới hạn (&lt; 3 ngày)</option>
+<option>Hôm nay</option>
+<option>Đang chờ duyệt</option>
+<option>Đã hoàn tất</option>
+</select>
+</div>
+<!-- Refresh Button -->
+<button class="h-8 w-8 flex items-center justify-center rounded-[6px] border border-border text-muted hover:text-forest hover:bg-forest-wash transition-colors" title="Làm mới danh sách">
+<span class="material-symbols-outlined text-[17px]">refresh</span>
+</button>
+</div>
+</div>
+</div>
+<!-- SECTION: PREVENTIVE HEALTHCARE SCHEDULE TABLE -->
+<div class="bg-surface rounded-panel border border-border overflow-hidden shadow-xs">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-canvas/80 border-b border-border text-muted font-label text-metadata uppercase tracking-wider">
+<th class="py-3 px-4 font-semibold">Chiến mã &amp; Mã số</th>
+<th class="py-3 px-4 font-semibold">Danh mục dự phòng</th>
+<th class="py-3 px-4 font-semibold">Ngày dự kiến &amp; Hạn chót</th>
+<th class="py-3 px-4 font-semibold">Trạng thái</th>
+<th class="py-3 px-4 font-semibold">Bác sĩ chỉ định</th>
+<th class="py-3 px-4 font-semibold">Người thực hiện</th>
+<th class="py-3 px-4 text-right font-semibold">Thao tác</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border">
+<!-- ROW 1: SẮP TỚI HẠN (CÒN 2 NGÀY - QUA CHUẨN NHẮC TRƯỚC 3 NGÀY) -->
+<tr class="hover:bg-forest-wash/40 transition-colors h-14">
+<td class="py-3 px-4" data-label="Chiến mã &amp; Mã số">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high text-forest font-bold flex items-center justify-center border border-border text-sm shrink-0">
+                      PV
+                    </div>
+<div>
+<div class="font-label text-label text-ink font-semibold flex items-center gap-1.5">
+                        Phong Vũ
+                        <span class="text-xs font-normal text-muted bg-canvas px-1.5 py-0.5 rounded border border-border">A01</span>
+</div>
+<div class="font-metadata text-metadata text-muted">RFID: 982.000.184.229</div>
+</div>
+</div>
+</td>
+<td class="py-3 px-4" data-label="Danh mục dự phòng">
+<div>
+<div class="font-label text-label text-ink font-medium">Vắc-xin Cúm Equine Influenza</div>
+<div class="font-metadata text-metadata text-muted flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-forest">vaccines</span>
+                      Mũi tiêm nhắc định kỳ 6 tháng (Lô B)
+                    </div>
+</div>
+</td>
+<td class="py-3 px-4" data-label="Ngày dự kiến &amp; Hạn chót">
+<div class="font-label text-label text-ink">12/03/2025</div>
+<div class="font-metadata text-metadata text-[#875B15] font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">alarm</span>
+                    Còn 2 ngày (Hạn: 14/03)
+                  </div>
+</td>
+<td class="py-3 px-4" data-label="Trạng thái">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border border-[#E5A83B] bg-warning-bg text-warning-text">
+<span class="w-1.5 h-1.5 rounded-full bg-[#E5A83B]"></span>
+                    Sắp tới hạn (Còn 2 ngày)
+                  </span>
+</td>
+<td class="py-3 px-4" data-label="Bác sĩ chỉ định">
+<div class="font-label text-label text-ink">BS. Lê Thanh Hà</div>
+<div class="font-metadata text-metadata text-muted">Ký phác đồ #EVP-202</div>
+</td>
+<td class="py-3 px-4" data-label="Người thực hiện">
+<div class="flex items-center gap-1.5">
+<span class="w-6 h-6 rounded-full bg-forest-wash text-forest text-[11px] font-bold flex items-center justify-center border border-border">TN</span>
+<div>
+<div class="font-label text-label text-ink leading-tight">Trần Văn Nam</div>
+<div class="font-metadata text-metadata text-muted">Groom phụ trách</div>
+</div>
+</div>
+</td>
+<td class="py-3 px-4 text-right" data-label="Thao tác">
+<div class="flex items-center justify-end gap-2">
+<button class="h-8 px-2.5 rounded-[6px] bg-forest text-on-primary font-metadata text-metadata font-semibold hover:bg-forest-deep flex items-center gap-1 shadow-xs transition-colors" onclick="openModal('Phong Vũ (A01)', 'Vắc-xin Cúm Equine Influenza', 'Trần Văn Nam', 'EQ-VAC-2025-08B')">
+<span class="material-symbols-outlined text-[15px]">done_all</span>
+<span>Hoàn tất</span>
+</button>
+<button class="h-8 w-8 rounded-[6px] border border-border text-muted hover:text-ink hover:bg-forest-wash flex items-center justify-center transition-colors" title="Xem chi tiết hồ sơ">
+<span class="material-symbols-outlined text-[17px]">visibility</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- ROW 2: HÔM NAY (VIỀN XANH FOREST) -->
+<tr class="hover:bg-forest-wash/40 transition-colors h-14 bg-forest-wash/10">
+<td class="py-3 px-4" data-label="Chiến mã &amp; Mã số">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high text-forest font-bold flex items-center justify-center border border-border text-sm shrink-0">
+                      BM
+                    </div>
+<div>
+<div class="font-label text-label text-ink font-semibold flex items-center gap-1.5">
+                        Bạch Mã
+                        <span class="text-xs font-normal text-muted bg-canvas px-1.5 py-0.5 rounded border border-border">A02</span>
+</div>
+<div class="font-metadata text-metadata text-muted">RFID: 982.000.184.340</div>
+</div>
+</div>
+</td>
+<td class="py-3 px-4" data-label="Danh mục dự phòng">
+<div>
+<div class="font-label text-label text-ink font-medium">Tẩy giun Ivermectin định kỳ Quý 1</div>
+<div class="font-metadata text-metadata text-muted flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-forest">medication</span>
+                      Paste đường uống theo thể trọng 520kg
+                    </div>
+</div>
+</td>
+<td class="py-3 px-4" data-label="Ngày dự kiến &amp; Hạn chót">
+<div class="font-label text-label text-ink font-semibold text-forest">10/03/2025</div>
+<div class="font-metadata text-metadata text-forest font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">today</span>
+                    Hạn xử lý: Trong ngày
+                  </div>
+</td>
+<td class="py-3 px-4" data-label="Trạng thái">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border border-forest bg-forest-wash text-forest">
+<span class="w-1.5 h-1.5 rounded-full bg-forest animate-pulse"></span>
+                    Hôm nay
+                  </span>
+</td>
+<td class="py-3 px-4" data-label="Bác sĩ chỉ định">
+<div class="font-label text-label text-ink">BS. Lê Thanh Hà</div>
+<div class="font-metadata text-metadata text-muted">Ký duyệt phác đồ #DW-042</div>
+</td>
+<td class="py-3 px-4" data-label="Người thực hiện">
+<div class="flex items-center gap-1.5">
+<span class="w-6 h-6 rounded-full bg-forest-wash text-forest text-[11px] font-bold flex items-center justify-center border border-border">TN</span>
+<div>
+<div class="font-label text-label text-ink leading-tight">Trần Văn Nam</div>
+<div class="font-metadata text-metadata text-muted">Groom phụ trách</div>
+</div>
+</div>
+</td>
+<td class="py-3 px-4 text-right" data-label="Thao tác">
+<div class="flex items-center justify-end gap-2">
+<button class="h-8 px-2.5 rounded-[6px] bg-forest text-on-primary font-metadata text-metadata font-semibold hover:bg-forest-deep flex items-center gap-1 shadow-xs transition-colors" onclick="openModal('Bạch Mã (A02)', 'Tẩy giun Ivermectin Quý 1', 'Trần Văn Nam', 'IVM-2025-Q1-11')">
+<span class="material-symbols-outlined text-[15px]">done_all</span>
+<span>Hoàn tất</span>
+</button>
+<button class="h-8 w-8 rounded-[6px] border border-border text-muted hover:text-ink hover:bg-forest-wash flex items-center justify-center transition-colors" title="Xem chi tiết hồ sơ">
+<span class="material-symbols-outlined text-[17px]">visibility</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- ROW 3: SẮP TỚI HẠN (CÒN 3 NGÀY - QUA CHUẨN NHẮC TRƯỚC 3 NGÀY) -->
+<tr class="hover:bg-forest-wash/40 transition-colors h-14">
+<td class="py-3 px-4" data-label="Chiến mã &amp; Mã số">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high text-forest font-bold flex items-center justify-center border border-border text-sm shrink-0">
+                      TL
+                    </div>
+<div>
+<div class="font-label text-label text-ink font-semibold flex items-center gap-1.5">
+                        Thiên Long
+                        <span class="text-xs font-normal text-muted bg-canvas px-1.5 py-0.5 rounded border border-border">A04</span>
+</div>
+<div class="font-metadata text-metadata text-muted">RFID: 982.000.185.011</div>
+</div>
+</div>
+</td>
+<td class="py-3 px-4" data-label="Danh mục dự phòng">
+<div>
+<div class="font-label text-label text-ink font-medium">Kiểm tra cân bằng móng &amp; móng sắt thi đấu</div>
+<div class="font-metadata text-metadata text-muted flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-forest">hardware</span>
+                      Gọt móng 4 chân + gắn móng nhôm đua
+                    </div>
+</div>
+</td>
+<td class="py-3 px-4" data-label="Ngày dự kiến &amp; Hạn chót">
+<div class="font-label text-label text-ink">13/03/2025</div>
+<div class="font-metadata text-metadata text-[#875B15] font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">alarm</span>
+                    Còn 3 ngày (Hạn: 15/03)
+                  </div>
+</td>
+<td class="py-3 px-4" data-label="Trạng thái">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border border-[#E5A83B] bg-warning-bg text-warning-text">
+<span class="w-1.5 h-1.5 rounded-full bg-[#E5A83B]"></span>
+                    Sắp tới hạn (Còn 3 ngày)
+                  </span>
+</td>
+<td class="py-3 px-4" data-label="Bác sĩ chỉ định">
+<div class="font-label text-label text-ink">BS. Vũ Mạnh Tuấn</div>
+<div class="font-metadata text-metadata text-muted">Bác sĩ chỉnh hình</div>
+</td>
+<td class="py-3 px-4" data-label="Người thực hiện">
+<div class="flex items-center gap-1.5">
+<span class="w-6 h-6 rounded-full bg-surface-container-high text-ink text-[11px] font-bold flex items-center justify-center border border-border">ĐK</span>
+<div>
+<div class="font-label text-label text-ink leading-tight">Đặng Văn Khoa</div>
+<div class="font-metadata text-metadata text-muted">Farrier chuyên trách</div>
+</div>
+</div>
+</td>
+<td class="py-3 px-4 text-right" data-label="Thao tác">
+<div class="flex items-center justify-end gap-2">
+<button class="h-8 px-2.5 rounded-[6px] bg-forest text-on-primary font-metadata text-metadata font-semibold hover:bg-forest-deep flex items-center gap-1 shadow-xs transition-colors" onclick="openModal('Thiên Long (A04)', 'Gọt móng &amp; Móng sắt thi đấu', 'Đặng Văn Khoa', 'FARRIER-ST-09')">
+<span class="material-symbols-outlined text-[15px]">done_all</span>
+<span>Hoàn tất</span>
+</button>
+<button class="h-8 w-8 rounded-[6px] border border-border text-muted hover:text-ink hover:bg-forest-wash flex items-center justify-center transition-colors" title="Xem chi tiết hồ sơ">
+<span class="material-symbols-outlined text-[17px]">visibility</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- ROW 4: ĐÃ HOÀN TẤT (VIỀN XANH LÁ + ICON CHECK) -->
+<tr class="hover:bg-forest-wash/40 transition-colors h-14 bg-surface">
+<td class="py-3 px-4" data-label="Chiến mã &amp; Mã số">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high text-forest font-bold flex items-center justify-center border border-border text-sm shrink-0">
+                      TP
+                    </div>
+<div>
+<div class="font-label text-label text-ink font-semibold flex items-center gap-1.5">
+                        Tốc Phong
+                        <span class="text-xs font-normal text-muted bg-canvas px-1.5 py-0.5 rounded border border-border">B01</span>
+</div>
+<div class="font-metadata text-metadata text-muted">RFID: 982.000.183.992</div>
+</div>
+</div>
+</td>
+<td class="py-3 px-4" data-label="Danh mục dự phòng">
+<div>
+<div class="font-label text-label text-ink font-medium">Vắc-xin Uốn ván Tetanus Toxoid</div>
+<div class="font-metadata text-metadata text-muted flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-positive-text">check</span>
+                      Lô: TET-2025-01 | Liều 1ml IM
+                    </div>
+</div>
+</td>
+<td class="py-3 px-4" data-label="Ngày dự kiến &amp; Hạn chót">
+<div class="font-label text-label text-ink">08/03/2025</div>
+<div class="font-metadata text-metadata text-positive-text flex items-center gap-1 font-medium">
+<span class="material-symbols-outlined text-[13px]">task_alt</span>
+                    Hoàn tất đúng hạn
+                  </div>
+</td>
+<td class="py-3 px-4" data-label="Trạng thái">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border border-positive-text/30 bg-positive-bg text-positive-text">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+                    Đã hoàn tất
+                  </span>
+</td>
+<td class="py-3 px-4" data-label="Bác sĩ chỉ định">
+<div class="font-label text-label text-ink">BS. Lê Thanh Hà</div>
+<div class="font-metadata text-metadata text-muted">Đã ký xác nhận</div>
+</td>
+<td class="py-3 px-4" data-label="Người thực hiện">
+<div class="flex items-center gap-1.5">
+<span class="w-6 h-6 rounded-full bg-forest-wash text-forest text-[11px] font-bold flex items-center justify-center border border-border">TN</span>
+<div>
+<div class="font-label text-label text-ink leading-tight">Trần Văn Nam</div>
+<div class="font-metadata text-metadata text-muted">08/03 lúc 09:15</div>
+</div>
+</div>
+</td>
+<td class="py-3 px-4 text-right" data-label="Thao tác">
+<div class="flex items-center justify-end gap-2">
+<button class="h-8 px-2.5 rounded-[6px] border border-border bg-canvas text-muted font-metadata text-metadata font-medium hover:text-ink hover:bg-forest-wash flex items-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[15px]">history_edu</span>
+<span>Nhật ký</span>
+</button>
+<button class="h-8 w-8 rounded-[6px] border border-border text-muted hover:text-ink hover:bg-forest-wash flex items-center justify-center transition-colors" title="Xem chứng chỉ tiêm chủng">
+<span class="material-symbols-outlined text-[17px]">verified</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- ROW 5: ĐANG CHỜ DUYỆT -->
+<tr class="hover:bg-forest-wash/40 transition-colors h-14">
+<td class="py-3 px-4" data-label="Chiến mã &amp; Mã số">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high text-forest font-bold flex items-center justify-center border border-border text-sm shrink-0">
+                      HL
+                    </div>
+<div>
+<div class="font-label text-label text-ink font-semibold flex items-center gap-1.5">
+                        Hắc Long
+                        <span class="text-xs font-normal text-muted bg-canvas px-1.5 py-0.5 rounded border border-border">B03</span>
+</div>
+<div class="font-metadata text-metadata text-muted">RFID: 982.000.185.454</div>
+</div>
+</div>
+</td>
+<td class="py-3 px-4" data-label="Danh mục dự phòng">
+<div>
+<div class="font-label text-label text-ink font-medium">Bổ sung Điện giải &amp; Vitamin B-Complex</div>
+<div class="font-metadata text-metadata text-muted flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-forest">science</span>
+                      Sau đợt huấn luyện cường độ cao
+                    </div>
+</div>
+</td>
+<td class="py-3 px-4" data-label="Ngày dự kiến &amp; Hạn chót">
+<div class="font-label text-label text-ink">11/03/2025</div>
+<div class="font-metadata text-metadata text-muted flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">hourglass_empty</span>
+                    Dự kiến sáng mai
+                  </div>
+</td>
+<td class="py-3 px-4" data-label="Trạng thái">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border border-border bg-canvas text-muted">
+<span class="w-1.5 h-1.5 rounded-full bg-outline"></span>
+                    Đang chờ duyệt
+                  </span>
+</td>
+<td class="py-3 px-4" data-label="Bác sĩ chỉ định">
+<div class="font-label text-label text-ink">BS. Lê Thanh Hà</div>
+<div class="font-metadata text-metadata text-[#875B15] font-medium">Cần ký duyệt</div>
+</td>
+<td class="py-3 px-4" data-label="Người thực hiện">
+<div class="flex items-center gap-1.5">
+<span class="w-6 h-6 rounded-full bg-surface-container-high text-ink text-[11px] font-bold flex items-center justify-center border border-border">TN</span>
+<div>
+<div class="font-label text-label text-ink leading-tight">Trần Văn Nam</div>
+<div class="font-metadata text-metadata text-muted">Chờ chỉ định</div>
+</div>
+</div>
+</td>
+<td class="py-3 px-4 text-right" data-label="Thao tác">
+<div class="flex items-center justify-end gap-2">
+<button class="h-8 px-2.5 rounded-[6px] border border-forest text-forest bg-surface font-metadata text-metadata font-semibold hover:bg-forest hover:text-on-primary flex items-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[15px]">draw</span>
+<span>Ký duyệt</span>
+</button>
+<button class="h-8 w-8 rounded-[6px] border border-border text-muted hover:text-ink hover:bg-forest-wash flex items-center justify-center transition-colors" title="Xem chi tiết">
+<span class="material-symbols-outlined text-[17px]">visibility</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Pagination & Operational Indicators -->
+<div class="py-3 px-4 bg-canvas/40 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 font-metadata text-metadata">
+<div class="flex items-center gap-3 text-muted">
+<span>Hiển thị <strong>1 - 5</strong> trong tổng số <strong>32</strong> lượt chăm sóc</span>
+<span class="inline-block w-1 h-1 rounded-full bg-border"></span>
+<span class="text-forest font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">event_repeat</span>
+              Chu kỳ đồng bộ: Hằng tuần
+            </span>
+</div>
+<div class="flex items-center gap-4">
+<!-- Dấu hiệu minh họa theo yêu cầu -->
+<span class="px-2 py-0.5 rounded bg-surface border border-border text-muted font-medium">
+              Dữ liệu minh họa
+            </span>
+<div class="flex items-center gap-1">
+<button class="h-8 w-8 rounded border border-border bg-surface text-muted flex items-center justify-center hover:bg-forest-wash disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined text-sm">chevron_left</span>
+</button>
+<button class="h-8 w-8 rounded border border-forest bg-forest text-on-primary font-semibold flex items-center justify-center text-xs">
+                1
+              </button>
+<button class="h-8 w-8 rounded border border-border bg-surface text-muted flex items-center justify-center hover:bg-forest-wash hover:text-ink text-xs">
+                2
+              </button>
+<button class="h-8 w-8 rounded border border-border bg-surface text-muted flex items-center justify-center hover:bg-forest-wash hover:text-ink text-xs">
+                3
+              </button>
+<button class="h-8 w-8 rounded border border-border bg-surface text-muted flex items-center justify-center hover:bg-forest-wash text-muted">
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- SECTION: BOTTOM NOTIFICATION & PROTOCOL RULES -->
+<div class="rounded-panel border border-border bg-surface p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-muted">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-full bg-forest-wash text-forest flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[20px]">notifications_active</span>
+</div>
+<div>
+<div class="font-label text-label text-ink font-semibold">Quy chuẩn cảnh báo y tế chủ động</div>
+<p class="font-metadata text-metadata text-muted mt-0.5">
+              Hệ thống tự động kích hoạt thông báo nhắc nhở trước 7 ngày cho Bác sĩ thú y và Groom phụ trách ô chuồng
+            </p>
+</div>
+</div>
+<div class="flex items-center gap-3 shrink-0 text-xs">
+<span class="flex items-center gap-1 text-forest font-medium">
+<span class="material-symbols-outlined text-[15px]">send</span>
+            Kênh: App EquiFlow &amp; SMS
+          </span>
+<span class="inline-block w-1 h-1 rounded-full bg-border"></span>
+<a class="text-forest hover:underline font-semibold" href="#">Cấu hình thời gian gửi</a>
+</div>
+</div>
+</main>
+</div>
+<!-- MODAL / POPOVER TIỆN ÍCH: XÁC NHẬN HOÀN TẤT CHĂM SÓC -->
+<div class="fixed inset-0 z-50 bg-ink/40 backdrop-blur-xs flex items-center justify-center hidden p-4" id="completeModal">
+<div class="bg-surface rounded-panel border border-border w-full max-w-lg shadow-xl overflow-hidden transition-all transform animate-in fade-in zoom-in-95 duration-150">
+<!-- Modal Header -->
+<div class="px-space-lg py-4 border-b border-border flex items-center justify-between bg-canvas/40">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-forest text-on-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+</div>
+<div>
+<h3 class="font-section-heading text-section-heading text-ink font-bold">Xác nhận hoàn tất chăm sóc</h3>
+<p class="font-metadata text-metadata text-muted">Ghi nhận thông tin thực thi y tế vào bệnh án điện tử</p>
+</div>
+</div>
+<button class="w-8 h-8 rounded-md text-muted hover:text-ink hover:bg-forest-wash flex items-center justify-center transition-colors" onclick="closeModal()">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<!-- Modal Body / Form -->
+<form class="p-space-lg space-y-4" onsubmit="handleFormSubmit(event)">
+<!-- Target Horse & Category Readonly info -->
+<div class="p-3 bg-canvas rounded-lg border border-border flex items-center justify-between">
+<div>
+<div class="font-metadata text-metadata text-muted">Chiến mã &amp; Danh mục</div>
+<div class="font-label text-label text-ink font-bold mt-0.5" id="modalHorseName">Phong Vũ (A01)</div>
+<div class="font-metadata text-metadata text-forest font-medium" id="modalTaskName">Vắc-xin Cúm Equine Influenza</div>
+</div>
+<span class="px-2.5 py-1 rounded bg-positive-bg text-positive-text font-metadata text-metadata font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">stethoscope</span>
+            Đúng phác đồ
+          </span>
+</div>
+<!-- Field 1: Người thực hiện -->
+<div>
+<label class="block font-label text-label text-ink mb-1.5">
+            Người thực hiện <span class="text-error">*</span>
+</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-[18px]">person</span>
+<input class="w-full h-11 pl-9 pr-3 rounded-[6px] border border-border bg-surface text-ink font-body text-body focus:border-forest focus:ring-1 focus:ring-forest outline-none" id="modalExecutor" required="" type="text" value="Trần Văn Nam - Groom">
+</div>
+<p class="font-metadata text-metadata text-muted mt-1">Groom chịu trách nhiệm an toàn trong quá trình thao tác</p>
+</div>
+<!-- Field 2: Số lô thuốc / vắc-xin -->
+<div>
+<label class="block font-label text-label text-ink mb-1.5">
+            Số lô vắc-xin / thuốc *
+          </label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-[18px]">inventory_2</span>
+<input class="w-full h-11 pl-9 pr-3 rounded-[6px] border border-border bg-surface text-ink font-body text-body focus:border-forest focus:ring-1 focus:ring-forest outline-none font-mono text-sm" id="modalBatch" placeholder="VD: EQ-VAC-2025-08B hoặc Lô farrier" required="" type="text" value="EQ-VAC-2025-08B">
+</div>
+<p class="font-metadata text-metadata text-muted mt-1">Truy xuất nguồn gốc dược phẩm theo tiêu chuẩn FEI</p>
+</div>
+<!-- Field 3: Ghi chú thể trạng sau tiêm / móng -->
+<div>
+<label class="block font-label text-label text-ink mb-1.5">
+            Ghi chú thể trạng sau tiêm / móng
+          </label>
+<textarea class="w-full p-2.5 rounded-[6px] border border-border bg-surface text-ink font-body text-body focus:border-forest focus:ring-1 focus:ring-forest outline-none resize-none" placeholder="Thể trạng bình thường, không có dấu hiệu sưng tấy cơ vai, nhiệt độ 37.8°C ổn định..." rows="3"></textarea>
+</div>
+<!-- Modal Footer Actions -->
+<div class="pt-3 border-t border-border flex items-center justify-end gap-2.5">
+<button class="h-11 px-4 rounded-[7px] border border-border text-muted hover:text-ink hover:bg-forest-wash font-label text-label transition-colors" onclick="closeModal()" type="button">
+            Hủy thao tác
+          </button>
+<button class="h-11 px-5 rounded-[7px] bg-forest text-on-primary font-label text-label hover:bg-forest-deep flex items-center gap-2 shadow-xs transition-colors" type="submit">
+<span class="material-symbols-outlined text-[19px]">check</span>
+<span>Xác nhận hoàn tất</span>
+</button>
+</div>
+</form>
+</div>
+</div>
+<!-- Inline Interaction Scripts -->
+<script>
+    function openModal(horseName, taskName, executor, batch) {
+      document.getElementById('modalHorseName').innerText = horseName;
+      document.getElementById('modalTaskName').innerText = taskName;
+      document.getElementById('modalExecutor').value = executor + " - Groom";
+      document.getElementById('modalBatch').value = batch;
+      document.getElementById('completeModal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('completeModal').classList.add('hidden');
+    }
+
+    function handleFormSubmit(e) {
+      e.preventDefault();
+      closeModal();
+      alert("Đã ghi nhận hoàn tất và cập nhật sổ theo dõi sức khỏe thành công!");
+    }
+
+    // Close modal on Escape
+    window.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeModal();
+      }
+    });
+  </script>
+</body></html>

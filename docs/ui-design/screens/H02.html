@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html class="h-full bg-canvas" lang="vi"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>[GH-BE-08][FR-002][H02] Quản lý Hồ sơ &amp; Định danh ngựa (Microchip RFID) — Tạo và sửa hồ sơ ngựa</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Google Fonts: Manrope -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-secondary-fixed": "#002116",
+            "forest": "#315D4B",
+            "canvas": "#F5F6F3",
+            "outline": "#717974",
+            "surface-bright": "#f9faf7",
+            "positive-bg": "#E8F3EB",
+            "on-error-container": "#93000a",
+            "surface-container": "#edeeeb",
+            "surface-container-lowest": "#ffffff",
+            "on-tertiary-fixed": "#34100e",
+            "on-error": "#ffffff",
+            "on-primary": "#ffffff",
+            "secondary": "#446557",
+            "on-primary-container": "#a5d4bd",
+            "on-secondary-fixed-variant": "#2c4d40",
+            "surface-tint": "#3b6754",
+            "surface-container-highest": "#e2e3e0",
+            "surface-container-high": "#e7e8e6",
+            "inverse-surface": "#2e312f",
+            "outline-variant": "#c0c8c2",
+            "critical-text": "#922D3C",
+            "tertiary-fixed": "#ffdad7",
+            "inverse-primary": "#a2d1ba",
+            "tertiary-container": "#794744",
+            "surface-variant": "#e2e3e0",
+            "secondary-fixed-dim": "#aacfbd",
+            "tertiary": "#5e312e",
+            "critical-bg": "#FAE9EB",
+            "quarantine-text": "#65517D",
+            "ink": "#202B28",
+            "border": "#DCE3DD",
+            "primary-fixed": "#bdedd6",
+            "primary-container": "#315d4b",
+            "forest-deep": "#234437",
+            "on-surface": "#191c1b",
+            "on-secondary": "#ffffff",
+            "quarantine-bg": "#F1EDF6",
+            "surface-container-low": "#f3f4f1",
+            "surface-dim": "#d9dad7",
+            "primary-fixed-dim": "#a2d1ba",
+            "warning-text": "#875B15",
+            "background": "#f9faf7",
+            "inverse-on-surface": "#f0f1ee",
+            "error-container": "#ffdad6",
+            "error": "#ba1a1a",
+            "tertiary-fixed-dim": "#f9b6b1",
+            "secondary-container": "#c6ebd8",
+            "on-tertiary-container": "#fcb9b4",
+            "on-secondary-container": "#4a6b5d",
+            "muted": "#65716B",
+            "on-background": "#191c1b",
+            "secondary-fixed": "#c6ebd8",
+            "on-tertiary-fixed-variant": "#693937",
+            "on-primary-fixed": "#002115",
+            "surface": "#FFFFFF",
+            "on-surface-variant": "#414944",
+            "on-tertiary": "#ffffff",
+            "warning-bg": "#FFF4DD",
+            "primary": "#184535",
+            "positive-text": "#276442",
+            "forest-wash": "#EAF1EC",
+            "on-primary-fixed-variant": "#224f3d"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-md": "16px",
+            "space-lg": "24px",
+            "space-sm": "8px",
+            "space-xs": "4px",
+            "margin": "32px",
+            "gutter": "24px",
+            "space-xl": "32px"
+          },
+          "fontFamily": {
+            "page-title": ["Manrope"],
+            "body-lg": ["Manrope"],
+            "metadata": ["Manrope"],
+            "auth-heading": ["Manrope"],
+            "label": ["Manrope"],
+            "body": ["Manrope"],
+            "section-heading": ["Manrope"]
+          },
+          "fontSize": {
+            "page-title": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "metadata": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "auth-heading": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+            "label": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "body": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "section-heading": ["18px", { "lineHeight": "26px", "fontWeight": "650" }]
+          }
+        },
+      },
+    }
+  </script>
+<style id="equiflow-reviewed-layout">
+   html,body{max-width:100%;} .ef-sidebar{width:224px!important;min-width:224px;background:#fff!important;border-right:1px solid #dce3dd;padding:24px 14px!important;display:flex;flex-direction:column;gap:24px}.ef-brand{font:700 24px/1.2 Manrope,'Segoe UI',sans-serif;color:#315d4b}.ef-brand small{display:block;font:11px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin-top:8px}.ef-role-nav{display:flex;flex-direction:column;gap:5px}.ef-role-nav a{padding:11px 12px;min-height:44px;border-radius:6px;font:500 14px/22px Manrope,'Segoe UI',sans-serif;color:#3e4e45;text-decoration:none;white-space:normal}.ef-role-nav a:hover,.ef-role-nav a[aria-current=page]{background:#eaf1ec;color:#315d4b}.ef-role-label{margin-top:auto;font-size:12px;color:#65716b}.ef-role-label a{display:block;padding-top:12px;color:#315d4b}.ef-sample-notice{font:12px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin:0 0 14px}.ef-mobile-nav{display:none}input,select,textarea{max-width:100%}button,a,input,select,textarea{touch-action:manipulation}
+   @media(max-width:1023px){[data-review-kind=app] header,[data-review-kind=app] main .flex{flex-wrap:wrap}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important}[data-review-kind=app] .flex-1{min-width:0}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{max-width:100%;min-width:0}[data-review-kind=app] header>div{max-width:100%;flex-wrap:wrap}}
+   @media(max-width:767px){body[data-review-kind=app]{display:block!important;height:auto!important;min-height:100dvh}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important;height:auto}}
+   @media(max-width:767px){.ef-sidebar{display:none!important}.ef-mobile-nav{display:block;position:relative;z-index:200;background:white;border-bottom:1px solid #dce3dd;padding:12px 16px}.ef-mobile-nav summary{min-height:44px;cursor:pointer;display:flex;align-items:center;font-weight:700;color:#315d4b}.ml-56,.ml-64,[class~='ml-[224px]'],[class~='ml-[240px]'],main[style*='margin-left']{margin-left:0!important}main{min-width:0!important;max-width:100%!important}header{flex-wrap:wrap!important;gap:8px!important;height:auto!important}footer{flex-wrap:wrap!important;gap:12px}h1{overflow-wrap:anywhere}.ef-role-nav{max-width:100%}[data-review-kind=app] .grid{grid-template-columns:minmax(0,1fr)!important}[data-review-kind=app] .flex{min-width:0;flex-wrap:wrap}[data-review-kind=app] table,[data-review-kind=app] tbody,[data-review-kind=app] tr{display:block;width:100%}[data-review-kind=app] thead{display:none}[data-review-kind=app] tr{padding:12px 0;border-bottom:1px solid #dce3dd}[data-review-kind=app] td{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;white-space:normal!important;padding:8px 12px;min-width:0;overflow-wrap:anywhere}[data-review-kind=app] td:before{content:attr(data-label);color:#65716b;font-size:12px;flex:0 0 35%}[data-review-kind=app] td>*{min-width:0;max-width:100%}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{width:100%}}
+  </style></head>
+<body class="h-full bg-canvas text-ink antialiased flex flex-row font-body" data-review-kind="app">
+<!-- SideNavBar Component -->
+<aside class="w-56 h-screen sticky top-0 flex flex-col justify-between p-space-sm z-30 bg-surface dark:bg-inverse-surface border-r border-border dark:border-outline-variant shrink-0 ef-sidebar"><div class="ef-brand">EquiFlow<small>Quản lý huấn luyện ngựa đua</small></div><nav class="ef-role-nav" aria-label="Điều hướng Quản lý CLB"><a href="M01.html">Tổng quan</a><a href="H01.html">Hồ sơ ngựa</a><a href="H04.html">Ô chuồng</a><a href="V01.html">Sức khỏe</a><a href="M02.html">Nhân sự</a><a href="M04.html">Nhật ký hệ thống</a></nav><div class="ef-role-label">Quản lý CLB<a href="AUTH01.html">Đăng xuất</a></div></aside>
+<!-- Right Content Area -->
+<div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+<!-- TopNavBar Component -->
+<header class="h-16 w-full flex items-center justify-between px-gutter sticky top-0 z-20 bg-surface dark:bg-inverse-surface border-b border-border dark:border-outline-variant shrink-0">
+<div class="flex items-center gap-6 flex-1 max-w-xl">
+<span class="font-section-heading text-section-heading font-bold text-forest dark:text-inverse-primary whitespace-nowrap">Thống Nhất Equine Club</span>
+<!-- Search bar on left -->
+<div class="relative w-full max-w-xs">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-[18px]">search</span>
+<input class="w-full h-9 pl-9 pr-3 rounded-lg border border-border bg-canvas text-ink text-body placeholder:text-muted focus:outline-none focus:border-forest text-xs" placeholder="Tìm kiếm mã vi chip, tên..." type="text">
+</div>
+</div>
+<!-- Trailing actions & Profile -->
+<div class="flex items-center gap-space-md">
+<button class="w-9 h-9 flex items-center justify-center rounded-lg text-muted hover:text-forest hover:bg-forest-wash transition-colors duration-150" title="Lịch trình" type="button">
+<span class="material-symbols-outlined text-[20px]">calendar_today</span>
+</button>
+<button class="w-9 h-9 flex items-center justify-center rounded-lg text-muted hover:text-forest hover:bg-forest-wash transition-colors duration-150 relative" title="Thông báo" type="button">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-error"></span>
+</button>
+<button class="h-9 px-3 rounded-lg bg-forest text-on-primary font-label text-label flex items-center gap-1.5 hover:bg-forest-deep transition-colors duration-150" type="button">
+<span class="material-symbols-outlined text-[18px]">post_add</span>
+<span>Thêm ghi nhận</span>
+</button>
+<div class="h-6 w-px bg-border"></div>
+<div class="flex items-center gap-2 pl-1 cursor-pointer">
+<div class="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-label text-xs font-bold">
+            QL
+          </div>
+<div class="hidden lg:flex flex-col text-left">
+<span class="font-label text-label text-ink leading-tight">Đặng Văn Thành</span>
+<span class="font-metadata text-metadata text-muted">Quản lý / HLV trưởng</span>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Workspace Container -->
+<main class="flex-1 px-8 py-8"><p class="ef-sample-notice">Dữ liệu minh họa · Bản thiết kế giao diện</p>
+<div class="max-w-[960px] mx-auto flex flex-col gap-6">
+<!-- Breadcrumb & Page Title Header -->
+<div class="flex flex-col gap-1">
+<nav class="flex items-center gap-2 font-metadata text-metadata text-muted">
+<a class="hover:text-forest transition-colors" href="#">Hồ sơ đàn ngựa</a>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="text-ink font-semibold">Thêm mới chiến mã</span>
+</nav>
+<div class="flex items-center justify-between mt-1">
+<h1 class="font-page-title text-page-title text-ink tracking-tight">Tạo và sửa hồ sơ ngựa</h1>
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-label bg-forest-wash text-positive-text border border-forest/20">
+<span class="w-1.5 h-1.5 rounded-full bg-positive-text"></span>
+              Phân quyền: HLV trưởng
+            </span>
+</div>
+</div>
+<!-- Main Work Surface Panel -->
+<form class="bg-surface rounded-[10px] border border-border p-8 flex flex-col gap-8 shadow-none" onsubmit="event.preventDefault();">
+<!-- Section Heading & Notice Banner -->
+<div class="border-b border-border pb-6 flex flex-col gap-3">
+<div>
+<h2 class="font-section-heading text-section-heading text-ink font-bold">Thông tin hồ sơ chiến mã</h2>
+<p class="font-body text-body text-muted mt-1">
+                Nhập thông tin định danh và phân bổ quyền sở hữu. Lưu ý: Mã vi chip RFID sau khi kích hoạt sẽ được liên kết vĩnh viễn với hồ sơ y tế.
+              </p>
+</div>
+<!-- Caution alert -->
+<div class="flex items-start gap-3 p-3.5 rounded-lg bg-warning-bg border border-warning-text/20 text-warning-text font-body text-xs leading-relaxed">
+<span class="material-symbols-outlined text-[18px] shrink-0 text-warning-text">lock</span>
+<span>Hồ sơ định danh vi chip là căn cứ kiểm soát thú y và di chuyển chuồng trại. Vui lòng rà soát chính xác số hiệu 15 chữ số ISO trước khi nhấn Lưu.</span>
+</div>
+</div>
+<!-- Form Fields Grid (2-Column balanced layout) -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
+<!-- Tên chiến mã * -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label text-label text-ink" for="horseName">
+                Tên chiến mã <span class="text-error">*</span>
+</label>
+<input class="h-[44px] px-3.5 rounded-lg border border-border bg-surface text-ink text-body placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-forest focus:border-forest transition-colors duration-150" id="horseName" placeholder="Ví dụ: Phong Vũ" required="" type="text" value="Phong Vũ">
+<span class="font-metadata text-metadata text-muted">Tên gọi chính thức dùng trong thi đấu và giấy chứng nhận</span>
+</div>
+<!-- Giống ngựa * -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label text-label text-ink" for="horseBreed">
+                Giống ngựa <span class="text-error">*</span>
+</label>
+<select class="h-[44px] px-3.5 rounded-lg border border-border bg-surface text-ink text-body focus:outline-none focus:ring-1 focus:ring-forest focus:border-forest transition-colors duration-150 cursor-pointer" id="horseBreed" required="">
+<option selected="" value="Thoroughbred">Thoroughbred (Thuần chủng Anh)</option>
+<option value="Arabian">Arabian</option>
+<option value="Quarter Horse">Quarter Horse</option>
+<option value="Warmblood">Warmblood</option>
+<option value="Khác">Khác</option>
+</select>
+<span class="font-metadata text-metadata text-muted">Xác định chuẩn thể lực và phân loại tập luyện</span>
+</div>
+<!-- Ngày sinh * -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label text-label text-ink" for="birthDate">
+                Ngày sinh <span class="text-error">*</span>
+</label>
+<input class="h-[44px] px-3.5 rounded-lg border border-border bg-surface text-ink text-body focus:outline-none focus:ring-1 focus:ring-forest focus:border-forest transition-colors duration-150" id="birthDate" required="" type="date" value="2021-03-15">
+<span class="font-metadata text-metadata text-warning-text flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">info</span>
+                Không được chọn ngày trong tương lai
+              </span>
+</div>
+<!-- Giới tính * -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label text-label text-ink" for="gender">
+                Giới tính <span class="text-error">*</span>
+</label>
+<select class="h-[44px] px-3.5 rounded-lg border border-border bg-surface text-ink text-body focus:outline-none focus:ring-1 focus:ring-forest focus:border-forest transition-colors duration-150 cursor-pointer" id="gender" required="">
+<option selected="" value="Stallion">Đực (Stallion)</option>
+<option value="Gelding">Đực thiến (Gelding)</option>
+<option value="Mare">Cái (Mare)</option>
+</select>
+<span class="font-metadata text-metadata text-muted">Quy định quy chuẩn tách đàn và kế hoạch chuồng trại</span>
+</div>
+<!-- Màu lông * -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label text-label text-ink" for="coatColor">
+                Màu lông <span class="text-error">*</span>
+</label>
+<select class="h-[44px] px-3.5 rounded-lg border border-border bg-surface text-ink text-body focus:outline-none focus:ring-1 focus:ring-forest focus:border-forest transition-colors duration-150 cursor-pointer" id="coatColor" required="">
+<option selected="" value="Chestnut">Hạt dẻ (Chestnut / Bay)</option>
+<option value="Dark Bay">Nâu đen (Dark Bay)</option>
+<option value="Black">Đen (Black)</option>
+<option value="Grey">Xám / Bạch (Grey)</option>
+</select>
+<span class="font-metadata text-metadata text-muted">Màu sắc thực tế đối chiếu theo sổ đăng ký</span>
+</div>
+<!-- Mã microchip / RFID (15 chữ số ISO 11784/11785) * -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label text-label text-ink" for="rfidCode">
+                Mã microchip / RFID (15 chữ số ISO 11784/11785) <span class="text-error">*</span>
+</label>
+<div class="relative">
+<input class="w-full h-[44px] pl-3.5 pr-10 rounded-lg border border-forest bg-surface text-ink font-mono text-body focus:outline-none focus:ring-1 focus:ring-forest" id="rfidCode" required="" type="text" value="VNM-123456789012">
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-positive-text text-[20px]" style="font-variation-settings: 'FILL' 1;">
+                  check_circle
+                </span>
+</div>
+<div class="flex items-center gap-1.5 font-metadata text-metadata text-positive-text">
+<span class="w-1.5 h-1.5 rounded-full bg-positive-text"></span>
+<span>Mã hợp lệ, chưa từng gán trong hệ thống</span>
+</div>
+</div>
+<!-- Chủ sở hữu được liên kết * -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label text-label text-ink" for="ownerSelect">
+                Chủ sở hữu được liên kết <span class="text-error">*</span>
+</label>
+<select class="h-[44px] px-3.5 rounded-lg border border-border bg-surface text-ink text-body focus:outline-none focus:ring-1 focus:ring-forest focus:border-forest transition-colors duration-150 cursor-pointer" id="ownerSelect" required="">
+<option selected="" value="TranMinhQuan">Trần Minh Quân (Tân Phú VIP)</option>
+<option value="VuDinhQuan">Vũ Đình Quân</option>
+<option value="LeThiMai">Lê Thị Mai</option>
+<option value="PhamHoangNam">Phạm Hoàng Nam</option>
+</select>
+<span class="font-metadata text-metadata text-muted">Tự động gắn mã thanh toán và cấp thẻ tham quan chuồng</span>
+</div>
+<!-- Ô chuồng ban đầu (Tùy chọn) -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label text-label text-ink" for="stallSelect">
+                Ô chuồng ban đầu (Tùy chọn)
+              </label>
+<select class="h-[44px] px-3.5 rounded-lg border border-border bg-surface text-ink text-body focus:outline-none focus:ring-1 focus:ring-forest focus:border-forest transition-colors duration-150 cursor-pointer" id="stallSelect">
+<option value="none">Chưa gán ô chuồng</option>
+<option selected="" value="A01">Khu A - Ô A01 (Đang trống)</option>
+<option value="B02">Khu B - Ô B02 (Đang trống)</option>
+</select>
+<span class="font-metadata text-metadata text-muted">Có thể bàn giao chuồng sau thông qua Quản lý Chuồng trại</span>
+</div>
+<!-- Ghi chú nhân dạng / Dấu vết đặc biệt (Span 2 cols) -->
+<div class="col-span-1 md:col-span-2 flex flex-col gap-1.5">
+<label class="font-label text-label text-ink" for="markingNotes">
+                Ghi chú nhân dạng / Dấu vết đặc biệt
+              </label>
+<textarea class="p-3.5 rounded-lg border border-border bg-surface text-ink text-body focus:outline-none focus:ring-1 focus:ring-forest focus:border-forest transition-colors duration-150 leading-relaxed resize-none" id="markingNotes" rows="3">Vệt sao trắng giữa trán (Star marking), 2 cẳng chân sau có khoang trắng (Socks).</textarea>
+<span class="font-metadata text-metadata text-muted">Ghi nhận các vết sẹo đặc hữu, xoáy lông hoặc đốm trắng nhận dạng chuẩn FEI</span>
+</div>
+<!-- Tải ảnh đại diện nhận diện (Span 2 cols) -->
+<div class="col-span-1 md:col-span-2 flex flex-col gap-2">
+<label class="font-label text-label text-ink">
+                Tải ảnh đại diện nhận diện
+              </label>
+<div class="border border-border rounded-xl p-4 bg-canvas flex flex-col sm:flex-row items-center gap-6">
+<!-- Preview Image Thumbnail -->
+<div class="relative w-36 h-28 rounded-lg overflow-hidden border border-border shrink-0 bg-surface shadow-sm">
+<img class="w-full h-full object-cover" data-alt="A dignified chestnut Thoroughbred horse standing gracefully in a clean, modern equestrian stable aisle with soft warm daylight filtering from high timber rafters. The horse has a gentle demeanor, a glossy groomed coat with subtle muscular definition, and a distinct white star marking on its forehead. The aesthetic is clean, professional, and tranquil with natural earth tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDa-MgJWRuCdKkvtHM1PGBkwpyWVukcJnCrL7mD978hdiC-f1RdMKuCNrgSZkea_QRrTfJVWsjsfRvnE6mPlQ0j92T7CLl2lPqZ8shzoZXsFNx4OFK-4_7QAbagZ_LV-lTc1uT1Gqmw9FqmqFS8_urGG005ns9YtIDTcQeyWFXZnKAp1SBVQbaUlNXa7Puu8_O5QY1ESmW0432-B1cGCCKO0x6HZJjc58xlYSC_-sabr5ZcpGt1tEnbhdIJAXOKyp6TpRmrbUKRUg">
+<div class="absolute bottom-1 right-1 bg-ink/75 backdrop-blur-xs text-white text-[10px] px-1.5 py-0.5 rounded font-metadata">
+                    Dữ liệu minh họa
+                  </div>
+</div>
+<!-- Upload Details & Button -->
+<div class="flex-1 flex flex-col items-start gap-2">
+<div class="flex items-center gap-2">
+<span class="font-label text-label text-ink font-semibold">Ảnh chụp góc nghiêng 45 độ</span>
+<span class="px-2 py-0.5 rounded text-[11px] font-medium bg-forest-wash text-forest">Đạt chuẩn ISO</span>
+</div>
+<p class="font-metadata text-metadata text-muted">
+                    Hỗ trợ định dạng JPG, PNG dung lượng dưới 10MB. Ảnh cần rõ nét đầu, cổ và 4 chân để đối chiếu dấu vết cơ thể.
+                  </p>
+<div class="flex items-center gap-3 mt-1">
+<button class="h-9 px-4 rounded-lg bg-surface border border-border hover:border-forest hover:bg-forest-wash text-ink font-label text-xs flex items-center gap-2 transition-colors duration-150" type="button">
+<span class="material-symbols-outlined text-[16px] text-forest">file_upload</span>
+<span>Chọn ảnh từ máy</span>
+</button>
+<span class="font-metadata text-metadata text-muted">phong_vu_side_profile.jpg (2.4 MB)</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Form Actions Bottom Bar -->
+<div class="border-t border-border pt-6 flex items-center justify-between">
+<span class="font-metadata text-metadata text-muted">
+<span class="text-error">*</span> Thông tin bắt buộc phải hoàn thành trước khi xác nhận
+            </span>
+<div class="flex items-center gap-3">
+<button class="h-[44px] px-6 rounded-[7px] border border-border bg-surface text-ink hover:bg-canvas font-label text-label transition-colors duration-150" type="button">
+                Hủy bỏ
+              </button>
+<button class="h-[44px] px-6 rounded-[7px] bg-forest text-on-primary font-label text-label hover:bg-forest-deep shadow-sm transition-colors duration-150 flex items-center gap-2" type="submit">
+<span class="material-symbols-outlined text-[18px]">check</span>
+<span>Lưu hồ sơ chiến mã</span>
+</button>
+</div>
+</div>
+</form>
+</div>
+</main>
+</div>
+</body></html>

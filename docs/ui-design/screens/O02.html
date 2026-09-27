@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="vi"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>[GH-BE-17][FR-007][O02] Ghi nhận kết quả buổi tập, đánh giá phong độ &amp; Cập nhật biểu đồ thể lực — Nhật ký huấn luyện của ngựa</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Manrope Font -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS with CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-secondary": "#ffffff",
+            "primary-fixed": "#bdedd6",
+            "outline-variant": "#c0c8c2",
+            "canvas": "#F5F6F3",
+            "surface-container-low": "#f3f4f1",
+            "on-primary-container": "#a5d4bd",
+            "on-error-container": "#93000a",
+            "warning-text": "#875B15",
+            "surface-dim": "#d9dad7",
+            "surface-bright": "#f9faf7",
+            "on-tertiary-container": "#fcb9b4",
+            "forest-wash": "#EAF1EC",
+            "inverse-on-surface": "#f0f1ee",
+            "forest-deep": "#234437",
+            "surface-container-highest": "#e2e3e0",
+            "critical-text": "#922D3C",
+            "inverse-surface": "#2e312f",
+            "on-tertiary": "#ffffff",
+            "ink": "#202B28",
+            "on-secondary-container": "#4a6b5d",
+            "critical-bg": "#FAE9EB",
+            "surface-tint": "#3b6754",
+            "primary-fixed-dim": "#a2d1ba",
+            "secondary-fixed-dim": "#aacfbd",
+            "background": "#f9faf7",
+            "secondary-container": "#c6ebd8",
+            "secondary": "#446557",
+            "on-tertiary-fixed-variant": "#693937",
+            "forest": "#315D4B",
+            "tertiary-fixed-dim": "#f9b6b1",
+            "primary": "#184535",
+            "surface": "#FFFFFF",
+            "secondary-fixed": "#c6ebd8",
+            "outline": "#717974",
+            "tertiary-container": "#794744",
+            "surface-container": "#edeeeb",
+            "muted": "#65716B",
+            "on-secondary-fixed-variant": "#2c4d40",
+            "warning-bg": "#FFF4DD",
+            "positive-bg": "#E8F3EB",
+            "surface-container-high": "#e7e8e6",
+            "quarantine-bg": "#F1EDF6",
+            "on-secondary-fixed": "#002116",
+            "on-surface-variant": "#414944",
+            "surface-variant": "#e2e3e0",
+            "error": "#ba1a1a",
+            "on-tertiary-fixed": "#34100e",
+            "on-primary-fixed": "#002115",
+            "surface-container-lowest": "#ffffff",
+            "tertiary-fixed": "#ffdad7",
+            "primary-container": "#315d4b",
+            "on-primary-fixed-variant": "#224f3d",
+            "positive-text": "#276442",
+            "on-surface": "#191c1b",
+            "quarantine-text": "#65517D",
+            "tertiary": "#5e312e",
+            "on-error": "#ffffff",
+            "on-background": "#191c1b",
+            "border": "#DCE3DD",
+            "error-container": "#ffdad6",
+            "on-primary": "#ffffff",
+            "inverse-primary": "#a2d1ba"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-xs": "4px",
+            "space-xl": "32px",
+            "space-md": "16px",
+            "gutter": "24px",
+            "margin": "32px",
+            "space-lg": "24px",
+            "space-sm": "8px"
+          },
+          "fontFamily": {
+            "page-title": ["Manrope"],
+            "auth-heading": ["Manrope"],
+            "metadata": ["Manrope"],
+            "body-lg": ["Manrope"],
+            "label": ["Manrope"],
+            "body": ["Manrope"],
+            "section-heading": ["Manrope"]
+          },
+          "fontSize": {
+            "page-title": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "auth-heading": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+            "metadata": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "label": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "body": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "section-heading": ["18px", { "lineHeight": "26px", "fontWeight": "650" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body {
+      font-family: 'Manrope', sans-serif;
+      background-color: #F5F6F3;
+      color: #202B28;
+    }
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 20px;
+      line-height: 1;
+      letter-spacing: normal;
+      text-transform: none;
+      display: inline-block;
+      white-space: nowrap;
+      word-wrap: normal;
+      direction: ltr;
+      -webkit-font-smoothing: antialiased;
+    }
+  </style>
+<style id="equiflow-reviewed-layout">
+   html,body{max-width:100%;} .ef-sidebar{width:224px!important;min-width:224px;background:#fff!important;border-right:1px solid #dce3dd;padding:24px 14px!important;display:flex;flex-direction:column;gap:24px}.ef-brand{font:700 24px/1.2 Manrope,'Segoe UI',sans-serif;color:#315d4b}.ef-brand small{display:block;font:11px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin-top:8px}.ef-role-nav{display:flex;flex-direction:column;gap:5px}.ef-role-nav a{padding:11px 12px;min-height:44px;border-radius:6px;font:500 14px/22px Manrope,'Segoe UI',sans-serif;color:#3e4e45;text-decoration:none;white-space:normal}.ef-role-nav a:hover,.ef-role-nav a[aria-current=page]{background:#eaf1ec;color:#315d4b}.ef-role-label{margin-top:auto;font-size:12px;color:#65716b}.ef-role-label a{display:block;padding-top:12px;color:#315d4b}.ef-sample-notice{font:12px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin:0 0 14px}.ef-mobile-nav{display:none}input,select,textarea{max-width:100%}button,a,input,select,textarea{touch-action:manipulation}
+   @media(max-width:1023px){[data-review-kind=app] header,[data-review-kind=app] main .flex{flex-wrap:wrap}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important}[data-review-kind=app] .flex-1{min-width:0}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{max-width:100%;min-width:0}[data-review-kind=app] header>div{max-width:100%;flex-wrap:wrap}}
+   @media(max-width:767px){body[data-review-kind=app]{display:block!important;height:auto!important;min-height:100dvh}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important;height:auto}}
+   @media(max-width:767px){.ef-sidebar{display:none!important}.ef-mobile-nav{display:block;position:relative;z-index:200;background:white;border-bottom:1px solid #dce3dd;padding:12px 16px}.ef-mobile-nav summary{min-height:44px;cursor:pointer;display:flex;align-items:center;font-weight:700;color:#315d4b}.ml-56,.ml-64,[class~='ml-[224px]'],[class~='ml-[240px]'],main[style*='margin-left']{margin-left:0!important}main{min-width:0!important;max-width:100%!important}header{flex-wrap:wrap!important;gap:8px!important;height:auto!important}footer{flex-wrap:wrap!important;gap:12px}h1{overflow-wrap:anywhere}.ef-role-nav{max-width:100%}[data-review-kind=app] .grid{grid-template-columns:minmax(0,1fr)!important}[data-review-kind=app] .flex{min-width:0;flex-wrap:wrap}[data-review-kind=app] table,[data-review-kind=app] tbody,[data-review-kind=app] tr{display:block;width:100%}[data-review-kind=app] thead{display:none}[data-review-kind=app] tr{padding:12px 0;border-bottom:1px solid #dce3dd}[data-review-kind=app] td{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;white-space:normal!important;padding:8px 12px;min-width:0;overflow-wrap:anywhere}[data-review-kind=app] td:before{content:attr(data-label);color:#65716b;font-size:12px;flex:0 0 35%}[data-review-kind=app] td>*{min-width:0;max-width:100%}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{width:100%}}
+  </style></head>
+<body class="bg-canvas text-ink antialiased" data-review-kind="app">
+<!-- Fixed Owner Portal Sidebar (224px width) -->
+<aside class="fixed left-0 top-0 bottom-0 w-56 z-50 flex flex-col justify-between py-5 px-3 bg-surface border-r border-border ef-sidebar"><div class="ef-brand">EquiFlow<small>Quản lý huấn luyện ngựa đua</small></div><nav class="ef-role-nav" aria-label="Điều hướng Chủ ngựa"><a href="O01.html">Ngựa của tôi</a><a href="O02.html" aria-current="page">Nhật ký huấn luyện</a></nav><div class="ef-role-label">Chủ ngựa<a href="AUTH01.html">Đăng xuất</a></div></aside>
+<!-- Main Layout Wrapper (Left margin 224px for sidebar, top margin 64px for topbar) -->
+<div class="ml-56 min-h-screen flex flex-col">
+<!-- TopBar (Height: 64px, Sticky / Fixed) -->
+<header class="sticky top-0 z-40 h-16 bg-surface border-b border-border px-8 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<!-- Equestrian Club Title -->
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-forest text-[22px]" data-icon="stadium">stadium</span>
+<span class="font-label text-label text-ink font-semibold tracking-tight">CLB Đua Ngựa Tân Phú</span>
+</div>
+<span class="text-border">|</span>
+<!-- VIP Badge -->
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-forest-wash border border-secondary-container text-forest font-label text-label">
+<span class="material-symbols-outlined text-[16px]" data-icon="stars" style="font-variation-settings: 'FILL' 1;">stars</span>
+<span class="font-metadata text-metadata font-bold text-forest">Cổng thông tin Chủ ngựa VIP</span>
+</div>
+</div>
+<!-- Right User Controls -->
+<div class="flex items-center gap-5">
+<div class="flex items-center gap-2 text-muted">
+<span class="material-symbols-outlined text-[18px]" data-icon="visibility">visibility</span>
+<span class="font-metadata text-metadata font-medium">Chế độ xem minh bạch (Chỉ đọc)</span>
+</div>
+<div class="h-4 w-px bg-border"></div>
+<div class="flex items-center gap-3">
+<div class="text-right">
+<p class="font-label text-label text-ink font-semibold">Trần Minh Quân</p>
+<p class="font-metadata text-metadata text-muted">Chủ ngựa chính thức</p>
+</div>
+<div class="w-9 h-9 rounded-full bg-forest text-on-primary flex items-center justify-center font-label text-label shadow-sm">
+            Q
+          </div>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 p-8 max-w-[1216px] mx-auto w-full"><p class="ef-sample-notice">Dữ liệu minh họa · Bản thiết kế giao diện</p>
+<!-- Screen Header & Guarantee Banner -->
+<div class="mb-6 flex flex-col gap-4">
+<div class="flex items-start justify-between">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="font-metadata text-metadata text-muted">MÃ NGHIỆP VỤ: O02 · FR-007</span>
+<span class="text-border">•</span>
+<span class="font-metadata text-metadata text-positive-text font-semibold flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-positive-text inline-block"></span> Đồng bộ thời gian thực
+              </span>
+</div>
+<h2 class="font-page-title text-page-title text-ink font-bold tracking-tight">
+              Nhật ký huấn luyện của chiến mã
+            </h2>
+<p class="font-body text-body text-muted mt-1 max-w-3xl">
+              Theo dõi dòng thời gian tập luyện thực tế, chỉ số sức bền và nhận xét minh bạch từ Huấn luyện viên trưởng.
+            </p>
+</div>
+<!-- Non-editable Read-only status indicator -->
+<div class="px-3.5 py-2 rounded-lg bg-surface border border-border flex items-center gap-2 text-muted">
+<span class="material-symbols-outlined text-[18px] text-forest" data-icon="lock">lock</span>
+<span class="font-metadata text-metadata font-medium">Hồ sơ công chứng số · Không sửa đổi</span>
+</div>
+</div>
+<!-- Banner bảo chứng -->
+<div class="flex items-center justify-between px-4 py-3 bg-positive-bg border border-border rounded-xl">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-positive-text text-on-primary flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-[18px]" data-icon="verified_user" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+</div>
+<div>
+<p class="font-label text-label text-positive-text font-bold">
+                Quyền xem độc quyền - Dữ liệu được bảo chứng bởi Ban Giám Sát Huấn Luyện
+              </p>
+<p class="font-metadata text-metadata text-muted mt-0.5">
+                Các thông số vận tốc, cự ly và nhịp tim được truyền tải tự động từ thiết bị cảm biến yên cương, loại trừ hoàn toàn can thiệp thủ công.
+              </p>
+</div>
+</div>
+<span class="font-metadata text-metadata text-muted px-2.5 py-1 bg-surface rounded border border-border">
+            Mã lưu trữ: #EQF-TR-2025-03
+          </span>
+</div>
+</div>
+<!-- Filter Bar (3 selectors) -->
+<section class="bg-surface rounded-xl border border-border p-5 mb-6 shadow-none">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+<!-- Dropdown 1: Chọn chiến mã sở hữu -->
+<div>
+<label class="block font-label text-label text-ink mb-1.5 font-semibold">
+              Chiến mã sở hữu
+            </label>
+<div class="relative">
+<select class="w-full h-11 pl-3.5 pr-10 rounded-lg border border-border bg-surface text-ink font-body text-body appearance-none focus:outline-none focus:border-forest transition-colors cursor-pointer">
+<option selected="">Phong Vũ - VNM-123456789012 · Ô A01</option>
+<option disabled="">Bạch Long - VNM-987654321098 · Ô B04 (Đang nghỉ dưỡng)</option>
+</select>
+<div class="absolute right-3 top-3 pointer-events-none text-muted">
+<span class="material-symbols-outlined text-[18px]" data-icon="arrow_drop_down">arrow_drop_down</span>
+</div>
+</div>
+<p class="font-metadata text-metadata text-muted mt-1">Giống: Thoroughbred Thuần Chủng · 4 tuổi</p>
+</div>
+<!-- Dropdown 2: Chu kỳ thời gian -->
+<div>
+<label class="block font-label text-label text-ink mb-1.5 font-semibold">
+              Chu kỳ thời gian
+            </label>
+<div class="relative">
+<select class="w-full h-11 pl-3.5 pr-10 rounded-lg border border-border bg-surface text-ink font-body text-body appearance-none focus:outline-none focus:border-forest transition-colors cursor-pointer">
+<option selected="">Tháng 03/2025 (Hiện tại)</option>
+<option>Tháng 02/2025</option>
+<option>Tháng 01/2025</option>
+</select>
+<div class="absolute right-3 top-3 pointer-events-none text-muted">
+<span class="material-symbols-outlined text-[18px]" data-icon="calendar_month">calendar_month</span>
+</div>
+</div>
+<p class="font-metadata text-metadata text-muted mt-1">Giai đoạn: Chuẩn bị Cúp Mùa Xuân</p>
+</div>
+<!-- Dropdown 3: Loại bài tập -->
+<div>
+<label class="block font-label text-label text-ink mb-1.5 font-semibold">
+              Phân loại bài tập
+            </label>
+<div class="relative">
+<select class="w-full h-11 pl-3.5 pr-10 rounded-lg border border-border bg-surface text-ink font-body text-body appearance-none focus:outline-none focus:border-forest transition-colors cursor-pointer">
+<option selected="">Tất cả bài tập</option>
+<option>Chạy nước rút (Sprint / Turf)</option>
+<option>Hồi phục &amp; Cơ bắp (Cool-down Trot)</option>
+<option>Cự ly trung bình (Pace / Dirt)</option>
+<option>Xuất phát phản xạ cổng</option>
+</select>
+<div class="absolute right-3 top-3 pointer-events-none text-muted">
+<span class="material-symbols-outlined text-[18px]" data-icon="tune">tune</span>
+</div>
+</div>
+<p class="font-metadata text-metadata text-muted mt-1">Bộ lọc hiển thị toàn bộ 4 phiên thực địa</p>
+</div>
+</div>
+</section>
+<!-- Weekly Performance Summary Cards -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+<!-- Card 1: Tổng quãng đường tích lũy -->
+<div class="bg-surface rounded-xl border border-border p-5">
+<div class="flex items-center justify-between mb-3">
+<span class="font-label text-label text-muted">Tổng quãng đường tích lũy</span>
+<div class="w-8 h-8 rounded-lg bg-forest-wash text-forest flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]" data-icon="route">route</span>
+</div>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-page-title text-[32px] font-bold text-ink leading-none">24</span>
+<span class="font-label text-label text-muted font-medium">km / tuần</span>
+</div>
+<div class="mt-3 flex items-center gap-1.5 text-positive-text font-metadata text-metadata">
+<span class="material-symbols-outlined text-[16px]" data-icon="trending_up">trending_up</span>
+<span class="font-medium">+4.2 km so với chu kỳ tuần trước</span>
+</div>
+</div>
+<!-- Card 2: Số buổi hoàn thành -->
+<div class="bg-surface rounded-xl border border-border p-5">
+<div class="flex items-center justify-between mb-3">
+<span class="font-label text-label text-muted">Số buổi hoàn thành</span>
+<div class="w-8 h-8 rounded-lg bg-forest-wash text-forest flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]" data-icon="task_alt">task_alt</span>
+</div>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-page-title text-[32px] font-bold text-forest leading-none">5/5</span>
+<span class="font-label text-label text-muted font-medium">buổi huấn luyện</span>
+</div>
+<div class="mt-3 flex items-center gap-1.5 text-ink font-metadata text-metadata">
+<span class="material-symbols-outlined text-[16px] text-forest" data-icon="check_circle">check_circle</span>
+<span class="font-medium text-muted">Đạt 100% mục tiêu giáo án tuần 10</span>
+</div>
+</div>
+<!-- Card 3: Đánh giá phong độ -->
+<div class="bg-surface rounded-xl border border-border p-5">
+<div class="flex items-center justify-between mb-3">
+<span class="font-label text-label text-muted">Đánh giá thể trạng &amp; phong độ</span>
+<div class="w-8 h-8 rounded-lg bg-positive-bg text-positive-text flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]" data-icon="health_and_safety">health_and_safety</span>
+</div>
+</div>
+<div class="mt-1">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-positive-bg text-positive-text font-label text-label font-bold border border-secondary-container">
+<span class="w-2 h-2 rounded-full bg-positive-text"></span>
+              Sẵn sàng tham gia thi đấu
+            </span>
+</div>
+<p class="font-metadata text-metadata text-muted mt-3">
+            Chứng nhận y tế hợp lệ đến: 30/03/2025
+          </p>
+</div>
+</section>
+<!-- Section Title: Dòng thời gian nhật ký thực địa -->
+<div class="flex items-center justify-between mb-5">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-forest" data-icon="timeline">timeline</span>
+<h3 class="font-section-heading text-section-heading text-ink font-bold">
+            Dòng thời gian nhật ký thực địa (Mới nhất)
+          </h3>
+</div>
+<span class="font-metadata text-metadata text-muted">
+          Hiển thị 4 phiên tập đã ghi nhận
+        </span>
+</div>
+<!-- Timeline Entries Container -->
+<div class="space-y-6 relative before:absolute before:inset-0 before:left-4 before:w-0.5 before:bg-border before:-z-0">
+<!-- Entry 1: 12/03/2025 - Chạy nước rút 400m -->
+<article class="relative pl-10">
+<!-- Timeline Marker Pin -->
+<div class="absolute left-2 top-4 w-4.5 h-4.5 -translate-x-1/2 rounded-full bg-forest border-4 border-surface shadow-sm z-10"></div>
+<div class="bg-surface rounded-xl border border-border p-6 shadow-none">
+<!-- Header of Log Entry -->
+<div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-border">
+<div class="flex items-center gap-3">
+<span class="px-2.5 py-1 rounded bg-forest-wash text-forest font-label text-label font-bold">
+                  Ngày 12/03/2025 · 06:30
+                </span>
+<h4 class="font-section-heading text-section-heading text-ink font-bold">
+                  Chạy nước rút 400m trên sân cỏ Turf
+                </h4>
+</div>
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-positive-bg text-positive-text font-metadata text-metadata font-semibold">
+<span class="material-symbols-outlined text-[14px]" data-icon="check">check</span> Đã hoàn thành
+                </span>
+<span class="font-metadata text-metadata text-muted bg-surface-container-low px-2 py-0.5 rounded">Mã đo: #TK-8891</span>
+</div>
+</div>
+<!-- Quantitative Telemetry Metrics Grid -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 my-5 p-4 bg-canvas rounded-lg border border-border">
+<!-- Metric 1 -->
+<div>
+<span class="font-metadata text-metadata text-muted block mb-0.5">Cự ly thực tế</span>
+<span class="font-page-title text-[22px] font-bold text-ink leading-tight">400</span>
+<span class="font-metadata text-metadata text-muted font-medium ml-1">mét</span>
+</div>
+<!-- Metric 2 -->
+<div>
+<span class="font-metadata text-metadata text-muted block mb-0.5">Tốc độ cao nhất</span>
+<span class="font-page-title text-[22px] font-bold text-forest leading-tight">64.8</span>
+<span class="font-metadata text-metadata text-muted font-medium ml-1">km/h</span>
+</div>
+<!-- Metric 3 -->
+<div>
+<span class="font-metadata text-metadata text-muted block mb-0.5">Nhịp tim phục hồi sau bài</span>
+<span class="font-page-title text-[22px] font-bold text-ink leading-tight">82</span>
+<span class="font-metadata text-metadata text-muted font-medium ml-1">bpm</span>
+</div>
+<!-- Metric 4 -->
+<div>
+<span class="font-metadata text-metadata text-muted block mb-0.5">Hiệu suất vận động</span>
+<span class="font-page-title text-[22px] font-bold text-positive-text leading-tight">98%</span>
+<span class="font-metadata text-metadata text-positive-text font-medium ml-1">Tối ưu</span>
+</div>
+</div>
+<!-- Head Coach Transparent Review Box -->
+<div class="bg-forest-wash/60 border border-secondary-container rounded-lg p-4">
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-forest text-on-primary flex items-center justify-center font-bold text-[10px]">
+                    NVH
+                  </div>
+<span class="font-label text-label font-bold text-forest">Nhận xét chính thức của HLV Trưởng Nguyễn Văn Hòa</span>
+</div>
+<span class="font-metadata text-metadata text-muted">Đã ký điện tử lúc 07:10 · 12/03/2025</span>
+</div>
+<p class="font-body text-body text-ink leading-relaxed italic">
+                “Chiến mã thể hiện phong độ ấn tượng, giữ thăng bằng hoàn hảo ở đoạn ôm cua, đáp ứng tốt giáo án chuẩn bị cho Cúp Mùa Xuân.”
+              </p>
+<div class="mt-2.5 pt-2 border-t border-secondary-container/40 flex items-center justify-between text-muted font-metadata text-metadata">
+<span>Trạng thái sau tập: Cơ bắp ráo mồ hôi sau 15 phút, hô hấp ổn định.</span>
+<span class="text-forest font-medium">Bảo chứng: HLV Cấp Quốc Gia #HLV-082</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Entry 2: 10/03/2025 - Hồi phục & Điều hòa cơ bắp -->
+<article class="relative pl-10">
+<!-- Timeline Marker Pin -->
+<div class="absolute left-2 top-4 w-4.5 h-4.5 -translate-x-1/2 rounded-full bg-forest border-4 border-surface shadow-sm z-10"></div>
+<div class="bg-surface rounded-xl border border-border p-6 shadow-none">
+<!-- Header of Log Entry -->
+<div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-border">
+<div class="flex items-center gap-3">
+<span class="px-2.5 py-1 rounded bg-surface-container-low text-ink font-label text-label font-bold border border-border">
+                  Ngày 10/03/2025 · 07:15
+                </span>
+<h4 class="font-section-heading text-section-heading text-ink font-bold">
+                  Bài tập hồi phục &amp; Điều hòa cơ bắp (Cool-down Trot)
+                </h4>
+</div>
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-positive-bg text-positive-text font-metadata text-metadata font-semibold">
+<span class="material-symbols-outlined text-[14px]" data-icon="check">check</span> Đã hoàn thành
+                </span>
+<span class="font-metadata text-metadata text-muted bg-surface-container-low px-2 py-0.5 rounded">Mã đo: #TK-8840</span>
+</div>
+</div>
+<!-- Quantitative Telemetry Metrics Grid -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 my-5 p-4 bg-canvas rounded-lg border border-border">
+<!-- Metric 1 -->
+<div>
+<span class="font-metadata text-metadata text-muted block mb-0.5">Địa hình &amp; Cự ly</span>
+<span class="font-page-title text-[22px] font-bold text-ink leading-tight">800</span>
+<span class="font-metadata text-metadata text-muted font-medium ml-1">m cát mịn</span>
+</div>
+<!-- Metric 2 -->
+<div>
+<span class="font-metadata text-metadata text-muted block mb-0.5">Vận tốc điều hòa</span>
+<span class="font-page-title text-[22px] font-bold text-forest leading-tight">22.4</span>
+<span class="font-metadata text-metadata text-muted font-medium ml-1">km/h</span>
+</div>
+<!-- Metric 3 -->
+<div>
+<span class="font-metadata text-metadata text-muted block mb-0.5">Nhịp tim duy trì</span>
+<span class="font-page-title text-[22px] font-bold text-ink leading-tight">74</span>
+<span class="font-metadata text-metadata text-muted font-medium ml-1">bpm</span>
+</div>
+<!-- Metric 4 -->
+<div>
+<span class="font-metadata text-metadata text-muted block mb-0.5">Liệu trình vật lý trị liệu</span>
+<span class="font-page-title text-[22px] font-bold text-forest leading-tight">35</span>
+<span class="font-metadata text-metadata text-muted font-medium ml-1">phút thủy lực</span>
+</div>
+</div>
+<!-- Head Coach Transparent Review Box -->
+<div class="bg-forest-wash/60 border border-secondary-container rounded-lg p-4">
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-forest text-on-primary flex items-center justify-center font-bold text-[10px]">
+                    NVH
+                  </div>
+<span class="font-label text-label font-bold text-forest">Nhận xét HLV Trưởng Nguyễn Văn Hòa</span>
+</div>
+<span class="font-metadata text-metadata text-muted">Đã ký điện tử lúc 08:30 · 10/03/2025</span>
+</div>
+<p class="font-body text-body text-ink leading-relaxed italic">
+                “Cơ gân trước và khớp cổ chân mềm mại, độ giãn cơ tốt sau bài chạy cường độ cao.”
+              </p>
+</div>
+</div>
+</article>
+<!-- Entry 3: 08/03/2025 - Tập cự ly trung bình 1,200m sân Dirt -->
+<article class="relative pl-10">
+<div class="absolute left-2 top-4 w-4.5 h-4.5 -translate-x-1/2 rounded-full bg-forest border-4 border-surface shadow-sm z-10"></div>
+<div class="bg-surface rounded-xl border border-border p-5 shadow-none">
+<div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-border">
+<div class="flex items-center gap-3">
+<span class="px-2.5 py-1 rounded bg-surface-container-low text-ink font-label text-label font-bold border border-border">
+                  Ngày 08/03/2025 · 06:15
+                </span>
+<h4 class="font-section-heading text-section-heading text-ink font-bold">
+                  Tập cự ly trung bình 1,200m sân Dirt
+                </h4>
+</div>
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-positive-bg text-positive-text font-metadata text-metadata font-semibold">
+<span class="material-symbols-outlined text-[14px]" data-icon="check">check</span> Đã hoàn thành
+              </span>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-3 gap-4 my-3 text-ink">
+<div class="p-3 bg-canvas rounded border border-border">
+<span class="font-metadata text-metadata text-muted block">Cự ly hoàn thành</span>
+<p class="font-label text-label font-bold text-ink">1,200 mét (Đường cát đầm)</p>
+</div>
+<div class="p-3 bg-canvas rounded border border-border">
+<span class="font-metadata text-metadata text-muted block">Thời gian &amp; Vận tốc trung bình</span>
+<p class="font-label text-label font-bold text-ink">1 phút 14 giây · 58.3 km/h</p>
+</div>
+<div class="p-3 bg-canvas rounded border border-border">
+<span class="font-metadata text-metadata text-muted block">Đánh giá sức bền tim mạch</span>
+<p class="font-label text-label font-bold text-forest">Nhịp tim đỉnh 124 bpm · Hồi phục nhanh</p>
+</div>
+</div>
+<p class="font-body text-body text-muted leading-relaxed">
+<span class="font-semibold text-ink">Ghi chú huấn luyện:</span> Hoàn tất toàn bộ bài tập theo kế hoạch, guồng chân đều ở 300m cuối, không phát hiện dấu hiệu căng cơ hay bầm tím móng guốc.
+            </p>
+</div>
+</article>
+<!-- Entry 4: 05/03/2025 - Khởi động chu kỳ -->
+<article class="relative pl-10">
+<div class="absolute left-2 top-4 w-4.5 h-4.5 -translate-x-1/2 rounded-full bg-forest border-4 border-surface shadow-sm z-10"></div>
+<div class="bg-surface rounded-xl border border-border p-5 shadow-none">
+<div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-border">
+<div class="flex items-center gap-3">
+<span class="px-2.5 py-1 rounded bg-surface-container-low text-ink font-label text-label font-bold border border-border">
+                  Ngày 05/03/2025 · 06:40
+                </span>
+<h4 class="font-section-heading text-section-heading text-ink font-bold">
+                  Khởi động chu kỳ: Chạy cự ly 800m kiểm tra phản xạ cổng xuất phát
+                </h4>
+</div>
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-positive-bg text-positive-text font-metadata text-metadata font-semibold">
+<span class="material-symbols-outlined text-[14px]" data-icon="check">check</span> Đã hoàn thành
+              </span>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-3 gap-4 my-3 text-ink">
+<div class="p-3 bg-canvas rounded border border-border">
+<span class="font-metadata text-metadata text-muted block">Thời gian bứt tốc cổng xuất</span>
+<p class="font-label text-label font-bold text-ink">0.38 giây (Xuất phát chuẩn nhịp còi)</p>
+</div>
+<div class="p-3 bg-canvas rounded border border-border">
+<span class="font-metadata text-metadata text-muted block">Quãng đường kiểm tra</span>
+<p class="font-label text-label font-bold text-ink">800 mét sân Turf</p>
+</div>
+<div class="p-3 bg-canvas rounded border border-border">
+<span class="font-metadata text-metadata text-muted block">Tâm lý &amp; Phản ứng</span>
+<p class="font-label text-label font-bold text-forest">Tập trung cao, bình tĩnh trước hiệu lệnh</p>
+</div>
+</div>
+<p class="font-body text-body text-muted leading-relaxed">
+<span class="font-semibold text-ink">Ghi chú huấn luyện:</span> Tác phong vào ô xuất phát nhanh chóng, phối hợp ăn ý cùng nài ngựa phụ trách.
+            </p>
+</div>
+</article>
+</div>
+<!-- Legal & System Audit Footer -->
+<footer class="mt-12 pt-6 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4 text-muted">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-forest" data-icon="verified_user">verified_user</span>
+<p class="font-metadata text-metadata text-muted">Nhật ký do huấn luyện viên ghi nhận sau buổi tập; chủ ngựa chỉ xem dữ liệu thuộc quyền sở hữu.</p>
+</div>
+<div class="flex items-center gap-4 font-metadata text-metadata">
+<span>Thời gian đồng bộ cuối: 12/03/2025 08:00</span>
+<span>•</span>
+<span>Bản quyền © 2025 CLB Đua Ngựa Tân Phú</span>
+</div>
+</footer>
+</main>
+</div>
+</body></html>

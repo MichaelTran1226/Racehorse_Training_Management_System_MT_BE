@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html class="light" lang="vi"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>[GH-BE-08][FR-002][H03] Quản lý Hồ sơ &amp; Định danh ngựa (Microchip RFID) — Chi tiết hồ sơ ngựa</title>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-secondary-fixed": "#002116",
+            "forest": "#315D4B",
+            "canvas": "#F5F6F3",
+            "outline": "#717974",
+            "surface-bright": "#f9faf7",
+            "positive-bg": "#E8F3EB",
+            "on-error-container": "#93000a",
+            "surface-container": "#edeeeb",
+            "surface-container-lowest": "#ffffff",
+            "on-tertiary-fixed": "#34100e",
+            "on-error": "#ffffff",
+            "on-primary": "#ffffff",
+            "secondary": "#446557",
+            "on-primary-container": "#a5d4bd",
+            "on-secondary-fixed-variant": "#2c4d40",
+            "surface-tint": "#3b6754",
+            "surface-container-highest": "#e2e3e0",
+            "surface-container-high": "#e7e8e6",
+            "inverse-surface": "#2e312f",
+            "outline-variant": "#c0c8c2",
+            "critical-text": "#922D3C",
+            "tertiary-fixed": "#ffdad7",
+            "inverse-primary": "#a2d1ba",
+            "tertiary-container": "#794744",
+            "surface-variant": "#e2e3e0",
+            "secondary-fixed-dim": "#aacfbd",
+            "tertiary": "#5e312e",
+            "critical-bg": "#FAE9EB",
+            "quarantine-text": "#65517D",
+            "ink": "#202B28",
+            "border": "#DCE3DD",
+            "primary-fixed": "#bdedd6",
+            "primary-container": "#315d4b",
+            "forest-deep": "#234437",
+            "on-surface": "#191c1b",
+            "on-secondary": "#ffffff",
+            "quarantine-bg": "#F1EDF6",
+            "surface-container-low": "#f3f4f1",
+            "surface-dim": "#d9dad7",
+            "primary-fixed-dim": "#a2d1ba",
+            "warning-text": "#875B15",
+            "background": "#f9faf7",
+            "inverse-on-surface": "#f0f1ee",
+            "error-container": "#ffdad6",
+            "error": "#ba1a1a",
+            "tertiary-fixed-dim": "#f9b6b1",
+            "secondary-container": "#c6ebd8",
+            "on-tertiary-container": "#fcb9b4",
+            "on-secondary-container": "#4a6b5d",
+            "muted": "#65716B",
+            "on-background": "#191c1b",
+            "secondary-fixed": "#c6ebd8",
+            "on-tertiary-fixed-variant": "#693937",
+            "on-primary-fixed": "#002115",
+            "surface": "#FFFFFF",
+            "on-surface-variant": "#414944",
+            "on-tertiary": "#ffffff",
+            "warning-bg": "#FFF4DD",
+            "primary": "#184535",
+            "positive-text": "#276442",
+            "forest-wash": "#EAF1EC",
+            "on-primary-fixed-variant": "#224f3d"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-md": "16px",
+            "space-lg": "24px",
+            "space-sm": "8px",
+            "space-xs": "4px",
+            "margin": "32px",
+            "gutter": "24px",
+            "space-xl": "32px"
+          },
+          "fontFamily": {
+            "page-title": ["Manrope"],
+            "body-lg": ["Manrope"],
+            "metadata": ["Manrope"],
+            "auth-heading": ["Manrope"],
+            "label": ["Manrope"],
+            "body": ["Manrope"],
+            "section-heading": ["Manrope"]
+          },
+          "fontSize": {
+            "page-title": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "metadata": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "auth-heading": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+            "label": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "body": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "section-heading": ["18px", { "lineHeight": "26px", "fontWeight": "650" }]
+          }
+        }
+      }
+    }
+  </script>
+<style id="equiflow-reviewed-layout">
+   html,body{max-width:100%;} .ef-sidebar{width:224px!important;min-width:224px;background:#fff!important;border-right:1px solid #dce3dd;padding:24px 14px!important;display:flex;flex-direction:column;gap:24px}.ef-brand{font:700 24px/1.2 Manrope,'Segoe UI',sans-serif;color:#315d4b}.ef-brand small{display:block;font:11px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin-top:8px}.ef-role-nav{display:flex;flex-direction:column;gap:5px}.ef-role-nav a{padding:11px 12px;min-height:44px;border-radius:6px;font:500 14px/22px Manrope,'Segoe UI',sans-serif;color:#3e4e45;text-decoration:none;white-space:normal}.ef-role-nav a:hover,.ef-role-nav a[aria-current=page]{background:#eaf1ec;color:#315d4b}.ef-role-label{margin-top:auto;font-size:12px;color:#65716b}.ef-role-label a{display:block;padding-top:12px;color:#315d4b}.ef-sample-notice{font:12px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin:0 0 14px}.ef-mobile-nav{display:none}input,select,textarea{max-width:100%}button,a,input,select,textarea{touch-action:manipulation}
+   @media(max-width:1023px){[data-review-kind=app] header,[data-review-kind=app] main .flex{flex-wrap:wrap}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important}[data-review-kind=app] .flex-1{min-width:0}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{max-width:100%;min-width:0}[data-review-kind=app] header>div{max-width:100%;flex-wrap:wrap}}
+   @media(max-width:767px){body[data-review-kind=app]{display:block!important;height:auto!important;min-height:100dvh}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important;height:auto}}
+   @media(max-width:767px){.ef-sidebar{display:none!important}.ef-mobile-nav{display:block;position:relative;z-index:200;background:white;border-bottom:1px solid #dce3dd;padding:12px 16px}.ef-mobile-nav summary{min-height:44px;cursor:pointer;display:flex;align-items:center;font-weight:700;color:#315d4b}.ml-56,.ml-64,[class~='ml-[224px]'],[class~='ml-[240px]'],main[style*='margin-left']{margin-left:0!important}main{min-width:0!important;max-width:100%!important}header{flex-wrap:wrap!important;gap:8px!important;height:auto!important}footer{flex-wrap:wrap!important;gap:12px}h1{overflow-wrap:anywhere}.ef-role-nav{max-width:100%}[data-review-kind=app] .grid{grid-template-columns:minmax(0,1fr)!important}[data-review-kind=app] .flex{min-width:0;flex-wrap:wrap}[data-review-kind=app] table,[data-review-kind=app] tbody,[data-review-kind=app] tr{display:block;width:100%}[data-review-kind=app] thead{display:none}[data-review-kind=app] tr{padding:12px 0;border-bottom:1px solid #dce3dd}[data-review-kind=app] td{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;white-space:normal!important;padding:8px 12px;min-width:0;overflow-wrap:anywhere}[data-review-kind=app] td:before{content:attr(data-label);color:#65716b;font-size:12px;flex:0 0 35%}[data-review-kind=app] td>*{min-width:0;max-width:100%}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{width:100%}}
+  </style></head>
+<body class="bg-canvas text-ink font-body text-body min-h-screen flex antialiased selection:bg-forest-wash selection:text-forest" data-review-kind="app">
+<!-- SideNavBar Anchor Component -->
+<aside class="w-56 h-screen sticky top-0 flex flex-col justify-between p-space-sm z-30 bg-surface dark:bg-inverse-surface border-r border-border dark:border-outline-variant shrink-0 ef-sidebar"><div class="ef-brand">EquiFlow<small>Quản lý huấn luyện ngựa đua</small></div><nav class="ef-role-nav" aria-label="Điều hướng Quản lý CLB"><a href="M01.html">Tổng quan</a><a href="H01.html">Hồ sơ ngựa</a><a href="H04.html">Ô chuồng</a><a href="V01.html">Sức khỏe</a><a href="M02.html">Nhân sự</a><a href="M04.html">Nhật ký hệ thống</a></nav><div class="ef-role-label">Quản lý CLB<a href="AUTH01.html">Đăng xuất</a></div></aside>
+<!-- Main Content Viewport Area -->
+<div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+<!-- TopNavBar Anchor Component -->
+<header class="h-16 w-full flex items-center justify-between px-gutter sticky top-0 z-20 bg-surface dark:bg-inverse-surface border-b border-border dark:border-outline-variant shrink-0">
+<div class="flex items-center gap-4 w-96">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-2.5 text-muted pointer-events-none text-xl">search</span>
+<input class="w-full pl-10 pr-4 py-2 text-body bg-canvas border border-border rounded-lg text-ink placeholder-muted focus:outline-none focus:border-forest text-sm" placeholder="Tìm kiếm chiến mã, mã chip, mã khoang..." type="text">
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-label text-label text-forest hidden lg:inline-block">Thống Nhất Equine Club</span>
+<div class="flex items-center gap-1">
+<button class="p-2 text-muted hover:text-ink hover:bg-forest-wash rounded-lg transition-colors relative" title="Thông báo">
+<span class="material-symbols-outlined text-xl">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-critical-text"></span>
+</button>
+<button class="p-2 text-muted hover:text-ink hover:bg-forest-wash rounded-lg transition-colors" title="Lịch hoạt động">
+<span class="material-symbols-outlined text-xl">calendar_today</span>
+</button>
+</div>
+<button class="flex items-center gap-2 bg-forest hover:bg-forest-deep text-on-primary px-3.5 py-2 rounded-lg font-label text-label transition-colors">
+<span class="material-symbols-outlined text-lg">edit_note</span>
+<span>Thêm ghi nhận</span>
+</button>
+<div class="h-6 w-px bg-border"></div>
+<!-- Role & Profile Indicator -->
+<div class="flex items-center gap-2.5 pl-1">
+<div class="w-8 h-8 rounded-full bg-positive-bg border border-border flex items-center justify-center text-positive-text font-bold text-xs uppercase">
+            LH
+          </div>
+<div class="text-left hidden sm:block">
+<div class="font-label text-xs font-semibold text-ink leading-tight">BS. Lê Thanh Hà</div>
+<div class="font-metadata text-metadata text-muted leading-none">Quản lý CLB</div>
+</div>
+</div>
+</div>
+</header>
+<!-- Canvas Body -->
+<main class="p-space-xl max-w-[1360px] mx-auto w-full flex flex-col gap-6"><p class="ef-sample-notice">Dữ liệu minh họa · Bản thiết kế giao diện</p>
+<!-- Breadcrumbs & Heading -->
+<div>
+<nav class="flex items-center gap-2 font-metadata text-metadata text-muted mb-1">
+<a class="hover:text-forest transition-colors" href="#">Hồ sơ đàn ngựa</a>
+<span class="material-symbols-outlined text-xs">chevron_right</span>
+<span class="text-ink font-semibold">Chiến mã: Lightning Star (Mã chip: VNM-789012345678)</span>
+</nav>
+<div class="flex items-center justify-between">
+<h1 class="font-page-title text-page-title text-ink tracking-tight">Chi tiết hồ sơ ngựa</h1>
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-forest-wash text-forest text-xs font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-forest animate-pulse"></span>
+              Đồng bộ dữ liệu thời gian thực
+            </span>
+</div>
+</div>
+</div>
+<!-- Prominent Medical Lock Restriction Banner -->
+<section class="bg-critical-bg border border-critical-text rounded-xl p-space-md shadow-sm">
+<div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+<div class="flex items-start gap-3.5">
+<div class="w-10 h-10 rounded-lg bg-surface flex items-center justify-center text-critical-text shrink-0 border border-critical-text/30">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">lock</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h2 class="font-label text-label font-bold text-critical-text tracking-wide uppercase">
+                  ĐANG KHOÁ HUẤN LUYỆN DO NGUY CƠ Y TẾ
+                </h2>
+<span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-white text-critical-text border border-critical-text/40">
+                  Cấp độ nghiêm ngặt: Y tế loại 1
+                </span>
+</div>
+<p class="font-body text-body text-ink mt-1 max-w-4xl text-sm leading-relaxed">
+                Chiến mã Lightning Star có cảnh báo phù nề gân gấp ngón nông chi trước trái (Superficial Digital Flexor Tendonitis). Vô hiệu hoá xếp lịch huấn luyện tốc độ cao và thi đấu. Chỉ Bác sĩ thú y (Dr. Lê Thanh Hà) mới có thẩm quyền mở khoá sau khi có kết quả siêu âm Doppler đạt chuẩn.
+              </p>
+</div>
+</div>
+<button class="shrink-0 flex items-center gap-2 bg-critical-text hover:bg-forest-deep text-white px-4 py-2.5 rounded-lg font-label text-sm transition-colors shadow-sm">Xem hồ sơ y tế</button>
+</div>
+</section>
+<!-- Horse Profile Header Card -->
+<section class="bg-surface rounded-xl border border-border p-6 shadow-sm">
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+<div class="flex flex-col sm:flex-row items-start sm:items-center gap-5">
+<!-- Horse Portrait -->
+<div class="relative w-28 h-28 rounded-xl overflow-hidden border border-border shrink-0 bg-canvas">
+<img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDq8DtOyeSMC3zQPKvic6nk7pVW3_S-KdZKxwovGnS-kKzugIo8ShXT6NtJMsLv8rurzvOofATkO-WQ8aBuvnlyPJmVPxKjUTbhxbbmc1NINmTyNKIX-yieVoyvJkmuuyVz2QU8HNTmHDEduW9cDQh9fZlPJM2-EHtZYIe9qunOaHPoDMs9ZLO4QQZPYOS6xpHmQwsjMp0c5fC69rEqe7OfWfYSHJ_KdE-r_pJsh_v1-cjLSuVfac_-qL-9sBvnwWkYOrECvjekyg">
+<div class="absolute bottom-1 right-1 bg-surface/90 backdrop-blur-sm rounded p-0.5 text-forest">
+<span class="material-symbols-outlined text-base">verified</span>
+</div>
+</div>
+<!-- Horse Core Metadata -->
+<div>
+<div class="flex flex-wrap items-center gap-2.5 mb-1.5">
+<h2 class="font-page-title text-2xl text-ink font-bold tracking-tight">Lightning Star</h2>
+<!-- Badges -->
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-critical-bg text-critical-text font-label text-xs border border-critical-text/20">
+<span class="material-symbols-outlined text-xs" style="font-variation-settings: 'FILL' 1;">lock</span>
+                  Khóa an toàn y tế
+                </span>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-surface-container text-muted font-label text-xs border border-border">
+<span class="material-symbols-outlined text-xs">hotel</span>
+                  Vòng đời: Nghỉ ngơi dưỡng thương
+                </span>
+</div>
+<!-- Identifiers -->
+<div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted font-body mb-3">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-base">tag</span>
+<span>Mã chip: <strong class="text-ink font-medium">VNM-789012345678</strong></span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-base">nature</span>
+<span>Giống: <strong class="text-ink font-medium">Thoroughbred</strong></span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-base">male</span>
+<span>Giới tính: <strong class="text-ink font-medium">Đực (4 tuổi)</strong></span>
+</div>
+</div>
+<!-- Key Info Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 pt-2 border-t border-border/60">
+<div>
+<div class="font-metadata text-metadata text-muted">Chủ sở hữu</div>
+<div class="font-label text-label text-ink">Trần Minh Quân</div>
+</div>
+<div>
+<div class="font-metadata text-metadata text-muted">Ô chuồng vị trí</div>
+<div class="font-label text-label text-forest flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">meeting_room</span>
+<span>Khu A - Ô A03</span>
+</div>
+</div>
+<div>
+<div class="font-metadata text-metadata text-muted">Bác sĩ thú y phụ trách</div>
+<div class="font-label text-label text-ink flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">stethoscope</span>
+<span>BS. Lê Thanh Hà</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Secondary Actions -->
+<div class="flex items-center gap-3 shrink-0 self-end lg:self-center">
+<button class="h-11 px-4 rounded-lg border border-border hover:bg-forest-wash hover:border-forest text-ink font-label text-label flex items-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-lg">print</span>
+<span>In thẻ chuồng</span>
+</button>
+<button class="h-11 px-4 rounded-lg border border-forest text-forest hover:bg-forest hover:text-white font-label text-label flex items-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-lg">edit</span>
+<span>Chỉnh sửa hồ sơ</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Operational Navigation Tabs -->
+<nav class="flex items-center gap-2 border-b border-border">
+<button class="px-5 py-3 font-label text-label border-b-2 border-forest text-forest bg-forest-wash/40 rounded-t-lg transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">space_dashboard</span>
+<span>Tổng quan</span>
+</button>
+<button class="px-5 py-3 font-label text-label text-muted hover:text-ink hover:bg-surface transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">medical_services</span>
+<span>Y tế &amp; Thú y</span>
+<span class="w-2 h-2 rounded-full bg-critical-text"></span>
+</button>
+<button class="px-5 py-3 font-label text-label text-muted hover:text-ink hover:bg-surface transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">fitness_center</span>
+<span>Huấn luyện &amp; Thể lực</span>
+<span class="material-symbols-outlined text-xs text-critical-text">lock</span>
+</button>
+<button class="px-5 py-3 font-label text-label text-muted hover:text-ink hover:bg-surface transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">trophy</span>
+<span>Thành tích thi đấu</span>
+</button>
+</nav>
+<!-- Content Area: Bento Layout (Activity Timeline + Biological Metrics) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+<!-- Left: Activity Timeline (Replaces Pedigree Tree) (7 cols) -->
+<section class="lg:col-span-7 bg-surface rounded-xl border border-border p-6 shadow-sm">
+<div class="flex items-center justify-between pb-4 border-b border-border">
+<div class="flex items-center gap-2.5">
+<div class="p-2 rounded-lg bg-forest-wash text-forest">
+<span class="material-symbols-outlined text-xl">history</span>
+</div>
+<div>
+<h3 class="font-section-heading text-section-heading text-ink">Nhật ký thời gian &amp; Hoạt động gần nhất</h3>
+<p class="font-metadata text-metadata text-muted">Dòng thời gian sự kiện chuyên môn theo thời gian thực</p>
+</div>
+</div>
+<button class="text-xs font-label text-forest hover:underline flex items-center gap-1">
+<span>Lọc nhật ký</span>
+<span class="material-symbols-outlined text-sm">filter_list</span>
+</button>
+</div>
+<!-- Timeline Items -->
+<div class="mt-6 relative pl-6 border-l border-border space-y-6">
+<!-- Timeline Item 1 -->
+<div class="relative group">
+<!-- Pin node -->
+<span class="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-critical-text border-2 border-surface flex items-center justify-center">
+<span class="w-1.5 h-1.5 rounded-full bg-white"></span>
+</span>
+<div class="bg-critical-bg/50 border border-critical-text/30 rounded-lg p-3.5 transition-colors">
+<div class="flex items-center justify-between text-xs mb-1">
+<span class="font-label font-bold text-critical-text">08/11/2024</span>
+<span class="px-2 py-0.5 rounded bg-white text-critical-text border border-critical-text/20 font-metadata">Khẩn cấp thú y</span>
+</div>
+<div class="font-label text-ink text-sm">Phát hiện phù nề nhẹ gân chi trước trái - BS. Lê Thanh Hà kích hoạt Khóa y tế</div>
+<p class="font-metadata text-muted mt-1">Đã áp dụng băng lạnh nén và chỉ định nghỉ ngơi hoàn toàn tại chuồng A03 trong 14 ngày.</p>
+</div>
+</div>
+<!-- Timeline Item 2 -->
+<div class="relative group">
+<span class="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-forest border-2 border-surface"></span>
+<div class="bg-canvas border border-border rounded-lg p-3.5">
+<div class="flex items-center justify-between text-xs mb-1">
+<span class="font-label font-semibold text-forest">05/11/2024</span>
+<span class="text-muted font-metadata">Giáo án bền bỉ</span>
+</div>
+<div class="font-label text-ink text-sm">Hoàn thành bài tập chạy bền 8km mặt đường Dirt - HLV Nguyễn Văn Hòa</div>
+<p class="font-metadata text-muted mt-1">Tốc độ trung bình 28 km/h, nhịp tim phục hồi đạt tiêu chuẩn sau 15 phút thả lỏng.</p>
+</div>
+</div>
+<!-- Timeline Item 3 -->
+<div class="relative group">
+<span class="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-forest border-2 border-surface"></span>
+<div class="bg-canvas border border-border rounded-lg p-3.5">
+<div class="flex items-center justify-between text-xs mb-1">
+<span class="font-label font-semibold text-forest">01/11/2024</span>
+<span class="text-muted font-metadata">Định kỳ</span>
+</div>
+<div class="font-label text-ink text-sm">Khám sức khỏe định kỳ &amp; Tiêm phòng cúm Equine Influenza - BS. Lê Thanh Hà</div>
+<p class="font-metadata text-muted mt-1">Đáp ứng miễn dịch tốt, không phát hiện phản ứng phụ sau tiêm vaccine.</p>
+</div>
+</div>
+<!-- Timeline Item 4 -->
+<div class="relative group">
+<span class="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-outline-variant border-2 border-surface"></span>
+<div class="bg-canvas border border-border rounded-lg p-3.5">
+<div class="flex items-center justify-between text-xs mb-1">
+<span class="font-label font-semibold text-ink">24/10/2024</span>
+<span class="text-muted font-metadata">Điều chuyển nội bộ</span>
+</div>
+<div class="font-label text-ink text-sm">Chuyển sang ô chuồng A03 từ khu kiểm dịch - Quản lý CLB</div>
+<p class="font-metadata text-muted mt-1">Hoàn thành 14 ngày cách ly quan sát y tế tiêu chuẩn sau khi nhập viện đào tạo.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Right: Biological Metrics & Stable Notes (5 cols) -->
+<div class="lg:col-span-5 flex flex-col gap-6">
+<!-- Biological Metrics Card -->
+<section class="bg-surface rounded-xl border border-border p-6 shadow-sm">
+<div class="flex items-center justify-between pb-3 border-b border-border">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-forest">vital_signs</span>
+<h3 class="font-section-heading text-section-heading text-ink">Chỉ số sinh học cá thể</h3>
+</div>
+<span class="text-xs text-muted font-metadata">Cập nhật: 08/11</span>
+</div>
+<div class="grid grid-cols-2 gap-4 mt-4">
+<!-- Metric 1: Cân nặng -->
+<div class="p-4 rounded-lg bg-canvas border border-border">
+<div class="flex items-center justify-between text-muted mb-1">
+<span class="font-metadata text-metadata">Cân nặng</span>
+<span class="material-symbols-outlined text-base">scale</span>
+</div>
+<div class="font-page-title text-2xl font-bold text-ink">495 <span class="text-sm font-normal text-muted">kg</span></div>
+<div class="font-metadata text-metadata text-positive-text flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-xs">trending_flat</span>
+<span>Chuẩn tỷ trọng đua</span>
+</div>
+</div>
+<!-- Metric 2: Chiều cao vai -->
+<div class="p-4 rounded-lg bg-canvas border border-border">
+<div class="flex items-center justify-between text-muted mb-1">
+<span class="font-metadata text-metadata">Chiều cao vai</span>
+<span class="material-symbols-outlined text-base">height</span>
+</div>
+<div class="font-page-title text-xl font-bold text-ink">16.2 <span class="text-sm font-normal text-muted">Hands</span></div>
+<div class="font-metadata text-metadata text-muted mt-1">
+                  Khoảng 165 cm
+                </div>
+</div>
+<!-- Metric 3: Nhịp tim nghỉ -->
+<div class="p-4 rounded-lg bg-canvas border border-border">
+<div class="flex items-center justify-between text-muted mb-1">
+<span class="font-metadata text-metadata">Nhịp tim nghỉ</span>
+<span class="material-symbols-outlined text-base text-forest">ecg_heart</span>
+</div>
+<div class="font-page-title text-2xl font-bold text-ink">36 <span class="text-sm font-normal text-muted">bpm</span></div>
+<div class="font-metadata text-metadata text-positive-text flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-xs">check_circle</span>
+<span>Trạng thái tĩnh chuẩn</span>
+</div>
+</div>
+<!-- Metric 4: Nhiệt độ thân nhiệt -->
+<div class="p-4 rounded-lg bg-canvas border border-border">
+<div class="flex items-center justify-between text-muted mb-1">
+<span class="font-metadata text-metadata">Nhiệt độ thân nhiệt</span>
+<span class="material-symbols-outlined text-base text-warning-text">device_thermostat</span>
+</div>
+<div class="font-page-title text-2xl font-bold text-ink">37.8 <span class="text-sm font-normal text-muted">°C</span></div>
+<div class="font-metadata text-metadata text-positive-text flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-xs">done</span>
+<span>Không phát hiện sốt</span>
+</div>
+</div>
+</div>
+<!-- Diagnostic protocol preview -->
+<div class="mt-4 p-3 rounded-lg bg-forest-wash border border-forest/20 text-xs text-forest flex items-center justify-between">
+<span class="font-medium flex items-center gap-1.5">
+<span class="material-symbols-outlined text-base">science</span>
+                Kế hoạch siêu âm Doppler: 15/11/2024
+              </span>
+<button class="font-bold underline text-forest hover:text-forest-deep">Chi tiết</button>
+</div>
+</section>
+<!-- Current Stabling & Diet Card -->
+
+<!-- System Note Box -->
+<div class="p-3.5 rounded-lg bg-canvas border border-border text-center">
+<span class="font-metadata text-metadata text-muted flex items-center justify-center gap-1.5">
+<span class="material-symbols-outlined text-base text-muted">info</span>
+              Dữ liệu minh họa cho hồ sơ cá thể
+            </span>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

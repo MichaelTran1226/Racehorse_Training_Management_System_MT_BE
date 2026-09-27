@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html class="h-full" lang="vi"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>[GH-BE-05][AUTH-STAFF][AUTH08] Mời nhân sự nội bộ (Manager, Trainer, Vet, Groom) &amp; Quản lý danh sách nhân sự — Nhận lời mời nhân sự</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Manrope Google Font -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS v3 with Plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "warning-text": "#875B15",
+            "primary-container": "#315d4b",
+            "on-background": "#191c1b",
+            "positive-text": "#276442",
+            "on-primary-fixed-variant": "#224f3d",
+            "on-primary-fixed": "#002115",
+            "secondary-container": "#c6ebd8",
+            "on-secondary": "#ffffff",
+            "secondary-fixed-dim": "#aacfbd",
+            "surface-container-lowest": "#ffffff",
+            "tertiary": "#5e312e",
+            "on-error": "#ffffff",
+            "on-tertiary-fixed-variant": "#693937",
+            "inverse-primary": "#a2d1ba",
+            "canvas": "#F5F6F3",
+            "surface-tint": "#3b6754",
+            "error-container": "#ffdad6",
+            "on-surface": "#191c1b",
+            "positive-bg": "#E8F3EB",
+            "quarantine-text": "#65517D",
+            "tertiary-fixed-dim": "#f9b6b1",
+            "on-primary": "#ffffff",
+            "on-secondary-container": "#4a6b5d",
+            "inverse-on-surface": "#f0f1ee",
+            "quarantine-bg": "#F1EDF6",
+            "surface-container": "#edeeeb",
+            "surface-container-highest": "#e2e3e0",
+            "tertiary-fixed": "#ffdad7",
+            "surface-variant": "#e2e3e0",
+            "warning-bg": "#FFF4DD",
+            "on-tertiary-fixed": "#34100e",
+            "forest": "#315D4B",
+            "on-error-container": "#93000a",
+            "surface-dim": "#d9dad7",
+            "background": "#f9faf7",
+            "primary": "#184535",
+            "surface": "#FFFFFF",
+            "surface-bright": "#f9faf7",
+            "outline": "#717974",
+            "critical-bg": "#FAE9EB",
+            "on-tertiary": "#ffffff",
+            "secondary-fixed": "#c6ebd8",
+            "ink": "#202B28",
+            "forest-wash": "#EAF1EC",
+            "forest-deep": "#234437",
+            "secondary": "#446557",
+            "border": "#DCE3DD",
+            "critical-text": "#922D3C",
+            "on-primary-container": "#a5d4bd",
+            "on-tertiary-container": "#fcb9b4",
+            "outline-variant": "#c0c8c2",
+            "on-secondary-fixed-variant": "#2c4d40",
+            "on-surface-variant": "#414944",
+            "on-secondary-fixed": "#002116",
+            "muted": "#65716B",
+            "surface-container-high": "#e7e8e6",
+            "primary-fixed-dim": "#a2d1ba",
+            "primary-fixed": "#bdedd6",
+            "error": "#ba1a1a",
+            "tertiary-container": "#794744",
+            "inverse-surface": "#2e312f",
+            "surface-container-low": "#f3f4f1"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-xs": "4px",
+            "space-xl": "32px",
+            "space-md": "16px",
+            "gutter": "24px",
+            "margin": "32px",
+            "space-lg": "24px",
+            "space-sm": "8px"
+          },
+          "fontFamily": {
+            "auth-heading": ["Manrope"],
+            "section-heading": ["Manrope"],
+            "page-title": ["Manrope"],
+            "metadata": ["Manrope"],
+            "body": ["Manrope"],
+            "body-lg": ["Manrope"],
+            "label": ["Manrope"]
+          },
+          "fontSize": {
+            "auth-heading": [
+              "32px",
+              {
+                "lineHeight": "40px",
+                "fontWeight": "700"
+              }
+            ],
+            "section-heading": [
+              "18px",
+              {
+                "lineHeight": "26px",
+                "fontWeight": "650"
+              }
+            ],
+            "page-title": [
+              "28px",
+              {
+                "lineHeight": "36px",
+                "fontWeight": "700"
+              }
+            ],
+            "metadata": [
+              "12px",
+              {
+                "lineHeight": "18px",
+                "fontWeight": "400"
+              }
+            ],
+            "body": [
+              "14px",
+              {
+                "lineHeight": "22px",
+                "fontWeight": "400"
+              }
+            ],
+            "body-lg": [
+              "16px",
+              {
+                "lineHeight": "24px",
+                "fontWeight": "400"
+              }
+            ],
+            "label": [
+              "14px",
+              {
+                "lineHeight": "20px",
+                "fontWeight": "600"
+              }
+            ]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+  </style>
+<style id="equiflow-reviewed-layout">
+   html,body{max-width:100%;} .ef-sidebar{width:224px!important;min-width:224px;background:#fff!important;border-right:1px solid #dce3dd;padding:24px 14px!important;display:flex;flex-direction:column;gap:24px}.ef-brand{font:700 24px/1.2 Manrope,'Segoe UI',sans-serif;color:#315d4b}.ef-brand small{display:block;font:11px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin-top:8px}.ef-role-nav{display:flex;flex-direction:column;gap:5px}.ef-role-nav a{padding:11px 12px;min-height:44px;border-radius:6px;font:500 14px/22px Manrope,'Segoe UI',sans-serif;color:#3e4e45;text-decoration:none;white-space:normal}.ef-role-nav a:hover,.ef-role-nav a[aria-current=page]{background:#eaf1ec;color:#315d4b}.ef-role-label{margin-top:auto;font-size:12px;color:#65716b}.ef-role-label a{display:block;padding-top:12px;color:#315d4b}.ef-sample-notice{font:12px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin:0 0 14px}.ef-mobile-nav{display:none}input,select,textarea{max-width:100%}button,a,input,select,textarea{touch-action:manipulation}
+   @media(max-width:1023px){[data-review-kind=app] header,[data-review-kind=app] main .flex{flex-wrap:wrap}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important}[data-review-kind=app] .flex-1{min-width:0}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{max-width:100%;min-width:0}[data-review-kind=app] header>div{max-width:100%;flex-wrap:wrap}}
+   @media(max-width:767px){body[data-review-kind=app]{display:block!important;height:auto!important;min-height:100dvh}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important;height:auto}}
+   @media(max-width:767px){.ef-sidebar{display:none!important}.ef-mobile-nav{display:block;position:relative;z-index:200;background:white;border-bottom:1px solid #dce3dd;padding:12px 16px}.ef-mobile-nav summary{min-height:44px;cursor:pointer;display:flex;align-items:center;font-weight:700;color:#315d4b}.ml-56,.ml-64,[class~='ml-[224px]'],[class~='ml-[240px]'],main[style*='margin-left']{margin-left:0!important}main{min-width:0!important;max-width:100%!important}header{flex-wrap:wrap!important;gap:8px!important;height:auto!important}footer{flex-wrap:wrap!important;gap:12px}h1{overflow-wrap:anywhere}.ef-role-nav{max-width:100%}[data-review-kind=app] .grid{grid-template-columns:minmax(0,1fr)!important}[data-review-kind=app] .flex{min-width:0;flex-wrap:wrap}[data-review-kind=app] table,[data-review-kind=app] tbody,[data-review-kind=app] tr{display:block;width:100%}[data-review-kind=app] thead{display:none}[data-review-kind=app] tr{padding:12px 0;border-bottom:1px solid #dce3dd}[data-review-kind=app] td{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;white-space:normal!important;padding:8px 12px;min-width:0;overflow-wrap:anywhere}[data-review-kind=app] td:before{content:attr(data-label);color:#65716b;font-size:12px;flex:0 0 35%}[data-review-kind=app] td>*{min-width:0;max-width:100%}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{width:100%}}
+  </style></head>
+<body class="bg-canvas text-ink antialiased selection:bg-forest-wash selection:text-forest min-h-screen flex flex-col justify-between">
+<!-- Core Usable Split Canvas Artboard (Desktop 46% / 54%) -->
+<main class="w-full flex-1 flex flex-col lg:flex-row min-h-screen">
+<!-- LEFT PANEL: Invitation Activation Workspace (46%) -->
+<div class="w-full lg:w-[46%] bg-surface flex flex-col justify-between p-6 sm:p-8 lg:p-12 border-r border-border overflow-y-auto">
+<!-- Top Section: Header & Invitation Context -->
+<div class="w-full max-w-xl mx-auto space-y-6">
+<!-- Brand Header Bar -->
+<div class="flex items-center justify-between pb-4 border-b border-border">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-forest flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-white" data-icon="pets">pets</span>
+</div>
+<div>
+<span class="font-page-title text-section-heading text-forest tracking-tight font-bold block leading-none">EquiFlow</span>
+<span class="font-metadata text-metadata text-muted">Hệ thống Vận hành Chuồng trại</span>
+</div>
+</div>
+</div>
+<!-- Badges & Screen Title Area -->
+<div class="space-y-3">
+<div class="flex flex-wrap items-center gap-2">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-forest-wash text-forest font-label text-metadata border border-[#CDE0D4]">
+<span class="material-symbols-outlined text-forest text-[16px]" data-icon="verified_user">verified_user</span>
+              Thư mời gia nhập đội ngũ chuyên môn
+            </span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-canvas text-ink font-body text-metadata border border-border">
+<span class="material-symbols-outlined text-muted text-[16px]" data-icon="stadium">stadium</span>
+              Câu Lạc Bộ Đua Ngựa Tân Phú
+            </span>
+</div>
+<h1 class="font-page-title text-page-title text-ink font-bold tracking-tight">Kích hoạt tài khoản nhân sự</h1>
+<p class="font-body text-body text-muted leading-relaxed">
+            Bạn được chỉ định quyền truy cập nghiệp vụ lâm sàng từ Ban quản lý CLB Đua Ngựa Tân Phú. Vui lòng xác thực danh tính để thiết lập tài khoản an toàn.
+          </p>
+</div>
+<!-- Mockup Bộ điều khiển trạng thái Lời Mời (Interactive Demo Selector) -->
+<!-- Warning / Error Alert Notice (Dynamic according to state mockup) -->
+<!-- Primary Form Container -->
+<form class="space-y-4" id="activationForm" onsubmit="event.preventDefault();">
+<!-- Readonly Pre-filled Credentials Grid -->
+<div class="p-4 rounded-lg bg-canvas border border-border space-y-3">
+<div class="flex items-center justify-between pb-2 border-b border-border">
+<span class="font-label text-metadata text-ink font-semibold flex items-center gap-1.5">
+<span class="material-symbols-outlined text-forest text-[16px]" data-icon="lock">lock</span>
+                Thông tin phân quyền định danh (Readonly)
+              </span>
+<span class="font-metadata text-metadata text-muted">Không được tự thay đổi</span>
+</div>
+<!-- Email (Readonly) -->
+<div>
+<label class="block font-label text-metadata text-muted mb-1 flex items-center justify-between">
+<span>Email tài khoản nhân sự</span>
+<span class="inline-flex items-center gap-1 text-positive-text font-label text-[11px] bg-positive-bg px-2 py-0.5 rounded">
+<span class="material-symbols-outlined text-[13px]" data-icon="check_circle">check_circle</span>
+                  Cố định từ lời mời
+                </span>
+</label>
+<div class="relative flex items-center">
+<span class="absolute left-3 material-symbols-outlined text-muted text-[18px]" data-icon="mail">mail</span>
+<input class="w-full pl-9 pr-9 h-[44px] rounded-[6px] border border-border bg-surface-container-low font-body text-body text-ink cursor-not-allowed select-all focus:outline-none focus:ring-0" readonly="" type="email" value="bs.hoanglong@tanphuracing.vn">
+<span class="absolute right-3 material-symbols-outlined text-muted text-[18px]" data-icon="lock">lock</span>
+</div>
+</div>
+<!-- Assigned Role (Readonly RBAC) -->
+<div>
+<label class="block font-label text-metadata text-muted mb-1 flex items-center justify-between">
+<span>Vai trò chuyên môn được cấp</span>
+<span class="inline-flex items-center gap-1 text-quarantine-text font-label text-[11px] bg-quarantine-bg px-2 py-0.5 rounded">
+<span class="material-symbols-outlined text-[13px]" data-icon="badge">badge</span>
+                  Phân quyền RBAC lâm sàng
+                </span>
+</label>
+<div class="relative flex items-center">
+<span class="absolute left-3 material-symbols-outlined text-forest text-[18px]" data-icon="medical_services">medical_services</span>
+<input class="w-full pl-9 pr-9 h-[44px] rounded-[6px] border border-border bg-surface-container-low font-label text-body text-forest font-semibold cursor-not-allowed focus:outline-none focus:ring-0" readonly="" type="text" value="Bác sĩ thú y (Veterinarian)">
+<span class="absolute right-3 material-symbols-outlined text-muted text-[18px]" data-icon="verified">verified</span>
+</div>
+<p class="font-metadata text-[11px] text-muted mt-1">Được quyền kê đơn dược lý cấp 2, lập biên bản chẩn đoán và đóng dấu bệnh án đua.</p>
+</div>
+</div>
+<!-- User Editable Fields -->
+<div class="space-y-4 pt-1">
+<!-- Full Name -->
+<div>
+<label class="block font-label text-label text-ink mb-1" for="fullName">
+                Họ và tên nhân sự <span class="text-error">*</span>
+</label>
+<div class="relative flex items-center">
+<span class="absolute left-3 material-symbols-outlined text-muted text-[18px]" data-icon="person">person</span>
+<input class="w-full pl-9 pr-3 h-[44px] rounded-[6px] border border-border bg-surface font-body text-body text-ink focus:border-forest focus:ring-1 focus:ring-forest transition-colors" id="fullName" placeholder="Nhập đầy đủ họ tên theo CCCD/chứng chỉ" required="" type="text" value="Lê Hoàng Long">
+</div>
+<span class="font-metadata text-[12px] text-muted mt-1 block">Tên này sẽ hiển thị trên phác đồ điều trị và chứng từ y tế của chuồng.</span>
+</div>
+<!-- Phone Number -->
+<div>
+<label class="block font-label text-label text-ink mb-1" for="phoneNumber">
+                Số điện thoại liên hệ <span class="text-error">*</span>
+</label>
+<span class="font-metadata text-[12px] text-muted mt-1 block">Dùng để nhận mã xác thực 2FA khi ký duyệt đơn thuốc khẩn cấp.</span>
+</div>
+<!-- Create Password -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+<div>
+<label class="block font-label text-label text-ink mb-1" for="newPassword">
+                  Tạo mật khẩu <span class="text-error">*</span>
+</label>
+<div class="relative flex items-center">
+<span class="absolute left-3 material-symbols-outlined text-muted text-[18px]" data-icon="key">key</span>
+<input class="w-full pl-9 pr-10 h-[44px] rounded-[6px] border border-border bg-surface font-body text-body text-ink focus:border-forest focus:ring-1 focus:ring-forest transition-colors" id="newPassword" required="" type="password" value="Equestrian@2025!">
+<button class="absolute right-3 text-muted hover:text-ink" onclick="togglePass('newPassword', this)" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="visibility">visibility</span>
+</button>
+</div>
+</div>
+<!-- Confirm Password -->
+<div>
+<label class="block font-label text-label text-ink mb-1" for="confirmPassword">
+                  Xác nhận mật khẩu <span class="text-error">*</span>
+</label>
+<div class="relative flex items-center">
+<span class="absolute left-3 material-symbols-outlined text-muted text-[18px]" data-icon="lock_reset">lock_reset</span>
+<input class="w-full pl-9 pr-10 h-[44px] rounded-[6px] border border-border bg-surface font-body text-body text-ink focus:border-forest focus:ring-1 focus:ring-forest transition-colors" id="confirmPassword" required="" type="password" value="Equestrian@2025!">
+<button class="absolute right-3 text-muted hover:text-ink" onclick="togglePass('confirmPassword', this)" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="visibility">visibility</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Password Safety Checklist -->
+<div class="p-3.5 rounded-lg bg-surface-container-low border border-border">
+<span class="font-label text-metadata text-ink block mb-2 font-semibold">Tiêu chuẩn an toàn mật khẩu hệ thống EquiFlow:</span>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 font-metadata text-metadata">
+<div class="flex items-center gap-1.5 text-positive-text">
+<span class="material-symbols-outlined text-[16px]" data-icon="check_circle">check_circle</span>
+<span>Tối thiểu 8 ký tự trở lên</span>
+</div>
+<div class="flex items-center gap-1.5 text-positive-text">
+<span class="material-symbols-outlined text-[16px]" data-icon="check_circle">check_circle</span>
+<span>Bao gồm chữ in hoa &amp; chữ thường</span>
+</div>
+<div class="flex items-center gap-1.5 text-positive-text">
+<span class="material-symbols-outlined text-[16px]" data-icon="check_circle">check_circle</span>
+<span>Có ít nhất 1 chữ số (0-9)</span>
+</div>
+<div class="flex items-center gap-1.5 text-positive-text">
+<span class="material-symbols-outlined text-[16px]" data-icon="check_circle">check_circle</span>
+<span>Chứa ký tự đặc biệt (@, #, $, !...)</span>
+</div>
+</div>
+</div>
+<!-- Compliance Agreement Checklist -->
+<!-- Primary Submission CTA Button -->
+<button class="w-full h-[44px] px-4 rounded-[7px] bg-forest hover:bg-forest-deep text-white font-label text-label flex items-center justify-center gap-2 shadow-sm transition-all duration-150 active:scale-[0.99]" id="btnSubmitActivation" type="submit">
+<span class="material-symbols-outlined text-[20px]" data-icon="how_to_reg">how_to_reg</span>
+<span>Kích hoạt tài khoản &amp; Vào hệ thống</span>
+</button>
+<!-- Secondary Help Action -->
+<div class="flex items-center justify-between text-metadata pt-1 text-muted">
+<a class="inline-flex items-center gap-1 hover:text-forest transition-colors" href="#">
+<span class="material-symbols-outlined text-[15px]" data-icon="help">help</span>
+                Cần hỗ trợ xác minh quyền hạn?
+              </a>
+<a class="hover:text-forest transition-colors" href="#">Đăng nhập tài khoản khác</a>
+</div>
+</div>
+</form>
+</div>
+<!-- Left Panel Footer -->
+<div class="w-full max-w-xl mx-auto pt-8 border-t border-border mt-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-metadata text-muted">
+<span>© 2025 EquiFlow Racing Operations. All rights reserved.</span>
+<div class="flex items-center gap-4">
+<a class="hover:text-ink" href="#">Quy chế phúc lợi</a>
+<span>·</span>
+<a class="hover:text-ink" href="#">Bảo mật RBAC</a>
+</div>
+</div>
+</div>
+<!-- RIGHT PANEL: EquiFlow Operational Brand Space (54%) -->
+<div class="w-full lg:w-[54%] bg-canvas relative flex flex-col justify-between p-8 lg:p-14 overflow-hidden border-t lg:border-t-0 lg:border-l border-border">
+<!-- Subtle Top Status Pill -->
+<div class="relative z-10 flex items-center justify-between">
+<div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface/90 backdrop-blur border border-border text-ink font-label text-metadata shadow-sm">
+<span class="w-2 h-2 rounded-full bg-forest animate-pulse"></span>
+<span>Hạ tầng chuồng đua chuẩn Olympic</span>
+</div>
+<div class="hidden sm:flex items-center gap-2 text-metadata text-muted bg-surface/80 px-3 py-1.5 rounded-full border border-border">
+<span class="material-symbols-outlined text-[16px] text-forest" data-icon="shield">shield</span>
+<span>Bảo mật dữ liệu cấp phân quyền Tier-3</span>
+</div>
+</div>
+<!-- Feature Card Overlaid on Professional Equine Photography -->
+<div class="relative z-10 my-auto py-8 max-w-xl"><div class="relative rounded-xl overflow-hidden border border-border bg-surface shadow-sm"><img class="w-full aspect-[16/10] object-cover" data-alt="A professional equine veterinary team conducting health examinations on thoroughbred racing horses inside a clean, modern, well-lit stable clinic. The atmosphere is calm and focused, with natural high-key daylight accentuating deep forest greens, crisp white surgical coats, and brushed stainless steel medical carts. The setting embodies calm operational efficiency and high animal welfare standards." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDrpTxF5iLkYQHUBSOfr0z6ITzMyGNiXV4O5u6qoXaYrvuOVuwDnw6WKRbt-X8oBgeT24TpFO-Kv1-FfZtebMlnW8VhcylN0sFTGpDLD_1e1sH4mJ7-1jLOjb9YD_Qk6VkpoCOBc-GQfDiWGi1zlcZpCUS_lTL7NZMq9r37nIJYc0tLg4gPuS-yEAxmk1KqSdxpBsi73BrKTM-jDYuDeCfZTtwKKqMTyYcEPoL8AthaBcqkZQfCdFtahdnzsvtHtFXnwfWypPv1Vw"></div><p class="mt-4 text-center font-body text-body text-muted leading-relaxed">EquiFlow — Hạ tầng chuyên môn thú y và huấn luyện chuẩn quốc tế</p></div>
+<!-- Brand Bottom Endorsement -->
+<div class="relative z-10 pt-4 border-t border-border flex items-center justify-between text-metadata text-muted">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-positive-text text-[18px]" data-icon="verified_user">verified_user</span>
+<span>Chuẩn mực bảo vệ phúc lợi ngựa đua FEI (Fédération Equestre Internationale)</span>
+</div>
+<span class="font-mono text-[11px] text-muted">CLB TÂN PHÚ · RACING DIV</span>
+</div>
+<!-- Subtle Geometric Backdrop Patterns -->
+<div class="absolute -right-24 -bottom-24 w-96 h-96 rounded-full bg-forest-wash/40 blur-3xl pointer-events-none"></div>
+<div class="absolute -left-20 top-1/4 w-80 h-80 rounded-full bg-secondary-container/20 blur-3xl pointer-events-none"></div>
+</div>
+</main>
+<!-- Interactive State Engine for Reviewing Error Mockups -->
+<script>
+    const states = {
+      valid: {
+        label: "Trạng thái: Hợp lệ (Sẵn sàng)",
+        noticeClass: "hidden",
+        btnDisabled: false,
+        btnText: "Kích hoạt tài khoản & Vào hệ thống",
+        btnClass: "bg-forest hover:bg-forest-deep text-white cursor-pointer"
+      },
+      expired: {
+        label: "Trạng thái: Lời mời đã hết hạn",
+        noticeClass: "block bg-warning-bg border-[#F3DFB4] text-warning-text",
+        icon: "timer_off",
+        title: "Lời mời kích hoạt đã hết hiệu lực",
+        desc: "Liên kết mời đã hết hạn 48 giờ theo quy chế an toàn nội bộ. Vui lòng liên hệ Club Manager để cấp lại liên kết bảo mật mới.",
+        btnDisabled: true,
+        btnText: "Lời mời đã hết hạn — Vui lòng cấp lại",
+        btnClass: "bg-surface-container-high text-muted cursor-not-allowed border border-border"
+      },
+      used: {
+        label: "Trạng thái: Lời mời đã sử dụng",
+        noticeClass: "block bg-quarantine-bg border-[#DACFE2] text-quarantine-text",
+        icon: "task_alt",
+        title: "Tài khoản đã được kích hoạt trước đó",
+        desc: "Mã lời mời này đã được kích hoạt và liên kết thành công với tài khoản 'bs.hoanglong@tanphuracing.vn'. Bạn có thể đăng nhập ngay.",
+        btnDisabled: true,
+        btnText: "Đã kích hoạt — Đến trang Đăng nhập",
+        btnClass: "bg-surface-container-high text-forest cursor-pointer border border-border"
+      },
+      revoked: {
+        label: "Trạng thái: Lời mời bị thu hồi",
+        noticeClass: "block bg-critical-bg border-[#F5C2C7] text-critical-text",
+        icon: "cancel",
+        title: "Quyền mời đã bị hủy bỏ",
+        desc: "Quản lý CLB Đua Ngựa Tân Phú đã hủy bỏ quyền mời này. Nếu bạn cho rằng đây là sự nhầm lẫn, vui lòng liên hệ Ban điều hành.",
+        btnDisabled: true,
+        btnText: "Quyền mời đã bị thu hồi",
+        btnClass: "bg-critical-bg text-critical-text cursor-not-allowed border border-[#F5C2C7]"
+      }
+    };
+
+    function switchState(stateKey) {
+      const config = states[stateKey];
+      if (!config) return;
+
+      // Update button styles in mock switcher
+      ['valid', 'expired', 'used', 'revoked'].forEach(key => {
+        const btn = document.getElementById('btn-state-' + key);
+        if (key === stateKey) {
+          btn.className = "px-2 py-1.5 rounded text-xs font-label bg-forest text-white shadow-sm transition-all";
+        } else {
+          btn.className = "px-2 py-1.5 rounded text-xs font-label bg-surface border border-border text-muted hover:text-ink transition-all";
+        }
+      });
+
+      // Update Active Status Label
+      document.getElementById('activeStatusLabel').innerText = config.label;
+
+      // Update Notice Banner
+      const noticeBox = document.getElementById('statusNotice');
+      if (stateKey === 'valid') {
+        noticeBox.className = "hidden p-4 rounded-lg border transition-all";
+      } else {
+        noticeBox.className = `p-4 rounded-lg border transition-all ${config.noticeClass}`;
+        document.getElementById('noticeIcon').innerText = config.icon;
+        document.getElementById('noticeTitle').innerText = config.title;
+        document.getElementById('noticeDesc').innerText = config.desc;
+      }
+
+      // Update Submit Action Button
+      const submitBtn = document.getElementById('btnSubmitActivation');
+      submitBtn.disabled = config.btnDisabled;
+      submitBtn.innerHTML = `
+        <span class="material-symbols-outlined text-[20px]" data-icon="${stateKey === 'valid' ? 'how_to_reg' : (stateKey === 'used' ? 'login' : 'block')}">${stateKey === 'valid' ? 'how_to_reg' : (stateKey === 'used' ? 'login' : 'block')}</span>
+        <span>${config.btnText}</span>
+      `;
+      submitBtn.className = `w-full h-[44px] px-4 rounded-[7px] font-label text-label flex items-center justify-center gap-2 transition-all duration-150 ${config.btnClass}`;
+
+      // Form input lock states for error modes
+      const inputs = ['fullName', 'phoneNumber', 'newPassword', 'confirmPassword'];
+      inputs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.disabled = (stateKey !== 'valid');
+          if (stateKey !== 'valid') {
+            el.classList.add('bg-surface-container-low', 'cursor-not-allowed');
+          } else {
+            el.classList.remove('bg-surface-container-low', 'cursor-not-allowed');
+          }
+        }
+      });
+    }
+
+    function togglePass(inputId, btn) {
+      const field = document.getElementById(inputId);
+      const icon = btn.querySelector('.material-symbols-outlined');
+      if (field.type === 'password') {
+        field.type = 'text';
+        icon.innerText = 'visibility_off';
+      } else {
+        field.type = 'password';
+        icon.innerText = 'visibility';
+      }
+    }
+  </script>
+</body></html>

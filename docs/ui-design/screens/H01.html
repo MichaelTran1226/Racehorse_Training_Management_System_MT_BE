@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html class="light" lang="vi"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>[GH-BE-08][FR-002][H01] Quản lý Hồ sơ &amp; Định danh ngựa (Microchip RFID) — Danh sách hồ sơ ngựa</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-secondary-fixed": "#002116",
+            "forest": "#315D4B",
+            "canvas": "#F5F6F3",
+            "outline": "#717974",
+            "surface-bright": "#f9faf7",
+            "positive-bg": "#E8F3EB",
+            "on-error-container": "#93000a",
+            "surface-container": "#edeeeb",
+            "surface-container-lowest": "#ffffff",
+            "on-tertiary-fixed": "#34100e",
+            "on-error": "#ffffff",
+            "on-primary": "#ffffff",
+            "secondary": "#446557",
+            "on-primary-container": "#a5d4bd",
+            "on-secondary-fixed-variant": "#2c4d40",
+            "surface-tint": "#3b6754",
+            "surface-container-highest": "#e2e3e0",
+            "surface-container-high": "#e7e8e6",
+            "inverse-surface": "#2e312f",
+            "outline-variant": "#c0c8c2",
+            "critical-text": "#922D3C",
+            "tertiary-fixed": "#ffdad7",
+            "inverse-primary": "#a2d1ba",
+            "tertiary-container": "#794744",
+            "surface-variant": "#e2e3e0",
+            "secondary-fixed-dim": "#aacfbd",
+            "tertiary": "#5e312e",
+            "critical-bg": "#FAE9EB",
+            "quarantine-text": "#65517D",
+            "ink": "#202B28",
+            "border": "#DCE3DD",
+            "primary-fixed": "#bdedd6",
+            "primary-container": "#315d4b",
+            "forest-deep": "#234437",
+            "on-surface": "#191c1b",
+            "on-secondary": "#ffffff",
+            "quarantine-bg": "#F1EDF6",
+            "surface-container-low": "#f3f4f1",
+            "surface-dim": "#d9dad7",
+            "primary-fixed-dim": "#a2d1ba",
+            "warning-text": "#875B15",
+            "background": "#f9faf7",
+            "inverse-on-surface": "#f0f1ee",
+            "error-container": "#ffdad6",
+            "error": "#ba1a1a",
+            "tertiary-fixed-dim": "#f9b6b1",
+            "secondary-container": "#c6ebd8",
+            "on-tertiary-container": "#fcb9b4",
+            "on-secondary-container": "#4a6b5d",
+            "muted": "#65716B",
+            "on-background": "#191c1b",
+            "secondary-fixed": "#c6ebd8",
+            "on-tertiary-fixed-variant": "#693937",
+            "on-primary-fixed": "#002115",
+            "surface": "#FFFFFF",
+            "on-surface-variant": "#414944",
+            "on-tertiary": "#ffffff",
+            "warning-bg": "#FFF4DD",
+            "primary": "#184535",
+            "positive-text": "#276442",
+            "forest-wash": "#EAF1EC",
+            "on-primary-fixed-variant": "#224f3d"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-md": "16px",
+            "space-lg": "24px",
+            "space-sm": "8px",
+            "space-xs": "4px",
+            "margin": "32px",
+            "gutter": "24px",
+            "space-xl": "32px"
+          },
+          "fontFamily": {
+            "page-title": ["Manrope"],
+            "body-lg": ["Manrope"],
+            "metadata": ["Manrope"],
+            "auth-heading": ["Manrope"],
+            "label": ["Manrope"],
+            "body": ["Manrope"],
+            "section-heading": ["Manrope"]
+          },
+          "fontSize": {
+            "page-title": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "metadata": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "auth-heading": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+            "label": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "body": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "section-heading": ["18px", { "lineHeight": "26px", "fontWeight": "650" }]
+          }
+        },
+      },
+    }
+  </script>
+<style id="equiflow-reviewed-layout">
+   html,body{max-width:100%;} .ef-sidebar{width:224px!important;min-width:224px;background:#fff!important;border-right:1px solid #dce3dd;padding:24px 14px!important;display:flex;flex-direction:column;gap:24px}.ef-brand{font:700 24px/1.2 Manrope,'Segoe UI',sans-serif;color:#315d4b}.ef-brand small{display:block;font:11px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin-top:8px}.ef-role-nav{display:flex;flex-direction:column;gap:5px}.ef-role-nav a{padding:11px 12px;min-height:44px;border-radius:6px;font:500 14px/22px Manrope,'Segoe UI',sans-serif;color:#3e4e45;text-decoration:none;white-space:normal}.ef-role-nav a:hover,.ef-role-nav a[aria-current=page]{background:#eaf1ec;color:#315d4b}.ef-role-label{margin-top:auto;font-size:12px;color:#65716b}.ef-role-label a{display:block;padding-top:12px;color:#315d4b}.ef-sample-notice{font:12px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin:0 0 14px}.ef-mobile-nav{display:none}input,select,textarea{max-width:100%}button,a,input,select,textarea{touch-action:manipulation}
+   @media(max-width:1023px){[data-review-kind=app] header,[data-review-kind=app] main .flex{flex-wrap:wrap}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important}[data-review-kind=app] .flex-1{min-width:0}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{max-width:100%;min-width:0}[data-review-kind=app] header>div{max-width:100%;flex-wrap:wrap}}
+   @media(max-width:767px){body[data-review-kind=app]{display:block!important;height:auto!important;min-height:100dvh}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important;height:auto}}
+   @media(max-width:767px){.ef-sidebar{display:none!important}.ef-mobile-nav{display:block;position:relative;z-index:200;background:white;border-bottom:1px solid #dce3dd;padding:12px 16px}.ef-mobile-nav summary{min-height:44px;cursor:pointer;display:flex;align-items:center;font-weight:700;color:#315d4b}.ml-56,.ml-64,[class~='ml-[224px]'],[class~='ml-[240px]'],main[style*='margin-left']{margin-left:0!important}main{min-width:0!important;max-width:100%!important}header{flex-wrap:wrap!important;gap:8px!important;height:auto!important}footer{flex-wrap:wrap!important;gap:12px}h1{overflow-wrap:anywhere}.ef-role-nav{max-width:100%}[data-review-kind=app] .grid{grid-template-columns:minmax(0,1fr)!important}[data-review-kind=app] .flex{min-width:0;flex-wrap:wrap}[data-review-kind=app] table,[data-review-kind=app] tbody,[data-review-kind=app] tr{display:block;width:100%}[data-review-kind=app] thead{display:none}[data-review-kind=app] tr{padding:12px 0;border-bottom:1px solid #dce3dd}[data-review-kind=app] td{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;white-space:normal!important;padding:8px 12px;min-width:0;overflow-wrap:anywhere}[data-review-kind=app] td:before{content:attr(data-label);color:#65716b;font-size:12px;flex:0 0 35%}[data-review-kind=app] td>*{min-width:0;max-width:100%}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{width:100%}}
+  </style></head>
+<body class="bg-canvas text-ink antialiased flex min-h-screen font-body text-body selection:bg-forest selection:text-surface" data-review-kind="app">
+<!-- Side Navigation Bar (Fixed 224px / w-56) -->
+<aside class="w-56 h-screen sticky top-0 flex flex-col justify-between p-space-sm z-30 bg-surface border-r border-border shrink-0 select-none ef-sidebar"><div class="ef-brand">EquiFlow<small>Quản lý huấn luyện ngựa đua</small></div><nav class="ef-role-nav" aria-label="Điều hướng Quản lý CLB"><a href="M01.html">Tổng quan</a><a href="H01.html" aria-current="page">Hồ sơ ngựa</a><a href="H04.html">Ô chuồng</a><a href="V01.html">Sức khỏe</a><a href="M02.html">Nhân sự</a><a href="M04.html">Nhật ký hệ thống</a></nav><div class="ef-role-label">Quản lý CLB<a href="AUTH01.html">Đăng xuất</a></div></aside>
+<!-- Main Content Layout Area -->
+<div class="flex-1 flex flex-col min-w-0">
+<!-- Top Navigation Bar (Fixed 64px / h-16) -->
+<header class="h-16 w-full flex items-center justify-between px-gutter sticky top-0 z-20 bg-surface border-b border-border shrink-0">
+<!-- Search Input on Left -->
+<div class="flex items-center gap-3 w-96">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-[20px]">search</span>
+<input class="w-full h-10 pl-10 pr-4 bg-canvas rounded-lg text-body font-body placeholder:text-muted placeholder:font-normal focus:outline-none focus:ring-1 focus:ring-forest border border-border text-sm" placeholder="Tìm theo tên chiến mã, số microchip RFID, chủ sở hữu..." type="search">
+</div>
+</div>
+<!-- Right Trailing Controls -->
+<div class="flex items-center gap-space-md">
+<!-- Icon Actions -->
+<button class="relative p-2 text-muted hover:text-forest hover:bg-forest-wash rounded-lg transition-colors" title="Lịch hoạt động">
+<span class="material-symbols-outlined text-[22px]">calendar_today</span>
+</button>
+<button class="relative p-2 text-muted hover:text-forest hover:bg-forest-wash rounded-lg transition-colors" title="Thông báo hệ thống">
+<span class="material-symbols-outlined text-[22px]">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 bg-critical-text rounded-full ring-2 ring-surface"></span>
+</button>
+<div class="h-5 w-px bg-border mx-1"></div>
+<!-- Stable Manager Profile Dropdown Anchor -->
+<div class="flex items-center gap-3 pl-1">
+<div class="text-right hidden sm:block">
+<div class="font-label text-label text-ink leading-tight">Nguyễn Văn An</div>
+<div class="font-metadata text-metadata text-muted">Quản lý CLB / HLV trưởng</div>
+</div>
+<img class="w-9 h-9 rounded-full object-cover border border-border" data-alt="Close up photographic headshot portrait of a professional Vietnamese equestrian stable manager in neat collared shirt standing against a clean warm stable background with soft natural lighting and pristine details." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCKfXYR2ALGbPsvOoNPgqSc7X5TKauvp6mhYjVX9alaCycegUndQlk59_mKEJhCzMRa1wTCqL0uE71rlojTHPsBNrm6ch6GHSQurjcXW4z-XEiDLxzo4qPoymq6HXi1AYsVGKLq1Bd2nunBrcOjZBj9eWucWohC6MOi--Gf_qx7OebVfi2010HeZbDCqDHAuwBo60BZB0F8E-i2ZMR5HewK3nINv9YkW76iaMEDof91qMuMccmzYr4AjmYJG9n4eZNQndnYmdL2TA">
+</div>
+</div>
+</header>
+<!-- Main Workspace Container -->
+<main class="flex-1 p-space-xl flex flex-col gap-6 max-w-[1440px] w-full mx-auto"><p class="ef-sample-notice">Dữ liệu minh họa · Bản thiết kế giao diện</p>
+<!-- Operational Page Title & Global Actions -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div>
+<div class="flex items-center gap-3">
+<h1 class="font-page-title text-page-title text-ink tracking-tight">Danh sách hồ sơ ngựa</h1>
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-forest-wash text-forest border border-border">
+              12 cá thể (Dữ liệu minh họa)
+            </span>
+</div>
+<p class="font-body text-body text-muted mt-1">Cơ sở dữ liệu nhận dạng cá thể, microchip RFID và giám sát phân vùng chuồng trại</p>
+</div>
+<div class="flex items-center gap-3">
+<button class="h-[44px] px-4 rounded-[7px] border border-border bg-surface text-ink hover:bg-canvas font-label text-label flex items-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-[18px]">file_download</span>
+<span>Xuất dữ liệu</span>
+</button>
+<button class="h-[44px] px-5 rounded-[7px] bg-forest hover:bg-forest-deep text-surface font-label text-label flex items-center gap-2 transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[20px]">add</span>
+<span>+ Thêm ngựa</span>
+</button>
+</div>
+</div>
+<!-- Filters & Control Toolbar -->
+<div class="bg-surface border border-border rounded-[10px] p-4 flex flex-wrap items-center justify-between gap-4">
+<div class="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
+<!-- Filter: Health Status -->
+<div class="flex items-center gap-2">
+<span class="text-xs font-label text-muted">Sức khỏe:</span>
+<div class="relative">
+<select class="h-10 pl-3 pr-8 py-1.5 text-sm bg-canvas border border-border rounded-lg text-ink font-body focus:outline-none focus:ring-1 focus:ring-forest cursor-pointer appearance-none">
+<option value="all">Tất cả trạng thái sức khỏe</option>
+<option value="eligible">Đủ điều kiện</option>
+<option value="monitor">Cần theo dõi</option>
+<option value="treating">Đang điều trị</option>
+<option value="quarantine">Cách ly</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-muted pointer-events-none text-[18px]">expand_more</span>
+</div>
+</div>
+<!-- Filter: Lifecycle -->
+<div class="flex items-center gap-2">
+<span class="text-xs font-label text-muted">Vòng đời:</span>
+<div class="relative">
+<select class="h-10 pl-3 pr-8 py-1.5 text-sm bg-canvas border border-border rounded-lg text-ink font-body focus:outline-none focus:ring-1 focus:ring-forest cursor-pointer appearance-none">
+<option value="all">Tất cả vòng đời</option>
+<option value="training">Đang huấn luyện</option>
+<option value="resting">Nghỉ ngơi</option>
+<option value="competition_ready">Sẵn sàng thi đấu</option>
+<option value="recovering">Dưỡng thương</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-muted pointer-events-none text-[18px]">expand_more</span>
+</div>
+</div>
+<!-- Stable Sector Filter -->
+<div class="flex items-center gap-2">
+<span class="text-xs font-label text-muted">Khu chuồng:</span>
+<div class="relative">
+<select class="h-10 pl-3 pr-8 py-1.5 text-sm bg-canvas border border-border rounded-lg text-ink font-body focus:outline-none focus:ring-1 focus:ring-forest cursor-pointer appearance-none">
+<option value="all">Tất cả các khu (A, B, C)</option>
+<option value="A">Khu chuồng A</option>
+<option value="B">Khu chuồng B</option>
+<option value="C">Khu chuồng C</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-muted pointer-events-none text-[18px]">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Active Filter Indicator / Reset -->
+<div class="flex items-center gap-2">
+<button class="h-10 px-3 text-muted hover:text-ink text-sm font-label flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">restart_alt</span>
+<span>Đặt lại bộ lọc</span>
+</button>
+</div>
+</div>
+<!-- Main Data Table Container -->
+<div class="bg-surface border border-border rounded-[10px] overflow-hidden flex flex-col">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-border text-muted font-label text-metadata tracking-wider uppercase">
+<th class="py-3 px-4 w-12 text-center" scope="col">#</th>
+<th class="py-3 px-3 w-16" scope="col">Ảnh</th>
+<th class="py-3 px-4" scope="col">Tên chiến mã &amp; Mã chip</th>
+<th class="py-3 px-4" scope="col">Chủ sở hữu</th>
+<th class="py-3 px-4" scope="col">Ô chuồng</th>
+<th class="py-3 px-4" scope="col">Sức khỏe</th>
+<th class="py-3 px-4" scope="col">Vòng đời</th>
+<th class="py-3 px-4 text-right" scope="col">Thao tác</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border">
+<!-- Row 1: Phong Vũ -->
+<tr class="hover:bg-forest-wash/40 transition-colors duration-150 h-14">
+<td class="py-2 px-4 text-center font-metadata text-muted" data-label="#">01</td>
+<td class="py-2 px-3" data-label="Ảnh">
+<img class="w-10 h-10 rounded-lg object-cover border border-border shadow-xs" data-alt="Close up fine art equine photography portrait of a noble thoroughbred brown racehorse named Phong Vu with expressive amber eyes in soft natural barn lighting with rich earthy tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPJ0o11bZ9ojCSTkxLDVxI2fNopXDSEM6cQPHpeJP_4VJPBtrqHoBlgMWWIOSu_7Ajud6HhEisVpgd1bna-rYy3wSDbyc9DRN_0mIiTXnsGd-A21CAcJsWESF7UnQha6Zx7PFTGyMP93tgybIYKNwPqMmtJXK-QXY3jSqn9Sm9aJmSSnj03RG7usd9G0y3cwVRtNpP5uE8x_dJrXyINhUWZbc0ECioO1t463KGiBssxKNobGPv27P7ehqV1eP2J45kLXzVo7zqAA">
+</td>
+<td class="py-2 px-4" data-label="Tên chiến mã &amp; Mã chip">
+<div class="font-label text-ink">Phong Vũ</div>
+<div class="font-metadata text-muted font-mono flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[13px]">qr_code</span>
+<span>VNM-123456789012</span>
+</div>
+</td>
+<td class="py-2 px-4 text-ink font-body text-sm" data-label="Chủ sở hữu">Vũ Đình Quân</td>
+<td class="py-2 px-4" data-label="Ô chuồng">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-medium bg-canvas border border-border text-ink">
+                    A01
+                  </span>
+</td>
+<td class="py-2 px-4" data-label="Sức khỏe">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-label bg-positive-bg text-positive-text border border-positive-text/20">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+<span>Đủ điều kiện</span>
+</span>
+</td>
+<td class="py-2 px-4" data-label="Vòng đời">
+<span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-forest-wash text-forest">
+                    Đang huấn luyện
+                  </span>
+</td>
+<td class="py-2 px-4 text-right" data-label="Thao tác">
+<button class="p-1.5 text-muted hover:text-forest hover:bg-forest-wash rounded-md transition-colors" title="Thao tác chi tiết">
+<span class="material-symbols-outlined text-[18px]">more_horiz</span>
+</button>
+</td>
+</tr>
+<!-- Row 2: Bạch Mã -->
+<tr class="hover:bg-forest-wash/40 transition-colors duration-150 h-14">
+<td class="py-2 px-4 text-center font-metadata text-muted" data-label="#">02</td>
+<td class="py-2 px-3" data-label="Ảnh">
+<img class="w-10 h-10 rounded-lg object-cover border border-border shadow-xs" data-alt="Stunning studio equine portrait of a pristine white thoroughbred racehorse named Bach Ma with a sleek braided mane illuminated by soft directional studio lighting against neutral background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAwbjNvc8z1xlOC6zQ0ol_w6-AUAxPqa8fWAtwmgOr7xu_pnSxwLNDgHuRjQ-xYvOXScnkMekzH6PtvWUWxmiQ1CWm40CV2SzJLEAAmSADxDSBLyk_Rd5UrQUN-KDG3Ai6qOkiPogC_nLz40pYpR4_3GsTRn1fDd01dCTHJKnpWkS9ye0Eae_32a-un0jtGlrmTeoyDzB6dFX-rh80DYjV9lwNqI9rYfpgDrkPDtNsVrXLUqly9rr7JbINO3RW3cUztfcTo7RRPHg">
+</td>
+<td class="py-2 px-4" data-label="Tên chiến mã &amp; Mã chip">
+<div class="font-label text-ink">Bạch Mã</div>
+<div class="font-metadata text-muted font-mono flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[13px]">qr_code</span>
+<span>VNM-987654321098</span>
+</div>
+</td>
+<td class="py-2 px-4 text-ink font-body text-sm" data-label="Chủ sở hữu">Lê Thị Mai</td>
+<td class="py-2 px-4" data-label="Ô chuồng">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-medium bg-canvas border border-border text-ink">
+                    A02
+                  </span>
+</td>
+<td class="py-2 px-4" data-label="Sức khỏe">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-label bg-positive-bg text-positive-text border border-positive-text/20">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+<span>Đủ điều kiện</span>
+</span>
+</td>
+<td class="py-2 px-4" data-label="Vòng đời">
+<span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-canvas border border-border text-muted">
+                    Nghỉ ngơi
+                  </span>
+</td>
+<td class="py-2 px-4 text-right" data-label="Thao tác">
+<button class="p-1.5 text-muted hover:text-forest hover:bg-forest-wash rounded-md transition-colors" title="Thao tác chi tiết">
+<span class="material-symbols-outlined text-[18px]">more_horiz</span>
+</button>
+</td>
+</tr>
+<!-- Row 3: Hồng Ngọc -->
+<tr class="hover:bg-forest-wash/40 transition-colors duration-150 h-14 bg-critical-bg/20">
+<td class="py-2 px-4 text-center font-metadata text-muted" data-label="#">03</td>
+<td class="py-2 px-3" data-label="Ảnh">
+<img class="w-10 h-10 rounded-lg object-cover border border-critical-text/40 shadow-xs" data-alt="Profile portrait of a chestnut colored athletic champion racehorse named Hong Ngoc with sleek muscular neck standing in modern clean veterinary clinic paddock." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtjaX0NH6JoRHKRNJlw81Ine-E2aKv6MS55q6hIZXB9JA8s6NRsALszRW66oSVNqCwIAP6D3Ha8kUGcmWe5lfG2bCIL2OY_haA7Hb5aZQNssl6lOc0MEYvXa7PiREJmvdlYQ_6WNzbuOOH9Riu4Nyhu4XzPDvYAndbcEvIxGRIzndzi_j7Vs3eQ43uQGIvO3dKfPzwncc6Q3tWVlsGI7kfDg03w5LXtB6j1bC-VGVFyirxphzSu-BqPv8Kk2aVQ3U0t9KlsCL4_w">
+</td>
+<td class="py-2 px-4" data-label="Tên chiến mã &amp; Mã chip">
+<div class="font-label text-ink flex items-center gap-1.5">
+<span>Hồng Ngọc</span>
+<span class="material-symbols-outlined text-[15px] text-critical-text" title="Đang bị khóa y tế">lock</span>
+</div>
+<div class="font-metadata text-muted font-mono flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[13px]">qr_code</span>
+<span>VNM-246813579024</span>
+</div>
+</td>
+<td class="py-2 px-4 text-ink font-body text-sm" data-label="Chủ sở hữu">Phạm Hoàng Nam</td>
+<td class="py-2 px-4" data-label="Ô chuồng">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-medium bg-canvas border border-border text-ink">
+                    A03
+                  </span>
+</td>
+<td class="py-2 px-4" data-label="Sức khỏe">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-label bg-critical-bg text-critical-text border border-critical-text/30 font-semibold">
+<span class="material-symbols-outlined text-[14px]">emergency</span>
+<span>Khóa y tế: Viêm bao hoạt dịch</span>
+</span>
+</td>
+<td class="py-2 px-4" data-label="Vòng đời">
+<span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-critical-bg text-critical-text border border-critical-text/20">
+                    Dưỡng thương
+                  </span>
+</td>
+<td class="py-2 px-4 text-right" data-label="Thao tác">
+<button class="p-1.5 text-muted hover:text-forest hover:bg-forest-wash rounded-md transition-colors" title="Thao tác chi tiết">
+<span class="material-symbols-outlined text-[18px]">more_horiz</span>
+</button>
+</td>
+</tr>
+<!-- Row 4: Thiên Long -->
+<tr class="hover:bg-forest-wash/40 transition-colors duration-150 h-14">
+<td class="py-2 px-4 text-center font-metadata text-muted" data-label="#">04</td>
+<td class="py-2 px-3" data-label="Ảnh">
+<img class="w-10 h-10 rounded-lg object-cover border border-border shadow-xs" data-alt="Expressive portrait photograph of an obsidian black Arabian thoroughbred horse named Thien Long with focused vigilant gaze outdoors during an overcast equestrian morning." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAqBEaNR77KTET-nn9pha3dRoSOl8w7TTlBPLyT6enpcGFXjkt2pT4ru318WguQycfTJ-8DHWpABqQQA8CEPcjhO58YTCxiIZ17DznhwUivL5JLuuO3jT4WQJxUD3K12LiEodIlQfv7-3aObDCa0WvWTDmkHmmvSi4kyKHXC_Q_rDXyunG-rXBqrQyeaswJM_ta_IbIGARPbNUhkCZm6JnYD38aapL10NBxPBGmr4EMHl09FBiJK5LkA2Fp6txplbgxs5y6glnu4A">
+</td>
+<td class="py-2 px-4" data-label="Tên chiến mã &amp; Mã chip">
+<div class="font-label text-ink">Thiên Long</div>
+<div class="font-metadata text-muted font-mono flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[13px]">qr_code</span>
+<span>VNM-135792468013</span>
+</div>
+</td>
+<td class="py-2 px-4 text-ink font-body text-sm" data-label="Chủ sở hữu">Hoàng Thị Lan</td>
+<td class="py-2 px-4" data-label="Ô chuồng">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-medium bg-canvas border border-border text-ink">
+                    A04
+                  </span>
+</td>
+<td class="py-2 px-4" data-label="Sức khỏe">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-label bg-warning-bg text-warning-text border border-warning-text/30">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+<span>Cần theo dõi</span>
+</span>
+</td>
+<td class="py-2 px-4" data-label="Vòng đời">
+<span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-forest-wash text-forest">
+                    Đang huấn luyện
+                  </span>
+</td>
+<td class="py-2 px-4 text-right" data-label="Thao tác">
+<button class="p-1.5 text-muted hover:text-forest hover:bg-forest-wash rounded-md transition-colors" title="Thao tác chi tiết">
+<span class="material-symbols-outlined text-[18px]">more_horiz</span>
+</button>
+</td>
+</tr>
+<!-- Row 5: Tốc Phong -->
+<tr class="hover:bg-forest-wash/40 transition-colors duration-150 h-14">
+<td class="py-2 px-4 text-center font-metadata text-muted" data-label="#">05</td>
+<td class="py-2 px-3" data-label="Ảnh">
+<img class="w-10 h-10 rounded-lg object-cover border border-border shadow-xs" data-alt="Side profile view portrait of an energetic bay racing colt named Toc Phong with shiny healthy coat wearing modern equestrian green halter against whitewashed stable wall." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBjO18tMRo7LEQ_WzB3B0g9A4Zauz1gE_LFxPy2y3v8p_EsXOO3XXWBIeSVqpD3B8X9KaV7HA1Yy0d8naXccpCcTwD2Pf0g1jjkC_ISLU61Z6wj2c0P3ZRTi4nmEzFShld55FT-uWdIJDJDhpi2TxQvUqsKrzeIyd4nP7LFBBnn_1GUFHm8CaniQxgg6yR2D6Dv613R0uCpodqoT58PtmoUdrtYnXpVidSELYm3xxinHBFDhk6aY522_H4VX5uHTSdPcIGFhCe9rQ">
+</td>
+<td class="py-2 px-4" data-label="Tên chiến mã &amp; Mã chip">
+<div class="font-label text-ink">Tốc Phong</div>
+<div class="font-metadata text-muted font-mono flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[13px]">qr_code</span>
+<span>VNM-111222333444</span>
+</div>
+</td>
+<td class="py-2 px-4 text-ink font-body text-sm" data-label="Chủ sở hữu">Nguyễn Văn Hùng</td>
+<td class="py-2 px-4" data-label="Ô chuồng">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-medium bg-canvas border border-border text-ink">
+                    B01
+                  </span>
+</td>
+<td class="py-2 px-4" data-label="Sức khỏe">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-label bg-positive-bg text-positive-text border border-positive-text/20">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+<span>Đủ điều kiện</span>
+</span>
+</td>
+<td class="py-2 px-4" data-label="Vòng đời">
+<span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-secondary-container text-on-secondary-fixed-variant border border-secondary/20">
+                    Sẵn sàng thi đấu
+                  </span>
+</td>
+<td class="py-2 px-4 text-right" data-label="Thao tác">
+<button class="p-1.5 text-muted hover:text-forest hover:bg-forest-wash rounded-md transition-colors" title="Thao tác chi tiết">
+<span class="material-symbols-outlined text-[18px]">more_horiz</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Pagination Footer -->
+<div class="px-6 py-3.5 bg-surface border-t border-border flex items-center justify-between">
+<span class="font-metadata text-metadata text-muted">
+            Hiển thị <span class="font-semibold text-ink">1–5</span> của <span class="font-semibold text-ink">12</span> cá thể
+          </span>
+<div class="flex items-center gap-1">
+<button class="w-8 h-8 flex items-center justify-center rounded-lg border border-border text-muted hover:text-ink hover:bg-canvas disabled:opacity-40" disabled="">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg bg-forest text-surface font-label text-xs shadow-xs">
+              1
+            </button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg border border-border text-ink hover:bg-canvas font-label text-xs">
+              2
+            </button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg border border-border text-ink hover:bg-canvas font-label text-xs">
+              3
+            </button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg border border-border text-muted hover:text-ink hover:bg-canvas transition-colors">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Quick Registry Operational Indicators -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+
+<div class="p-4 rounded-[10px] bg-surface border border-border flex items-start gap-3">
+<div class="w-8 h-8 rounded-lg bg-warning-bg text-warning-text flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[20px]">healing</span>
+</div>
+<div>
+<div class="font-label text-ink text-sm">Giám sát vết thương</div>
+<div class="font-metadata text-metadata text-muted mt-0.5">1 cá thể đang áp dụng Medical Lock (Hồng Ngọc - Chuồng A03).</div>
+</div>
+</div>
+
+</div>
+<!-- Global Minimalist Footer Note -->
+<footer class="mt-auto py-4 text-center border-t border-border">EquiFlow · Quản lý hồ sơ và huấn luyện ngựa đua</footer>
+</main>
+</div>
+</body></html>

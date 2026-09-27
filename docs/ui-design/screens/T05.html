@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="vi"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>[GH-BE-15][FR-005][T05] Thực thi cơ chế Chặn xếp lịch tự động bởi Lệnh 'Khóa huấn luyện' (Medical Lock Enforcement) — Chặn xếp lịch do khóa huấn luyện</title>
+<!-- Google Fonts: Manrope -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;650;700;800&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config verbatim -->
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-secondary": "#ffffff",
+            "primary-fixed": "#bdedd6",
+            "outline-variant": "#c0c8c2",
+            "canvas": "#F5F6F3",
+            "surface-container-low": "#f3f4f1",
+            "on-primary-container": "#a5d4bd",
+            "on-error-container": "#93000a",
+            "warning-text": "#875B15",
+            "surface-dim": "#d9dad7",
+            "surface-bright": "#f9faf7",
+            "on-tertiary-container": "#fcb9b4",
+            "forest-wash": "#EAF1EC",
+            "inverse-on-surface": "#f0f1ee",
+            "forest-deep": "#234437",
+            "surface-container-highest": "#e2e3e0",
+            "critical-text": "#922D3C",
+            "inverse-surface": "#2e312f",
+            "on-tertiary": "#ffffff",
+            "ink": "#202B28",
+            "on-secondary-container": "#4a6b5d",
+            "critical-bg": "#FAE9EB",
+            "surface-tint": "#3b6754",
+            "primary-fixed-dim": "#a2d1ba",
+            "secondary-fixed-dim": "#aacfbd",
+            "background": "#f9faf7",
+            "secondary-container": "#c6ebd8",
+            "secondary": "#446557",
+            "on-tertiary-fixed-variant": "#693937",
+            "forest": "#315D4B",
+            "tertiary-fixed-dim": "#f9b6b1",
+            "primary": "#184535",
+            "surface": "#FFFFFF",
+            "secondary-fixed": "#c6ebd8",
+            "outline": "#717974",
+            "tertiary-container": "#794744",
+            "surface-container": "#edeeeb",
+            "muted": "#65716B",
+            "on-secondary-fixed-variant": "#2c4d40",
+            "warning-bg": "#FFF4DD",
+            "positive-bg": "#E8F3EB",
+            "surface-container-high": "#e7e8e6",
+            "quarantine-bg": "#F1EDF6",
+            "on-secondary-fixed": "#002116",
+            "on-surface-variant": "#414944",
+            "surface-variant": "#e2e3e0",
+            "error": "#ba1a1a",
+            "on-tertiary-fixed": "#34100e",
+            "on-primary-fixed": "#002115",
+            "surface-container-lowest": "#ffffff",
+            "tertiary-fixed": "#ffdad7",
+            "primary-container": "#315d4b",
+            "on-primary-fixed-variant": "#224f3d",
+            "positive-text": "#276442",
+            "on-surface": "#191c1b",
+            "quarantine-text": "#65517D",
+            "tertiary": "#5e312e",
+            "on-error": "#ffffff",
+            "on-background": "#191c1b",
+            "border": "#DCE3DD",
+            "error-container": "#ffdad6",
+            "on-primary": "#ffffff",
+            "inverse-primary": "#a2d1ba"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-xs": "4px",
+            "space-xl": "32px",
+            "space-md": "16px",
+            "gutter": "24px",
+            "margin": "32px",
+            "space-lg": "24px",
+            "space-sm": "8px"
+          },
+          "fontFamily": {
+            "page-title": ["Manrope"],
+            "auth-heading": ["Manrope"],
+            "metadata": ["Manrope"],
+            "body-lg": ["Manrope"],
+            "label": ["Manrope"],
+            "body": ["Manrope"],
+            "section-heading": ["Manrope"]
+          },
+          "fontSize": {
+            "page-title": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "auth-heading": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+            "metadata": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "label": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "body": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "section-heading": ["18px", { "lineHeight": "26px", "fontWeight": "650" }]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 20px;
+      line-height: 1;
+      letter-spacing: normal;
+      text-transform: none;
+      display: inline-block;
+      white-space: nowrap;
+      word-wrap: normal;
+      direction: ltr;
+      -webkit-font-smoothing: antialiased;
+      vertical-align: middle;
+    }
+    body {
+      font-family: 'Manrope', sans-serif;
+      background-color: #F5F6F3;
+      color: #202B28;
+    }
+  </style>
+<style id="equiflow-reviewed-layout">
+   html,body{max-width:100%;} .ef-sidebar{width:224px!important;min-width:224px;background:#fff!important;border-right:1px solid #dce3dd;padding:24px 14px!important;display:flex;flex-direction:column;gap:24px}.ef-brand{font:700 24px/1.2 Manrope,'Segoe UI',sans-serif;color:#315d4b}.ef-brand small{display:block;font:11px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin-top:8px}.ef-role-nav{display:flex;flex-direction:column;gap:5px}.ef-role-nav a{padding:11px 12px;min-height:44px;border-radius:6px;font:500 14px/22px Manrope,'Segoe UI',sans-serif;color:#3e4e45;text-decoration:none;white-space:normal}.ef-role-nav a:hover,.ef-role-nav a[aria-current=page]{background:#eaf1ec;color:#315d4b}.ef-role-label{margin-top:auto;font-size:12px;color:#65716b}.ef-role-label a{display:block;padding-top:12px;color:#315d4b}.ef-sample-notice{font:12px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin:0 0 14px}.ef-mobile-nav{display:none}input,select,textarea{max-width:100%}button,a,input,select,textarea{touch-action:manipulation}
+   @media(max-width:1023px){[data-review-kind=app] header,[data-review-kind=app] main .flex{flex-wrap:wrap}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important}[data-review-kind=app] .flex-1{min-width:0}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{max-width:100%;min-width:0}[data-review-kind=app] header>div{max-width:100%;flex-wrap:wrap}}
+   @media(max-width:767px){body[data-review-kind=app]{display:block!important;height:auto!important;min-height:100dvh}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important;height:auto}}
+   @media(max-width:767px){.ef-sidebar{display:none!important}.ef-mobile-nav{display:block;position:relative;z-index:200;background:white;border-bottom:1px solid #dce3dd;padding:12px 16px}.ef-mobile-nav summary{min-height:44px;cursor:pointer;display:flex;align-items:center;font-weight:700;color:#315d4b}.ml-56,.ml-64,[class~='ml-[224px]'],[class~='ml-[240px]'],main[style*='margin-left']{margin-left:0!important}main{min-width:0!important;max-width:100%!important}header{flex-wrap:wrap!important;gap:8px!important;height:auto!important}footer{flex-wrap:wrap!important;gap:12px}h1{overflow-wrap:anywhere}.ef-role-nav{max-width:100%}[data-review-kind=app] .grid{grid-template-columns:minmax(0,1fr)!important}[data-review-kind=app] .flex{min-width:0;flex-wrap:wrap}[data-review-kind=app] table,[data-review-kind=app] tbody,[data-review-kind=app] tr{display:block;width:100%}[data-review-kind=app] thead{display:none}[data-review-kind=app] tr{padding:12px 0;border-bottom:1px solid #dce3dd}[data-review-kind=app] td{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;white-space:normal!important;padding:8px 12px;min-width:0;overflow-wrap:anywhere}[data-review-kind=app] td:before{content:attr(data-label);color:#65716b;font-size:12px;flex:0 0 35%}[data-review-kind=app] td>*{min-width:0;max-width:100%}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{width:100%}}
+  </style></head>
+<body class="bg-canvas text-ink antialiased min-h-screen overflow-hidden selection:bg-forest-wash selection:text-forest" data-review-kind="app">
+<!-- ================= TOP APP BAR (Shared Component JSON) ================= -->
+<header class="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-6 h-16 bg-surface border-b border-border">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">pets</span>
+<span class="font-page-title text-section-heading text-primary tracking-tight font-bold">EquiFlow</span>
+</div>
+<div class="relative w-72">
+<span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-muted">
+<span class="material-symbols-outlined text-base">search</span>
+</span>
+<input class="w-full h-9 pl-9 pr-3 text-body font-body bg-surface-container-low border border-border rounded-lg text-ink focus:outline-none focus:border-forest" disabled="" placeholder="Tìm chiến mã, ô chuồng, mã chip..." type="text">
+</div>
+<!-- Navigation Links from JSON -->
+
+</div>
+<div class="flex items-center gap-3">
+<button class="px-3 py-1.5 rounded-lg border border-border font-label text-label text-critical-text bg-critical-bg flex items-center gap-1.5 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-base" style="font-variation-settings: 'FILL' 1;">emergency</span>
+<span>Khẩn cấp</span>
+</button>
+<button class="px-3.5 py-1.5 rounded-lg bg-forest text-on-primary font-label text-label flex items-center gap-1 hover:bg-forest-deep transition-colors">
+<span class="material-symbols-outlined text-base">add</span>
+<span>Thêm mới</span>
+</button>
+<div class="h-5 w-[1px] bg-border mx-1"></div>
+<button class="p-2 rounded-lg text-muted hover:bg-forest-wash hover:text-primary transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 rounded-lg text-muted hover:bg-forest-wash hover:text-primary transition-colors">
+<span class="material-symbols-outlined">help</span>
+</button>
+<button class="p-2 rounded-lg text-muted hover:bg-forest-wash hover:text-primary transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="flex items-center gap-2 pl-2">
+<div class="w-8 h-8 rounded-full bg-forest-wash border border-border flex items-center justify-center font-label text-primary font-bold text-xs" title="Ảnh đại diện quản lý chuồng trại">
+          HLV
+        </div>
+</div>
+</div>
+</header>
+<!-- ================= SIDE NAV BAR (Shared Component JSON) ================= -->
+<aside class="fixed left-0 top-0 bottom-0 w-56 z-30 flex flex-col justify-between py-4 px-3 bg-surface border-r border-border pt-20 ef-sidebar"><div class="ef-brand">EquiFlow<small>Quản lý huấn luyện ngựa đua</small></div><nav class="ef-role-nav" aria-label="Điều hướng HLV trưởng"><a href="T01.html">Tổng quan huấn luyện</a><a href="H01.html">Hồ sơ ngựa</a><a href="T02.html">Giáo án</a><a href="T03.html">Lịch tập</a><a href="T04.html">Kết quả buổi tập</a></nav><div class="ef-role-label">HLV trưởng<a href="AUTH01.html">Đăng xuất</a></div></aside>
+<!-- ================= BACKGROUND WORKSPACE: LỊCH TẬP LUYỆN (BLURRED / OVERLAID) ================= -->
+<main class="ml-56 pt-16 min-h-screen p-8 bg-canvas filter blur-[2px] opacity-40 pointer-events-none select-none"><p class="ef-sample-notice">Dữ liệu minh họa · Bản thiết kế giao diện</p>
+<!-- Header of workspace -->
+<div class="flex items-center justify-between mb-6">
+<div>
+<div class="flex items-center gap-2 text-muted font-metadata text-metadata mb-1">
+<span>Lịch trình huấn luyện</span>
+<span class="material-symbols-outlined text-xs">chevron_right</span>
+<span>Kế hoạch tuần 12 (15/03 - 21/03/2025)</span>
+</div>
+<h1 class="font-page-title text-page-title text-ink">Bảng Điều Phối Lịch Tập Tuần</h1>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex border border-border rounded-lg bg-surface p-1">
+<button class="px-3 py-1 bg-forest-wash text-forest rounded font-label text-label">Tuần</button>
+<button class="px-3 py-1 text-muted rounded font-body text-body">Ngày</button>
+<button class="px-3 py-1 text-muted rounded font-body text-body">Tháng</button>
+</div>
+<button class="h-10 px-4 rounded-lg bg-forest text-on-primary font-label text-label flex items-center gap-2">
+<span class="material-symbols-outlined text-base">event_available</span>
+<span>Xếp lịch buổi tập</span>
+</button>
+</div>
+</div>
+<!-- Calendar Mock Grid -->
+<div class="bg-surface rounded-xl border border-border p-5 space-y-4">
+<div class="grid grid-cols-7 gap-4 pb-3 border-b border-border text-center font-label text-label text-muted">
+<div>Thứ Hai (15/03)</div>
+<div>Thứ Ba (16/03)</div>
+<div>Thứ Tư (17/03)</div>
+<div>Thứ Năm (18/03)</div>
+<div>Thứ Sáu (19/03)</div>
+<div>Thứ Bảy (20/03)</div>
+<div>Chủ Nhật (21/03)</div>
+</div>
+<div class="grid grid-cols-7 gap-4 min-h-[460px]">
+<!-- Col 1 -->
+<div class="space-y-3 p-2 bg-canvas/60 rounded-lg border border-border/60">
+<div class="p-3 bg-surface rounded-lg border border-border shadow-sm">
+<div class="font-label text-label text-ink">Phi Mã 01</div>
+<div class="font-metadata text-metadata text-muted">07:00 · Khởi động nhẹ</div>
+</div>
+<div class="p-3 bg-critical-bg rounded-lg border border-critical-text/30">
+<div class="font-label text-label text-critical-text flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">lock</span> Hồng Ngọc
+            </div>
+<div class="font-metadata text-metadata text-critical-text/80">09:30 · Bị hủy (Medical Lock)</div>
+</div>
+</div>
+<!-- Col 2 -->
+<div class="space-y-3 p-2 bg-canvas/60 rounded-lg border border-border/60">
+<div class="p-3 bg-surface rounded-lg border border-border shadow-sm">
+<div class="font-label text-label text-ink">Bạch Long Mã</div>
+<div class="font-metadata text-metadata text-muted">08:00 · Chạy nước kiệu</div>
+</div>
+</div>
+<!-- Col 3 to 7 mock blocks -->
+<div class="p-2 bg-canvas/60 rounded-lg border border-border/60"></div>
+<div class="p-2 bg-canvas/60 rounded-lg border border-border/60"></div>
+<div class="p-2 bg-canvas/60 rounded-lg border border-border/60"></div>
+<div class="p-2 bg-canvas/60 rounded-lg border border-border/60"></div>
+<div class="p-2 bg-canvas/60 rounded-lg border border-border/60"></div>
+</div>
+</div>
+</main>
+<!-- ================= MANDATORY MODAL DIALOG OVERLAY (FR-005, FR-011) ================= -->
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50 backdrop-blur-[3px] transition-all duration-200">
+<!-- Modal Box: Strict Corporate Minimalist, 1px Border, 10px Radius, Solid Elevation -->
+<div class="w-full max-w-3xl bg-surface rounded-[10px] border border-border shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150">
+<!-- Top Critical Banner: Burgundy #922D3C as specified -->
+<div class="bg-critical-text px-6 py-4 flex items-start justify-between text-on-primary">
+<div class="flex items-start gap-3.5">
+<div class="w-10 h-10 rounded-lg bg-surface/15 flex items-center justify-center shrink-0 border border-white/20">
+<span class="material-symbols-outlined text-2xl text-on-primary" style="font-variation-settings: 'FILL' 1;">lock</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+
+
+</div>
+<h2 class="font-page-title text-section-heading font-bold text-white mt-1">
+              LỆNH CHẶN CƯỠNG CHẾ: Không thể xếp lịch huấn luyện (Medical Lock Active)
+            </h2>
+</div>
+</div>
+<button class="p-1 rounded text-white/70 hover:text-white hover:bg-white/10 transition-colors" title="Đóng cửa sổ">
+<span class="material-symbols-outlined text-xl">close</span>
+</button>
+</div>
+<!-- Modal Content Body -->
+<div class="p-6 space-y-5 bg-surface overflow-y-auto max-h-[calc(85vh-140px)]">
+<!-- SECTION 1: Horse Identity Card with Status Badge -->
+<div class="flex items-center justify-between p-4 rounded-lg bg-canvas border border-border">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-critical-bg border border-critical-text/30 flex items-center justify-center text-critical-text font-bold">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">pets</span>
+</div>
+<div>
+<div class="flex items-center gap-2.5">
+<span class="font-page-title text-section-heading text-ink font-bold">Chiến mã Hồng Ngọc</span>
+<span class="px-2.5 py-0.5 rounded bg-critical-bg text-critical-text border border-critical-text/40 font-label text-xs font-bold tracking-wide uppercase flex items-center gap-1">
+<span class="material-symbols-outlined text-xs" style="font-variation-settings: 'FILL' 1;">block</span>
+                  CẤM TẬP LUYỆN
+                </span>
+</div>
+<div class="flex items-center gap-4 mt-1 font-metadata text-metadata text-muted">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">pin</span> Mã chip: <strong class="text-ink">VNM-246813579024</strong>
+</span>
+<span class="inline-block w-1 h-1 rounded-full bg-border"></span>
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">meeting_room</span> Ô chuồng: <strong class="text-ink">A03</strong>
+</span>
+<span class="inline-block w-1 h-1 rounded-full bg-border"></span>
+<span>Giống: Thuần chủng 4 tuổi</span>
+</div>
+</div>
+</div>
+<div class="text-right">
+<span class="font-metadata text-metadata text-muted block">Tình trạng kiểm soát</span>
+<span class="font-label text-label text-critical-text font-bold flex items-center justify-end gap-1 mt-0.5">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">lock_clock</span>
+              Khóa y tế toàn phần
+            </span>
+</div>
+</div>
+<!-- SECTION 2: Medical Restriction Diagnosis Block from Veterinary Board -->
+<div class="p-4 rounded-lg bg-critical-bg/50 border border-critical-text/30 space-y-3">
+<div class="flex items-center justify-between border-b border-critical-text/20 pb-2">
+<div class="flex items-center gap-2 text-critical-text font-label text-label">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">clinical_notes</span>
+<span class="font-bold">LÝ DO Y TẾ TỪ BAN THÚ Y</span>
+</div>
+<span class="font-metadata text-metadata text-critical-text font-medium bg-surface px-2 py-0.5 rounded border border-critical-text/25">
+              Mã hồ sơ: MED-2025-089A
+            </span>
+</div>
+<!-- Medical description -->
+<div class="p-3 bg-surface rounded border border-critical-text/20 text-ink">
+<p class="font-body text-body leading-relaxed">
+<strong class="text-critical-text font-semibold">Chẩn đoán lâm sàng &amp; siêu âm:</strong> 
+              Phát hiện tổn thương phù nề gân gấp ngón nông chi trước trái (SDFT strain - Độ II). 
+              <span class="text-critical-text font-bold">Cấm hoàn toàn mọi bài tập tốc độ cao và thi đấu đường chạy.</span>
+</p>
+</div>
+<!-- Authority & Assignment Timestamps Grid -->
+<div class="grid grid-cols-2 gap-4 pt-1 font-body text-body">
+<div class="flex items-start gap-2.5">
+<span class="material-symbols-outlined text-forest text-lg mt-0.5">medical_information</span>
+<div>
+<span class="font-metadata text-metadata text-muted block">Bác sĩ chỉ định khóa:</span>
+<span class="font-label text-label text-ink font-semibold">BS. Lê Thanh Hà</span>
+<span class="text-xs text-muted block">(Trưởng ban Thú y EquiFlow)</span>
+</div>
+</div>
+<div class="flex items-start gap-2.5">
+<span class="material-symbols-outlined text-forest text-lg mt-0.5">calendar_month</span>
+<div>
+<span class="font-metadata text-metadata text-muted block">Thời điểm kích hoạt lệnh:</span>
+<span class="font-label text-label text-ink font-semibold">15/03/2025 · 08:30 GMT+7</span>
+<span class="text-xs text-muted block flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-xs text-warning-text">event_repeat</span>
+                  Lịch tái khám dự kiến: <strong class="text-ink">29/03/2025</strong>
+</span>
+</div>
+</div>
+</div>
+</div>
+<!-- SECTION 3: Suspended/Cancelled Training Sessions List -->
+<div class="space-y-2">
+<div class="flex items-center justify-between">
+<span class="font-label text-label text-ink flex items-center gap-1.5 font-bold">
+<span class="material-symbols-outlined text-muted text-base">event_busy</span>
+              Danh sách các buổi tập hệ thống tự động đình chỉ / hủy (3 buổi)
+            </span>
+<span class="font-metadata text-metadata text-muted">Tự động phong tỏa theo quy tắc FR-011</span>
+</div>
+<div class="border border-border rounded-lg divide-y divide-border overflow-hidden bg-surface">
+<!-- Row 1 -->
+<div class="flex items-center justify-between px-3.5 py-2.5 bg-canvas/40 font-body text-body">
+<div class="flex items-center gap-3">
+<span class="w-2 h-2 rounded-full bg-critical-text"></span>
+<div>
+<span class="font-label text-label text-ink">Chạy biến tốc cự ly 1.200m (Giai đoạn nước rút)</span>
+<div class="font-metadata text-metadata text-muted">Thứ Hai, 15/03/2025 · 14:00 - 15:30 · Đường chạy ngoài số 2</div>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded bg-critical-bg text-critical-text font-metadata text-metadata font-bold border border-critical-text/20">
+                ĐÃ PHONG TỎA
+              </span>
+</div>
+<!-- Row 2 -->
+<div class="flex items-center justify-between px-3.5 py-2.5 bg-canvas/40 font-body text-body">
+<div class="flex items-center gap-3">
+<span class="w-2 h-2 rounded-full bg-critical-text"></span>
+<div>
+<span class="font-label text-label text-ink">Tập tăng tải nhịp tim đồi dốc dải B</span>
+<div class="font-metadata text-metadata text-muted">Thứ Tư, 17/03/2025 · 07:30 - 09:00 · Đồi luyện lực</div>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded bg-critical-bg text-critical-text font-metadata text-metadata font-bold border border-critical-text/20">
+                ĐÃ PHONG TỎA
+              </span>
+</div>
+<!-- Row 3 -->
+<div class="flex items-center justify-between px-3.5 py-2.5 bg-canvas/40 font-body text-body">
+<div class="flex items-center gap-3">
+<span class="w-2 h-2 rounded-full bg-critical-text"></span>
+<div>
+<span class="font-label text-label text-ink">Thi đấu kiểm tra thể lực định kỳ trước giải mùa xuân</span>
+<div class="font-metadata text-metadata text-muted">Thứ Sáu, 19/03/2025 · 15:00 - 17:00 · Đường đua chính A</div>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded bg-critical-bg text-critical-text font-metadata text-metadata font-bold border border-critical-text/20">
+                ĐÃ PHONG TỎA
+              </span>
+</div>
+</div>
+</div>
+<!-- SECTION 4: Mandatory Business Rules & Security Governance Box -->
+<div class="p-3.5 rounded-lg bg-surface-container-low border border-border flex items-start gap-3">
+<span class="material-symbols-outlined text-warning-text mt-0.5 shrink-0" style="font-variation-settings: 'FILL' 1;">shield</span>
+<div class="space-y-1 font-body text-body">
+<span class="font-label text-label text-ink font-bold block">
+              Quy tắc an toàn hệ thống EquiFlow &amp; Phân quyền bảo vệ:
+            </span>
+<p class="font-metadata text-metadata text-muted leading-relaxed">
+              Hệ thống tự động vô hiệu hóa tính năng xếp lịch cho cá thể này. Huấn luyện viên trưởng 
+              <span class="text-ink font-bold underline decoration-critical-text decoration-2">KHÔNG thể tự ý bỏ qua (Bypass) hoặc mở khóa huấn luyện</span>. 
+              Mọi can thiệp nghiệp vụ đều bị ghi vết audit log vĩnh viễn trên hệ thống máy chủ EquiFlow.
+            </p>
+<div class="pt-1.5 flex items-center gap-2 text-xs font-label text-forest">
+<span class="material-symbols-outlined text-sm">verified_user</span>
+<span>Quyền hạn mở khóa: Duy nhất <strong>Bác sĩ thú y</strong> mới có quyền gỡ khóa sau khi có kết quả tái khám lâm sàng hợp lệ.</span>
+</div>
+</div>
+</div>
+</div>
+<!-- SECTION 5: Footer Actions (Strictly NO Bypass/Unlock buttons for Trainer) -->
+<div class="px-6 py-4 bg-canvas border-t border-border flex items-center justify-between">
+<div class="flex items-center gap-2 text-muted font-metadata text-metadata">
+<span class="material-symbols-outlined text-base">info</span>
+<span>Trạng thái hồ sơ: Chỉ đọc (Read-only for Head Trainer)</span>
+</div>
+<div class="flex items-center gap-3">
+<!-- Action 1: View Medical Record (Clean Outline Button) -->
+<button class="h-11 px-4 rounded-[7px] border border-border bg-surface text-ink hover:bg-forest-wash hover:text-forest hover:border-forest/40 font-label text-label transition-colors duration-150 flex items-center gap-2">
+<span class="material-symbols-outlined text-base">description</span>
+<span>Xem hồ sơ y tế &amp; biên bản khám</span>
+</button>
+<!-- Action 2: Close (Neutral Solid Action returning to Schedule) -->
+<button class="h-11 px-6 rounded-[7px] bg-forest text-on-primary hover:bg-forest-deep font-label text-label transition-colors duration-150 flex items-center gap-2 shadow-sm">
+<span class="material-symbols-outlined text-base">arrow_back</span>
+<span>Đóng (Trở về lịch tuần)</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</body></html>

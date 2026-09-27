@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html class="h-full" lang="vi"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>[GH-BE-04][AUTH-RESET][AUTH07] Quy trình Quên mật khẩu &amp; Đặt lại mật khẩu an toàn — Đặt lại mật khẩu thành công</title>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "warning-text": "#875B15",
+            "primary-container": "#315d4b",
+            "on-background": "#191c1b",
+            "positive-text": "#276442",
+            "on-primary-fixed-variant": "#224f3d",
+            "on-primary-fixed": "#002115",
+            "secondary-container": "#c6ebd8",
+            "on-secondary": "#ffffff",
+            "secondary-fixed-dim": "#aacfbd",
+            "surface-container-lowest": "#ffffff",
+            "tertiary": "#5e312e",
+            "on-error": "#ffffff",
+            "on-tertiary-fixed-variant": "#693937",
+            "inverse-primary": "#a2d1ba",
+            "canvas": "#F5F6F3",
+            "surface-tint": "#3b6754",
+            "error-container": "#ffdad6",
+            "on-surface": "#191c1b",
+            "positive-bg": "#E8F3EB",
+            "quarantine-text": "#65517D",
+            "tertiary-fixed-dim": "#f9b6b1",
+            "on-primary": "#ffffff",
+            "on-secondary-container": "#4a6b5d",
+            "inverse-on-surface": "#f0f1ee",
+            "quarantine-bg": "#F1EDF6",
+            "surface-container": "#edeeeb",
+            "surface-container-highest": "#e2e3e0",
+            "tertiary-fixed": "#ffdad7",
+            "surface-variant": "#e2e3e0",
+            "warning-bg": "#FFF4DD",
+            "on-tertiary-fixed": "#34100e",
+            "forest": "#315D4B",
+            "on-error-container": "#93000a",
+            "surface-dim": "#d9dad7",
+            "background": "#f9faf7",
+            "primary": "#184535",
+            "surface": "#FFFFFF",
+            "surface-bright": "#f9faf7",
+            "outline": "#717974",
+            "critical-bg": "#FAE9EB",
+            "on-tertiary": "#ffffff",
+            "secondary-fixed": "#c6ebd8",
+            "ink": "#202B28",
+            "forest-wash": "#EAF1EC",
+            "forest-deep": "#234437",
+            "secondary": "#446557",
+            "border": "#DCE3DD",
+            "critical-text": "#922D3C",
+            "on-primary-container": "#a5d4bd",
+            "on-tertiary-container": "#fcb9b4",
+            "outline-variant": "#c0c8c2",
+            "on-secondary-fixed-variant": "#2c4d40",
+            "on-surface-variant": "#414944",
+            "on-secondary-fixed": "#002116",
+            "muted": "#65716B",
+            "surface-container-high": "#e7e8e6",
+            "primary-fixed-dim": "#a2d1ba",
+            "primary-fixed": "#bdedd6",
+            "error": "#ba1a1a",
+            "tertiary-container": "#794744",
+            "inverse-surface": "#2e312f",
+            "surface-container-low": "#f3f4f1"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem",
+            "btn": "7px",
+            "panel": "10px"
+          },
+          "spacing": {
+            "space-xs": "4px",
+            "space-xl": "32px",
+            "space-md": "16px",
+            "gutter": "24px",
+            "margin": "32px",
+            "space-lg": "24px",
+            "space-sm": "8px"
+          },
+          "fontFamily": {
+            "auth-heading": ["Manrope"],
+            "section-heading": ["Manrope"],
+            "page-title": ["Manrope"],
+            "metadata": ["Manrope"],
+            "body": ["Manrope"],
+            "body-lg": ["Manrope"],
+            "label": ["Manrope"]
+          },
+          "fontSize": {
+            "auth-heading": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+            "section-heading": ["18px", { "lineHeight": "26px", "fontWeight": "650" }],
+            "page-title": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "metadata": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "body": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "label": ["14px", { "lineHeight": "20px", "fontWeight": "600" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+  </style>
+<style id="equiflow-reviewed-layout">
+   html,body{max-width:100%;} .ef-sidebar{width:224px!important;min-width:224px;background:#fff!important;border-right:1px solid #dce3dd;padding:24px 14px!important;display:flex;flex-direction:column;gap:24px}.ef-brand{font:700 24px/1.2 Manrope,'Segoe UI',sans-serif;color:#315d4b}.ef-brand small{display:block;font:11px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin-top:8px}.ef-role-nav{display:flex;flex-direction:column;gap:5px}.ef-role-nav a{padding:11px 12px;min-height:44px;border-radius:6px;font:500 14px/22px Manrope,'Segoe UI',sans-serif;color:#3e4e45;text-decoration:none;white-space:normal}.ef-role-nav a:hover,.ef-role-nav a[aria-current=page]{background:#eaf1ec;color:#315d4b}.ef-role-label{margin-top:auto;font-size:12px;color:#65716b}.ef-role-label a{display:block;padding-top:12px;color:#315d4b}.ef-sample-notice{font:12px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin:0 0 14px}.ef-mobile-nav{display:none}input,select,textarea{max-width:100%}button,a,input,select,textarea{touch-action:manipulation}
+   @media(max-width:1023px){[data-review-kind=app] header,[data-review-kind=app] main .flex{flex-wrap:wrap}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important}[data-review-kind=app] .flex-1{min-width:0}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{max-width:100%;min-width:0}[data-review-kind=app] header>div{max-width:100%;flex-wrap:wrap}}
+   @media(max-width:767px){body[data-review-kind=app]{display:block!important;height:auto!important;min-height:100dvh}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important;height:auto}}
+   @media(max-width:767px){.ef-sidebar{display:none!important}.ef-mobile-nav{display:block;position:relative;z-index:200;background:white;border-bottom:1px solid #dce3dd;padding:12px 16px}.ef-mobile-nav summary{min-height:44px;cursor:pointer;display:flex;align-items:center;font-weight:700;color:#315d4b}.ml-56,.ml-64,[class~='ml-[224px]'],[class~='ml-[240px]'],main[style*='margin-left']{margin-left:0!important}main{min-width:0!important;max-width:100%!important}header{flex-wrap:wrap!important;gap:8px!important;height:auto!important}footer{flex-wrap:wrap!important;gap:12px}h1{overflow-wrap:anywhere}.ef-role-nav{max-width:100%}[data-review-kind=app] .grid{grid-template-columns:minmax(0,1fr)!important}[data-review-kind=app] .flex{min-width:0;flex-wrap:wrap}[data-review-kind=app] table,[data-review-kind=app] tbody,[data-review-kind=app] tr{display:block;width:100%}[data-review-kind=app] thead{display:none}[data-review-kind=app] tr{padding:12px 0;border-bottom:1px solid #dce3dd}[data-review-kind=app] td{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;white-space:normal!important;padding:8px 12px;min-width:0;overflow-wrap:anywhere}[data-review-kind=app] td:before{content:attr(data-label);color:#65716b;font-size:12px;flex:0 0 35%}[data-review-kind=app] td>*{min-width:0;max-width:100%}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{width:100%}}
+  </style></head>
+<body class="bg-canvas text-ink antialiased min-h-screen flex flex-col justify-center">
+<!-- Desktop Split Layout (44% Card/Form Trái - 56% Hình ảnh chiến mã Phải) -->
+<main class="w-full min-h-screen flex flex-col lg:flex-row bg-canvas">
+<!-- CỘT TRÁI (44% trên desktop) -->
+<div class="w-full lg:w-[44%] min-h-screen flex flex-col justify-between p-6 sm:p-10 lg:p-12 xl:p-16 bg-surface border-r border-border z-10">
+<!-- Top Brand Header -->
+<header class="flex items-center justify-between w-full pb-6">
+<a class="flex items-center gap-3 text-primary group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg" href="#">
+<div class="w-10 h-10 rounded-lg bg-forest-wash flex items-center justify-center text-forest group-hover:bg-primary group-hover:text-surface transition-colors duration-150">
+<span class="material-symbols-outlined text-2xl" data-icon="pets">pets</span>
+</div>
+<div>
+<span class="font-page-title text-section-heading text-primary tracking-tight font-bold block leading-none">EquiFlow</span>
+<span class="font-metadata text-metadata text-muted block mt-0.5">Hệ thống Vận hành Chuồng trại</span>
+</div>
+</a>
+</header>
+<!-- Center Content: Thẻ thông báo thành công -->
+<div class="my-auto py-8 max-w-md w-full mx-auto">
+<!-- Success State Icon Container -->
+<div class="mb-6 inline-flex items-center justify-center w-14 h-14 rounded-full bg-positive-bg border border-[#276442]/20">
+<span class="material-symbols-outlined text-positive-text text-3xl font-semibold" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<!-- Main Title & Confirmation Note -->
+<h1 class="font-page-title text-page-title text-ink tracking-tight mb-3">
+          Đặt lại mật khẩu thành công!
+        </h1>
+<p class="font-body text-body text-muted leading-relaxed mb-6">
+          Mật khẩu tài khoản của bạn đã được cập nhật thành công vào hệ thống. Mọi phiên đăng nhập cũ trên các thiết bị khác đã được đăng xuất an toàn.
+        </p>
+<!-- Status Card / Mockup F-01 Equine Security -->
+<!-- Primary CTA Button (44px height, 7px radius, #315D4B) -->
+<div class="space-y-4">
+<a class="w-full h-[44px] rounded-[7px] bg-[#315D4B] text-surface font-label text-label flex items-center justify-center gap-2 shadow-sm hover:bg-forest-deep active:scale-[0.99] transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-forest focus:ring-offset-2" href="#">
+<span>Đăng nhập ngay</span>
+<span class="material-symbols-outlined text-base" data-icon="arrow_forward">arrow_forward</span>
+</a>
+<!-- Secondary Auxiliary Helper -->
+<div class="pt-4 border-t border-border">
+<div class="flex items-start gap-2.5">
+<span class="material-symbols-outlined text-muted text-lg mt-0.5 shrink-0" data-icon="info">info</span>
+<p class="font-body text-body text-muted text-xs leading-relaxed">
+                Khuyến nghị an toàn: Nếu bạn không thực hiện hành động này, vui lòng liên hệ ngay <span class="font-medium text-ink">Quản trị viên CLB</span> hoặc <a class="text-forest underline font-medium hover:text-forest-deep" href="#">Bộ phận Hỗ trợ kỹ thuật</a>.
+              </p>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Info -->
+<footer class="pt-6 border-t border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-muted">
+<span class="font-metadata text-metadata">© 2024 EquiFlow Inc. Mọi quyền được bảo lưu.</span>
+<div class="flex items-center gap-4 text-xs font-metadata">
+<a class="hover:text-forest transition-colors" href="#">Điều khoản dịch vụ</a>
+<span class="text-border">|</span>
+<a class="hover:text-forest transition-colors" href="#">Chính sách bảo mật</a>
+</div>
+</footer>
+</div>
+<!-- CỘT PHẢI: HÌNH ẢNH NGỰA ĐUA (56% trên desktop) -->
+<div class="hidden lg:flex lg:w-[56%] relative bg-canvas items-center justify-center overflow-hidden">
+<!-- Immersive Image Layer -->
+<div class="absolute inset-0 bg-cover bg-center" data-alt="A magnificent thoroughbred racehorse standing poised and tranquil inside an architectural, sunlit modern equestrian stable in soft morning light. The environment features refined wooden stable stalls, muted earthen tones, pristine clean concrete walkways, and serene forest green accents aligning with modern sports stable operations. High key, peaceful, clean, and disciplined atmosphere conveying veterinary precision and elite equestrian care." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCISnGPoszdxjvvqD_Q5uF9uwS8aF1vSpXe_u5LIJgf7ANCOsDN-9Ugaawb3xJ9BghnR5XXnaNVxO2HsJaSRkmSpWPSi5hMVOngYLCGNkPeKUk4DeLaYbjaylzOpWe8ny7kMAxIREELZd9We5bPIoOOecBfZ_D6Vp70snXF2wTOcAzY8VUAHhg3oSGsTm3QyKbdbNp0Lyc0lXNL1PCbN8VZzK8G-GeiYXZylzWHCzAcwy-fRPhb5AUhgyZdVoC0Yv0fVMybeXWWzQ')">
+</div>
+<!-- Subtle tonal wash overlay ensuring light-mode aesthetic -->
+<div class="absolute inset-0 bg-primary/10 backdrop-brightness-[0.98]"></div>
+<!-- Floating subtle metadata badge in the corner of image -->
+<div class="absolute bottom-6 left-6 right-6 text-center z-10"><p class="text-xs font-metadata text-surface/90 backdrop-blur-sm bg-black/40 py-2 px-4 rounded-full inline-block tracking-normal font-medium">EquiFlow — Tiêu chuẩn chăm sóc &amp; quản lý chiến mã chuyên nghiệp</p></div>
+</div>
+</main>
+</body></html>

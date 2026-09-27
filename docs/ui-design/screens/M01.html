@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html class="h-full" lang="vi"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>[GH-FE-01][UI-V2][M01] Duyệt bộ giao diện Stitch V2, xây dựng Design System tokens (màu Forest Green #315D4B, font Manrope), Master layout (Sidebar 224px, Header 64px, Content 1440px) và routing cơ bản trên Frontend — Tổng quan câu lạc bộ</title>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-secondary-fixed": "#002116",
+            "forest": "#315D4B",
+            "canvas": "#F5F6F3",
+            "outline": "#717974",
+            "surface-bright": "#f9faf7",
+            "positive-bg": "#E8F3EB",
+            "on-error-container": "#93000a",
+            "surface-container": "#edeeeb",
+            "surface-container-lowest": "#ffffff",
+            "on-tertiary-fixed": "#34100e",
+            "on-error": "#ffffff",
+            "on-primary": "#ffffff",
+            "secondary": "#446557",
+            "on-primary-container": "#a5d4bd",
+            "on-secondary-fixed-variant": "#2c4d40",
+            "surface-tint": "#3b6754",
+            "surface-container-highest": "#e2e3e0",
+            "surface-container-high": "#e7e8e6",
+            "inverse-surface": "#2e312f",
+            "outline-variant": "#c0c8c2",
+            "critical-text": "#922D3C",
+            "tertiary-fixed": "#ffdad7",
+            "inverse-primary": "#a2d1ba",
+            "tertiary-container": "#794744",
+            "surface-variant": "#e2e3e0",
+            "secondary-fixed-dim": "#aacfbd",
+            "tertiary": "#5e312e",
+            "critical-bg": "#FAE9EB",
+            "quarantine-text": "#65517D",
+            "ink": "#202B28",
+            "border": "#DCE3DD",
+            "primary-fixed": "#bdedd6",
+            "primary-container": "#315d4b",
+            "forest-deep": "#234437",
+            "on-surface": "#191c1b",
+            "on-secondary": "#ffffff",
+            "quarantine-bg": "#F1EDF6",
+            "surface-container-low": "#f3f4f1",
+            "surface-dim": "#d9dad7",
+            "primary-fixed-dim": "#a2d1ba",
+            "warning-text": "#875B15",
+            "background": "#f9faf7",
+            "inverse-on-surface": "#f0f1ee",
+            "error-container": "#ffdad6",
+            "error": "#ba1a1a",
+            "tertiary-fixed-dim": "#f9b6b1",
+            "secondary-container": "#c6ebd8",
+            "on-tertiary-container": "#fcb9b4",
+            "on-secondary-container": "#4a6b5d",
+            "muted": "#65716B",
+            "on-background": "#191c1b",
+            "secondary-fixed": "#c6ebd8",
+            "on-tertiary-fixed-variant": "#693937",
+            "on-primary-fixed": "#002115",
+            "surface": "#FFFFFF",
+            "on-surface-variant": "#414944",
+            "on-tertiary": "#ffffff",
+            "warning-bg": "#FFF4DD",
+            "primary": "#184535",
+            "positive-text": "#276442",
+            "forest-wash": "#EAF1EC",
+            "on-primary-fixed-variant": "#224f3d"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-md": "16px",
+            "space-lg": "24px",
+            "space-sm": "8px",
+            "space-xs": "4px",
+            "margin": "32px",
+            "gutter": "24px",
+            "space-xl": "32px"
+          },
+          "fontFamily": {
+            "page-title": ["Manrope"],
+            "body-lg": ["Manrope"],
+            "metadata": ["Manrope"],
+            "auth-heading": ["Manrope"],
+            "label": ["Manrope"],
+            "body": ["Manrope"],
+            "section-heading": ["Manrope"]
+          },
+          "fontSize": {
+            "page-title": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "metadata": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "auth-heading": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+            "label": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "body": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "section-heading": ["18px", { "lineHeight": "26px", "fontWeight": "650" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+  </style>
+<style id="equiflow-reviewed-layout">
+   html,body{max-width:100%;} .ef-sidebar{width:224px!important;min-width:224px;background:#fff!important;border-right:1px solid #dce3dd;padding:24px 14px!important;display:flex;flex-direction:column;gap:24px}.ef-brand{font:700 24px/1.2 Manrope,'Segoe UI',sans-serif;color:#315d4b}.ef-brand small{display:block;font:11px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin-top:8px}.ef-role-nav{display:flex;flex-direction:column;gap:5px}.ef-role-nav a{padding:11px 12px;min-height:44px;border-radius:6px;font:500 14px/22px Manrope,'Segoe UI',sans-serif;color:#3e4e45;text-decoration:none;white-space:normal}.ef-role-nav a:hover,.ef-role-nav a[aria-current=page]{background:#eaf1ec;color:#315d4b}.ef-role-label{margin-top:auto;font-size:12px;color:#65716b}.ef-role-label a{display:block;padding-top:12px;color:#315d4b}.ef-sample-notice{font:12px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin:0 0 14px}.ef-mobile-nav{display:none}input,select,textarea{max-width:100%}button,a,input,select,textarea{touch-action:manipulation}
+   @media(max-width:1023px){[data-review-kind=app] header,[data-review-kind=app] main .flex{flex-wrap:wrap}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important}[data-review-kind=app] .flex-1{min-width:0}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{max-width:100%;min-width:0}[data-review-kind=app] header>div{max-width:100%;flex-wrap:wrap}}
+   @media(max-width:767px){body[data-review-kind=app]{display:block!important;height:auto!important;min-height:100dvh}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important;height:auto}}
+   @media(max-width:767px){.ef-sidebar{display:none!important}.ef-mobile-nav{display:block;position:relative;z-index:200;background:white;border-bottom:1px solid #dce3dd;padding:12px 16px}.ef-mobile-nav summary{min-height:44px;cursor:pointer;display:flex;align-items:center;font-weight:700;color:#315d4b}.ml-56,.ml-64,[class~='ml-[224px]'],[class~='ml-[240px]'],main[style*='margin-left']{margin-left:0!important}main{min-width:0!important;max-width:100%!important}header{flex-wrap:wrap!important;gap:8px!important;height:auto!important}footer{flex-wrap:wrap!important;gap:12px}h1{overflow-wrap:anywhere}.ef-role-nav{max-width:100%}[data-review-kind=app] .grid{grid-template-columns:minmax(0,1fr)!important}[data-review-kind=app] .flex{min-width:0;flex-wrap:wrap}[data-review-kind=app] table,[data-review-kind=app] tbody,[data-review-kind=app] tr{display:block;width:100%}[data-review-kind=app] thead{display:none}[data-review-kind=app] tr{padding:12px 0;border-bottom:1px solid #dce3dd}[data-review-kind=app] td{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;white-space:normal!important;padding:8px 12px;min-width:0;overflow-wrap:anywhere}[data-review-kind=app] td:before{content:attr(data-label);color:#65716b;font-size:12px;flex:0 0 35%}[data-review-kind=app] td>*{min-width:0;max-width:100%}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{width:100%}}
+  </style></head>
+<body class="bg-canvas text-ink font-body text-body min-h-screen flex flex-col antialiased selection:bg-forest-wash selection:text-forest" data-review-kind="app">
+<div class="flex h-screen w-full overflow-hidden">
+<!-- Sidebar (224px white) matching SideNavBar schema & specs -->
+<aside class="w-56 h-screen sticky top-0 flex flex-col justify-between p-space-sm z-30 shrink-0 bg-surface border-r border-border ef-sidebar"><div class="ef-brand">EquiFlow<small>Quản lý huấn luyện ngựa đua</small></div><nav class="ef-role-nav" aria-label="Điều hướng Quản lý CLB"><a href="M01.html" aria-current="page">Tổng quan</a><a href="H01.html">Hồ sơ ngựa</a><a href="H04.html">Ô chuồng</a><a href="V01.html">Sức khỏe</a><a href="M02.html">Nhân sự</a><a href="M04.html">Nhật ký hệ thống</a></nav><div class="ef-role-label">Quản lý CLB<a href="AUTH01.html">Đăng xuất</a></div></aside>
+<!-- Main App Container -->
+<div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+<!-- TopNavBar matching JSON spec -->
+<header class="h-16 w-full flex items-center justify-between px-gutter sticky top-0 z-20 bg-surface border-b border-border shrink-0">
+<!-- Left: Context Header & Club Details -->
+<div class="flex items-center gap-4">
+<div class="flex flex-col">
+<h1 class="font-section-heading text-section-heading font-bold text-forest leading-tight tracking-tight">CLB Đua Ngựa Tân Phú</h1>
+<span class="font-metadata text-metadata text-muted">Thống Nhất Equine Club • Phân khu A &amp; B</span>
+</div>
+<div class="h-6 w-px bg-border mx-1"></div>
+<!-- Quick Search -->
+<div class="relative w-64 hidden lg:block">
+<span class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-muted">
+<span class="material-symbols-outlined text-[18px]" data-icon="search">search</span>
+</span>
+<input class="w-full h-9 pl-9 pr-3 text-body bg-canvas/70 border border-border rounded-lg placeholder-muted focus:outline-none focus:ring-1 focus:ring-forest focus:border-forest text-xs" placeholder="Tìm mã ngựa, hồ sơ, vị trí..." type="text">
+</div>
+</div>
+<!-- Trailing actions & User profile -->
+<div class="flex items-center gap-3">
+<button aria-label="Lịch theo dõi" class="w-9 h-9 rounded-lg flex items-center justify-center text-muted hover:text-ink hover:bg-forest-wash transition-colors duration-150 relative" type="button">
+<span class="material-symbols-outlined text-[20px]" data-icon="calendar_today">calendar_today</span>
+</button>
+<button aria-label="Thông báo" class="w-9 h-9 rounded-lg flex items-center justify-center text-muted hover:text-ink hover:bg-forest-wash transition-colors duration-150 relative" type="button">
+<span class="material-symbols-outlined text-[20px]" data-icon="notifications">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-critical-text ring-2 ring-surface"></span>
+</button>
+<button class="hidden sm:inline-flex items-center gap-1.5 h-9 px-3 bg-forest hover:bg-forest-deep text-on-primary rounded-lg font-label text-label transition-colors duration-150" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="post_add">post_add</span>
+<span>Thêm ghi nhận</span>
+</button>
+<div class="h-6 w-px bg-border mx-1"></div>
+<!-- User avatar and role badge -->
+<div class="flex items-center gap-2.5 pl-1">
+<div class="w-9 h-9 rounded-full bg-forest-wash border border-border flex items-center justify-center overflow-hidden shrink-0">
+<img class="w-full h-full object-cover" data-alt="Chân dung quản lý câu lạc bộ đua ngựa chuyên nghiệp trong trang phục sơ mi trang nhã, phông nền ấm áp tự nhiên của chuồng ngựa thanh lịch, ánh sáng dịu ban ngày với tông xanh rừng và trắng." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCCjd6LuV6w5EyB42_nWOgMfL9M4dmTzSEgTeMMRbN7eVW3OSooZdjY73qzNZjAEZFH9ANLiv_jgTRNt_aRmmaGIvYA53JDMG7dsysBTK7JkRKZT8Nu47NrsugVYyUwq4WRg6oyClPET9AUAs7PfwxV5SvQCUOWsvlDQV5gNf1lWMSCZfqLuaxNkHuDBphmOdKD4H7WSXAxBMLvPBxXV3EP_X1QSu5_uicmA2fAgaNCaT3_ad8I3c7CHMGDTVGnWlf2x3BeO0302A">
+</div>
+<div class="flex flex-col text-left">
+<span class="font-label text-label text-ink leading-tight">Nguyễn Văn An</span>
+<span class="font-metadata text-metadata text-muted">Quản lý CLB</span>
+</div>
+</div>
+</div>
+</header>
+<!-- Page Content Canvas (Padding 28-32px) -->
+<main class="p-space-xl flex-1 space-y-6"><p class="ef-sample-notice">Dữ liệu minh họa · Bản thiết kế giao diện</p>
+<!-- Top Title & Scope Row -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border">
+<div>
+<h2 class="font-page-title text-page-title text-ink">Tổng quan câu lạc bộ</h2>
+<p class="font-body text-body text-muted mt-0.5">Giám sát hoạt động chuồng, y tế thể lực và phân công nhân lực trực nhật theo thời gian thực.</p>
+</div>
+<!-- Scope selector -->
+<div class="flex items-center gap-2 bg-surface px-3 py-1.5 rounded-lg border border-border self-start sm:self-auto shadow-sm">
+<span class="material-symbols-outlined text-forest text-[18px]" data-icon="date_range">date_range</span>
+<span class="font-label text-label text-muted">Kỳ báo cáo:</span>
+<span class="font-label text-label text-ink font-semibold">Tháng 3, 2025</span>
+<span class="material-symbols-outlined text-muted text-[16px] ml-1" data-icon="arrow_drop_down">arrow_drop_down</span>
+</div>
+</div>
+<!-- Top KPI / Summary Row (4 Honest Operational Stats) -->
+<section aria-label="Chỉ số hoạt động tổng thể" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+<!-- Card 1: Tổng đàn -->
+<div class="bg-surface p-5 rounded-lg border border-border flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<span class="font-label text-label text-muted">Tổng đàn ngựa đang quản lý</span>
+<span class="p-1.5 rounded-md bg-forest-wash text-forest">
+<span class="material-symbols-outlined text-[20px]" data-icon="pets">pets</span>
+</span>
+</div>
+<div class="mt-3">
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-bold font-page-title text-ink">12</span>
+<span class="font-body text-body text-muted">cá thể</span>
+</div>
+<div class="mt-2 pt-2 border-t border-border flex items-center gap-3 text-xs">
+<span class="inline-flex items-center gap-1 text-positive-text font-medium">
+<span class="w-1.5 h-1.5 rounded-full bg-forest"></span> 10 sẵn sàng
+                </span>
+<span class="inline-flex items-center gap-1 text-critical-text font-medium">
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span> 2 có chỉ định y tế
+                </span>
+</div>
+</div>
+</div>
+<!-- Card 2: Nhân sự -->
+<div class="bg-surface p-5 rounded-lg border border-border flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<span class="font-label text-label text-muted">Nhân sự trực ca hôm nay</span>
+<span class="p-1.5 rounded-md bg-forest-wash text-forest">
+<span class="material-symbols-outlined text-[20px]" data-icon="badge">badge</span>
+</span>
+</div>
+<div class="mt-3">
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-bold font-page-title text-ink">8</span>
+<span class="font-body text-body text-muted">nhân sự trực</span>
+</div>
+<div class="mt-2 pt-2 border-t border-border flex items-center justify-between text-xs text-muted">
+<span>4 Grooms</span>
+<span>•</span>
+<span>2 Huấn luyện viên</span>
+<span>•</span>
+<span>2 Bác sĩ</span>
+</div>
+</div>
+</div>
+<!-- Card 3: Huấn luyện -->
+<div class="bg-surface p-5 rounded-lg border border-border flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<span class="font-label text-label text-muted">Kế hoạch tập luyện trong ngày</span>
+<span class="p-1.5 rounded-md bg-forest-wash text-forest">
+<span class="material-symbols-outlined text-[20px]" data-icon="timer">timer</span>
+</span>
+</div>
+<div class="mt-3">
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-bold font-page-title text-ink">14</span>
+<span class="font-body text-body text-muted">lượt chạy thử</span>
+</div>
+<div class="mt-2 pt-2 border-t border-border flex items-center gap-3 text-xs text-muted">
+<span class="font-medium text-ink">8 lượt Turf</span>
+<span>•</span>
+<span class="font-medium text-ink">6 lượt Dirt</span>
+</div>
+</div>
+</div>
+<!-- Card 4: Cảnh báo y tế -->
+<div class="bg-surface p-5 rounded-lg border border-border flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<span class="font-label text-label text-critical-text font-semibold">Cảnh báo y tế cần theo dõi</span>
+<span class="p-1.5 rounded-md bg-critical-bg text-critical-text">
+<span class="material-symbols-outlined text-[20px]" data-icon="medical_information">medical_information</span>
+</span>
+</div>
+<div class="mt-3">
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-bold font-page-title text-critical-text">2</span>
+<span class="font-body text-body text-critical-text/80">cá thể cảnh báo</span>
+</div>
+<div class="mt-2 pt-2 border-t border-border flex flex-col gap-0.5 text-xs">
+<span class="text-critical-text truncate font-medium">1 Khóa y tế: Hồng Ngọc (A03)</span>
+<span class="text-warning-text truncate">1 Cần theo dõi: Thiên Long (A04)</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Main Dashboard Layout (2 columns: 60% Left, 40% Right) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+<!-- LEFT COLUMN (60% ~ 7 cols of 12) -->
+<div class="lg:col-span-7 space-y-6">
+<!-- Section 1: Việc cần xử lý gấp trong ngày (Action Items) -->
+<section class="bg-surface rounded-lg border border-border p-5">
+<div class="flex items-center justify-between pb-3 mb-4 border-b border-border">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-critical-text animate-pulse"></span>
+<h3 class="font-section-heading text-section-heading font-semibold text-ink">Việc cần xử lý gấp trong ngày (Action Items)</h3>
+</div>
+<span class="px-2 py-0.5 rounded text-xs font-semibold bg-critical-bg text-critical-text">3 việc chờ duyệt</span>
+</div>
+<div class="space-y-3">
+<!-- Action Item 1 -->
+<div class="p-3.5 rounded-lg border border-border bg-canvas/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-forest-wash/40 transition-colors">
+<div class="flex items-start gap-3">
+<span class="px-2 py-1 rounded text-xs font-semibold bg-critical-bg text-critical-text uppercase tracking-wider shrink-0 mt-0.5">Y tế</span>
+<div>
+<p class="font-body text-body text-ink font-medium">Theo dõi kết quả tái khám Hồng Ngọc (A03) do bác sĩ thú y phụ trách.</p>
+<p class="font-metadata text-metadata text-muted mt-0.5">Chỉ bác sĩ thú y quyết định mở khóa sau tái khám; quản lý xem kết quả.</p>
+</div>
+</div>
+<button class="shrink-0 h-9 px-4 rounded-lg bg-forest hover:bg-forest-deep text-on-primary font-label text-label transition-colors" type="button">Xem bệnh án</button>
+</div>
+<!-- Action Item 2 -->
+<div class="p-3.5 rounded-lg border border-border bg-canvas/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-forest-wash/40 transition-colors">
+<div class="flex items-start gap-3">
+<span class="px-2 py-1 rounded text-xs font-semibold bg-positive-bg text-positive-text uppercase tracking-wider shrink-0 mt-0.5">Vận hành</span>
+<div>
+<p class="font-body text-body text-ink font-medium">Ô chuồng A07 đang trống và sẵn sàng phân bổ ngựa.</p>
+<p class="font-metadata text-metadata text-muted mt-0.5">Kiểm tra trạng thái ô và nhân viên phụ trách trước khi phân bổ.</p>
+</div>
+</div>
+<button class="shrink-0 h-9 px-4 rounded-lg border border-border bg-surface hover:bg-forest-wash text-ink font-label text-label transition-colors" type="button">
+                    Kiểm tra
+                  </button>
+</div>
+<!-- Action Item 3 -->
+<div class="p-3.5 rounded-lg border border-border bg-canvas/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-forest-wash/40 transition-colors">
+<div class="flex items-start gap-3">
+<span class="px-2 py-1 rounded text-xs font-semibold bg-warning-bg text-warning-text uppercase tracking-wider shrink-0 mt-0.5">Huấn luyện</span>
+<div>
+<p class="font-body text-body text-ink font-medium">Rà soát lịch huấn luyện ngày mai và các buổi chưa đủ nhân sự.</p>
+<p class="font-metadata text-metadata text-muted mt-0.5">Huấn luyện viên trưởng kiểm tra xung đột lịch và khóa y tế.</p>
+</div>
+</div>
+<button class="shrink-0 h-9 px-4 rounded-lg border border-forest text-forest hover:bg-forest hover:text-on-primary font-label text-label transition-colors" type="button">Xem lịch tập</button>
+</div>
+</div>
+</section>
+<!-- Section 2: Lịch trình vận hành & Huấn luyện hôm nay -->
+<section class="bg-surface rounded-lg border border-border p-5">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 mb-4 border-b border-border gap-2">
+<div>
+<h3 class="font-section-heading text-section-heading font-semibold text-ink">Lịch trình vận hành &amp; Huấn luyện hôm nay</h3>
+<p class="font-metadata text-metadata text-muted">Thứ Ba, 12/03/2025 • Lịch thực địa &amp; ca chăm sóc chi tiết</p>
+</div>
+<div class="flex items-center gap-2">
+<button class="text-xs px-2.5 py-1 rounded border border-border bg-canvas hover:bg-forest-wash text-ink font-label" type="button">Tất cả bài tập</button>
+<button class="text-xs px-2.5 py-1 rounded bg-forest-wash text-forest font-label" type="button">Ca y tế</button>
+</div>
+</div>
+<!-- Operational Schedule Table (Strict 56px rows, explicit headers) -->
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-border bg-canvas/60 text-xs font-semibold text-muted uppercase tracking-wider">
+<th class="py-2.5 px-3">Giờ</th>
+<th class="py-2.5 px-3">Chiến mã</th>
+<th class="py-2.5 px-3">Nội dung ca</th>
+<th class="py-2.5 px-3">Phụ trách</th>
+<th class="py-2.5 px-3 text-right">Trạng thái</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border text-sm">
+<!-- Row 1 -->
+<tr class="hover:bg-forest-wash/40 transition-colors h-14">
+<td class="py-3 px-3 font-semibold text-ink whitespace-nowrap" data-label="Giờ">06:30 - 08:00</td>
+<td class="py-3 px-3" data-label="Chiến mã">
+<div class="font-medium text-ink">Phong Vũ</div>
+<span class="text-xs text-muted">Mã A01</span>
+</td>
+<td class="py-3 px-3 text-ink" data-label="Nội dung ca">Chạy nhẹ 5km bề mặt Turf</td>
+<td class="py-3 px-3 text-muted text-xs" data-label="Phụ trách">HLV Nguyễn Văn Hòa</td>
+<td class="py-3 px-3 text-right" data-label="Trạng thái">
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-positive-bg text-positive-text">
+<span class="material-symbols-outlined text-[14px]" data-icon="check_circle">check_circle</span>
+                          Đã hoàn thành
+                        </span>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-forest-wash/40 transition-colors h-14 bg-forest-wash/10">
+<td class="py-3 px-3 font-semibold text-ink whitespace-nowrap" data-label="Giờ">08:30 - 09:30</td>
+<td class="py-3 px-3" data-label="Chiến mã">
+<div class="font-medium text-ink">Lightning Star</div>
+<span class="text-xs text-muted">Mã A05</span>
+</td>
+<td class="py-3 px-3 text-ink" data-label="Nội dung ca">Kiểm tra siêu âm Doppler chi trước</td>
+<td class="py-3 px-3 text-muted text-xs" data-label="Phụ trách">BS. Lê Thanh Hà</td>
+<td class="py-3 px-3 text-right" data-label="Trạng thái">
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-forest-wash text-forest animate-pulse">
+<span class="material-symbols-outlined text-[14px]" data-icon="sync">sync</span>
+                          Đang thực hiện
+                        </span>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-forest-wash/40 transition-colors h-14">
+<td class="py-3 px-3 font-semibold text-ink whitespace-nowrap" data-label="Giờ">10:00 - 11:00</td>
+<td class="py-3 px-3" data-label="Chiến mã">
+<div class="font-medium text-ink">Bạch Mã</div>
+<span class="text-xs text-muted">Mã B02</span>
+</td>
+<td class="py-3 px-3 text-ink" data-label="Nội dung ca">Bài tốc độ 6km Dirt</td>
+<td class="py-3 px-3 text-muted text-xs" data-label="Phụ trách">HLV Đỗ Cao Thắng</td>
+<td class="py-3 px-3 text-right" data-label="Trạng thái">
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-canvas text-ink border border-border">
+<span class="material-symbols-outlined text-[14px]" data-icon="schedule">schedule</span>
+                          Chuẩn bị
+                        </span>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-forest-wash/40 transition-colors h-14">
+<td class="py-3 px-3 font-semibold text-ink whitespace-nowrap" data-label="Giờ">14:30 - 15:30</td>
+<td class="py-3 px-3" data-label="Chiến mã">
+<div class="font-medium text-ink">Toàn đàn A</div>
+<span class="text-xs text-muted">8 ô chuồng</span>
+</td>
+<td class="py-3 px-3 text-ink" data-label="Nội dung ca">Cho ăn bổ sung cỏ Alfalfa</td>
+<td class="py-3 px-3 text-muted text-xs" data-label="Phụ trách">Đội ngũ Groom</td>
+<td class="py-3 px-3 text-right" data-label="Trạng thái">
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-canvas text-muted">
+                          Theo lịch
+                        </span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+<!-- RIGHT COLUMN (40% ~ 5 cols of 12) -->
+<div class="lg:col-span-5 space-y-6">
+<!-- Card 1: Cảnh báo an toàn y tế (Medical Restrictions Active) -->
+<section class="bg-surface rounded-lg border border-border p-5">
+<div class="flex items-center justify-between pb-3 mb-3 border-b border-border">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-critical-text text-[20px]" data-icon="lock_clock">lock_clock</span>
+<h3 class="font-section-heading text-section-heading font-semibold text-ink">Cảnh báo an toàn y tế</h3>
+</div>
+<span class="text-xs font-medium text-critical-text">2 hạn chế hiệu lực</span>
+</div>
+<div class="space-y-3">
+<!-- Red Alert Banner: Medical Lock -->
+<div class="p-3.5 rounded-lg border border-error/30 bg-critical-bg text-critical-text">
+<div class="flex items-start gap-2.5">
+<span class="material-symbols-outlined text-[18px] text-critical-text shrink-0 mt-0.5" data-icon="block">block</span>
+<div class="space-y-1">
+<div class="flex items-center gap-2 flex-wrap">
+<span class="font-bold text-sm">Hồng Ngọc (A03)</span>
+<span class="text-[10px] px-1.5 py-0.5 rounded bg-error text-on-error font-semibold">KHÓA Y TẾ</span>
+</div>
+<p class="text-xs leading-relaxed text-critical-text">
+                        Viêm bao hoạt dịch gân chân sau. <strong class="font-bold">Chặn hoàn toàn xếp lịch chạy tốc độ cao</strong> cho đến khi có xác nhận hồi phục từ Bác sĩ trưởng.
+                      </p>
+<div class="pt-1 flex items-center justify-between text-[11px] text-critical-text/80">
+<span>Chỉ định bởi: BS. Lê Thanh Hà</span>
+<a class="font-semibold underline hover:text-critical-text" href="#">Xem bệnh án →</a>
+</div>
+</div>
+</div>
+</div>
+<!-- Yellow Alert Banner: Monitoring -->
+<div class="p-3.5 rounded-lg border border-warning-text/30 bg-warning-bg text-warning-text">
+<div class="flex items-start gap-2.5">
+<span class="material-symbols-outlined text-[18px] text-warning-text shrink-0 mt-0.5" data-icon="thermostat">thermostat</span>
+<div class="space-y-1">
+<div class="flex items-center gap-2 flex-wrap">
+<span class="font-bold text-sm">Thiên Long (A04)</span>
+<span class="text-[10px] px-1.5 py-0.5 rounded bg-warning-text text-on-primary font-semibold">THEO DÕI</span>
+</div>
+<p class="text-xs leading-relaxed text-warning-text">
+                        Theo dõi thân nhiệt sau tiêm phòng cúm. Đo thân nhiệt 2 giờ/lần. Hạn chế tiếp xúc nắng gắt trong 24 giờ.
+                      </p>
+<div class="pt-1 flex items-center justify-between text-[11px] text-warning-text/90">
+<span>Đã ghi nhận: 38.2°C (ổn định)</span>
+<a class="font-semibold underline hover:text-warning-text" href="#">Nhật ký nhiệt độ →</a>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Card 2: Hiện trạng công suất ô chuồng -->
+<section class="bg-surface rounded-lg border border-border p-5">
+<div class="flex items-center justify-between pb-3 mb-4 border-b border-border">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-forest text-[20px]" data-icon="grid_view">grid_view</span>
+<h3 class="font-section-heading text-section-heading font-semibold text-ink">Hiện trạng công suất ô chuồng</h3>
+</div>
+<span class="text-xs text-muted font-medium">15/20 ô đang dùng</span>
+</div>
+<!-- Bars breakdown -->
+<div class="space-y-4">
+<!-- Khu A -->
+<div>
+<div class="flex justify-between items-center text-xs mb-1.5">
+<span class="font-semibold text-ink">Khu A (Chuồng ngựa thi đấu chính)</span>
+<span class="font-bold text-critical-text">8/8 ô (100% lấp đầy)</span>
+</div>
+<div class="w-full bg-canvas h-2.5 rounded-full overflow-hidden border border-border">
+<div class="bg-critical-text h-full rounded-full w-full"></div>
+</div>
+<span class="text-[11px] text-muted mt-1 block">Tất cả ô chuồng đã có cá thể định vị.</span>
+</div>
+<!-- Khu B -->
+<div>
+<div class="flex justify-between items-center text-xs mb-1.5">
+<span class="font-semibold text-ink">Khu B (Chuồng phục hồi &amp; Dự bị)</span>
+<span class="font-bold text-forest">6/8 ô (75% lấp đầy)</span>
+</div>
+<div class="w-full bg-canvas h-2.5 rounded-full overflow-hidden border border-border">
+<div class="bg-forest h-full rounded-full" style="width: 75%;"></div>
+</div>
+<span class="text-[11px] text-muted mt-1 block">Còn 2 ô trống sẵn sàng đón nhận (B07, B08).</span>
+</div>
+<!-- Khu Cách ly -->
+<div>
+<div class="flex justify-between items-center text-xs mb-1.5">
+<span class="font-semibold text-ink">Khu Cách ly y tế &amp; Kiểm dịch</span>
+<span class="font-bold text-quarantine-text">1/4 ô (25%)</span>
+</div>
+<div class="w-full bg-canvas h-2.5 rounded-full overflow-hidden border border-border">
+<div class="bg-quarantine-text h-full rounded-full" style="width: 25%;"></div>
+</div>
+<span class="text-[11px] text-muted mt-1 block">3 ô thông thoáng tiêu chuẩn sinh học dự phòng.</span>
+</div>
+</div>
+<div class="mt-5 pt-4 border-t border-border">
+<button class="w-full h-10 rounded-lg border border-border hover:border-forest text-forest hover:bg-forest-wash font-label text-label flex items-center justify-center gap-2 transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="map">map</span>
+<span>Xem toàn bộ sơ đồ ô chuồng</span>
+</button>
+</div>
+</section>
+<!-- Card 3: Vật tư & Thức ăn chạm ngưỡng tối thiểu -->
+<section class="bg-surface rounded-lg border border-border p-5">
+<div class="flex items-center justify-between pb-3 mb-3 border-b border-border">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-warning-text text-[20px]" data-icon="inventory_2">inventory_2</span>
+<h3 class="font-section-heading text-section-heading font-semibold text-ink">Vật tư &amp; Thức ăn chạm ngưỡng tối thiểu</h3>
+</div>
+<span class="text-xs px-2 py-0.5 rounded bg-warning-bg text-warning-text font-semibold">2 mục cần đặt</span>
+</div>
+<div class="space-y-3">
+<!-- Item 1 -->
+<div class="p-3 rounded-lg border border-border bg-canvas/40 flex items-center justify-between gap-3">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-warning-bg text-warning-text flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]" data-icon="grass">grass</span>
+</div>
+<div>
+<p class="font-label text-label text-ink">Cỏ Alfalfa nhập khẩu</p>
+<p class="font-metadata text-metadata text-critical-text font-medium">Hiện còn: 1 kiện (định mức an toàn: &gt;5)</p>
+</div>
+</div>
+<button class="shrink-0 h-8 px-2.5 text-xs font-semibold rounded bg-forest text-on-primary hover:bg-forest-deep transition-colors" type="button">
+                    Đề nghị nhập kho
+                  </button>
+</div>
+<!-- Item 2 -->
+<div class="p-3 rounded-lg border border-border bg-canvas/40 flex items-center justify-between gap-3">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-warning-bg text-warning-text flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]" data-icon="sanitizer">sanitizer</span>
+</div>
+<div>
+<p class="font-label text-label text-ink">Dầu xoa bóp móng</p>
+<p class="font-metadata text-metadata text-warning-text font-medium">Hiện còn: 3 chai (định mức an toàn: &gt;10)</p>
+</div>
+</div>
+<button class="shrink-0 h-8 px-2.5 text-xs font-semibold rounded bg-forest text-on-primary hover:bg-forest-deep transition-colors" type="button">
+                    Đề nghị nhập kho
+                  </button>
+</div>
+</div>
+</section>
+</div>
+</div>
+<!-- Footer note & metadata statement -->
+<footer class="mt-8 pt-4 pb-2 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-forest" data-icon="info">info</span>
+<span>Tất cả số liệu báo cáo có phạm vi thời gian rõ ràng (Tháng 3/2025). Dữ liệu minh họa.</span>
+</div>
+<div class="flex items-center gap-4">
+<span>Hệ thống EquiFlow V2 • Phiên bản Quản lý</span>
+<span>Đồng bộ máy chủ lúc 09:12 GMT+7</span>
+</div>
+</footer>
+</main>
+</div>
+</div>
+</body></html>

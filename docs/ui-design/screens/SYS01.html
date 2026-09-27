@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html class="h-full bg-canvas text-ink" lang="vi"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>[GH-BE-06][AUTH-SCOPE][SYS01] Phân quyền RBAC 5 vai trò &amp; Cách ly dữ liệu Chủ ngựa — Không có quyền truy cập</title>
+<!-- Material Symbols & Typography -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS & Theme Config -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "warning-text": "#875B15",
+            "primary-container": "#315d4b",
+            "on-background": "#191c1b",
+            "positive-text": "#276442",
+            "on-primary-fixed-variant": "#224f3d",
+            "on-primary-fixed": "#002115",
+            "secondary-container": "#c6ebd8",
+            "on-secondary": "#ffffff",
+            "secondary-fixed-dim": "#aacfbd",
+            "surface-container-lowest": "#ffffff",
+            "tertiary": "#5e312e",
+            "on-error": "#ffffff",
+            "on-tertiary-fixed-variant": "#693937",
+            "inverse-primary": "#a2d1ba",
+            "canvas": "#F5F6F3",
+            "surface-tint": "#3b6754",
+            "error-container": "#ffdad6",
+            "on-surface": "#191c1b",
+            "positive-bg": "#E8F3EB",
+            "quarantine-text": "#65517D",
+            "tertiary-fixed-dim": "#f9b6b1",
+            "on-primary": "#ffffff",
+            "on-secondary-container": "#4a6b5d",
+            "inverse-on-surface": "#f0f1ee",
+            "quarantine-bg": "#F1EDF6",
+            "surface-container": "#edeeeb",
+            "surface-container-highest": "#e2e3e0",
+            "tertiary-fixed": "#ffdad7",
+            "surface-variant": "#e2e3e0",
+            "warning-bg": "#FFF4DD",
+            "on-tertiary-fixed": "#34100e",
+            "forest": "#315D4B",
+            "on-error-container": "#93000a",
+            "surface-dim": "#d9dad7",
+            "background": "#f9faf7",
+            "primary": "#184535",
+            "surface": "#FFFFFF",
+            "surface-bright": "#f9faf7",
+            "outline": "#717974",
+            "critical-bg": "#FAE9EB",
+            "on-tertiary": "#ffffff",
+            "secondary-fixed": "#c6ebd8",
+            "ink": "#202B28",
+            "forest-wash": "#EAF1EC",
+            "forest-deep": "#234437",
+            "secondary": "#446557",
+            "border": "#DCE3DD",
+            "critical-text": "#922D3C",
+            "on-primary-container": "#a5d4bd",
+            "on-tertiary-container": "#fcb9b4",
+            "outline-variant": "#c0c8c2",
+            "on-secondary-fixed-variant": "#2c4d40",
+            "on-surface-variant": "#414944",
+            "on-secondary-fixed": "#002116",
+            "muted": "#65716B",
+            "surface-container-high": "#e7e8e6",
+            "primary-fixed-dim": "#a2d1ba",
+            "primary-fixed": "#bdedd6",
+            "error": "#ba1a1a",
+            "tertiary-container": "#794744",
+            "inverse-surface": "#2e312f",
+            "surface-container-low": "#f3f4f1"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem",
+            "button": "7px",
+            "panel": "10px"
+          },
+          "spacing": {
+            "space-xs": "4px",
+            "space-xl": "32px",
+            "space-md": "16px",
+            "gutter": "24px",
+            "margin": "32px",
+            "space-lg": "24px",
+            "space-sm": "8px"
+          },
+          "fontFamily": {
+            "auth-heading": ["Manrope"],
+            "section-heading": ["Manrope"],
+            "page-title": ["Manrope"],
+            "metadata": ["Manrope"],
+            "body": ["Manrope"],
+            "body-lg": ["Manrope"],
+            "label": ["Manrope"]
+          },
+          "fontSize": {
+            "auth-heading": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+            "section-heading": ["18px", { "lineHeight": "26px", "fontWeight": "650" }],
+            "page-title": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "metadata": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "body": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "label": ["14px", { "lineHeight": "20px", "fontWeight": "600" }]
+          }
+        }
+      }
+    }
+  </script>
+<style id="equiflow-reviewed-layout">
+   html,body{max-width:100%;} .ef-sidebar{width:224px!important;min-width:224px;background:#fff!important;border-right:1px solid #dce3dd;padding:24px 14px!important;display:flex;flex-direction:column;gap:24px}.ef-brand{font:700 24px/1.2 Manrope,'Segoe UI',sans-serif;color:#315d4b}.ef-brand small{display:block;font:11px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin-top:8px}.ef-role-nav{display:flex;flex-direction:column;gap:5px}.ef-role-nav a{padding:11px 12px;min-height:44px;border-radius:6px;font:500 14px/22px Manrope,'Segoe UI',sans-serif;color:#3e4e45;text-decoration:none;white-space:normal}.ef-role-nav a:hover,.ef-role-nav a[aria-current=page]{background:#eaf1ec;color:#315d4b}.ef-role-label{margin-top:auto;font-size:12px;color:#65716b}.ef-role-label a{display:block;padding-top:12px;color:#315d4b}.ef-sample-notice{font:12px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin:0 0 14px}.ef-mobile-nav{display:none}input,select,textarea{max-width:100%}button,a,input,select,textarea{touch-action:manipulation}
+   @media(max-width:1023px){[data-review-kind=app] header,[data-review-kind=app] main .flex{flex-wrap:wrap}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important}[data-review-kind=app] .flex-1{min-width:0}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{max-width:100%;min-width:0}[data-review-kind=app] header>div{max-width:100%;flex-wrap:wrap}}
+   @media(max-width:767px){body[data-review-kind=app]{display:block!important;height:auto!important;min-height:100dvh}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important;height:auto}}
+   @media(max-width:767px){.ef-sidebar{display:none!important}.ef-mobile-nav{display:block;position:relative;z-index:200;background:white;border-bottom:1px solid #dce3dd;padding:12px 16px}.ef-mobile-nav summary{min-height:44px;cursor:pointer;display:flex;align-items:center;font-weight:700;color:#315d4b}.ml-56,.ml-64,[class~='ml-[224px]'],[class~='ml-[240px]'],main[style*='margin-left']{margin-left:0!important}main{min-width:0!important;max-width:100%!important}header{flex-wrap:wrap!important;gap:8px!important;height:auto!important}footer{flex-wrap:wrap!important;gap:12px}h1{overflow-wrap:anywhere}.ef-role-nav{max-width:100%}[data-review-kind=app] .grid{grid-template-columns:minmax(0,1fr)!important}[data-review-kind=app] .flex{min-width:0;flex-wrap:wrap}[data-review-kind=app] table,[data-review-kind=app] tbody,[data-review-kind=app] tr{display:block;width:100%}[data-review-kind=app] thead{display:none}[data-review-kind=app] tr{padding:12px 0;border-bottom:1px solid #dce3dd}[data-review-kind=app] td{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;white-space:normal!important;padding:8px 12px;min-width:0;overflow-wrap:anywhere}[data-review-kind=app] td:before{content:attr(data-label);color:#65716b;font-size:12px;flex:0 0 35%}[data-review-kind=app] td>*{min-width:0;max-width:100%}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{width:100%}}
+  </style></head>
+<body class="h-full bg-canvas text-ink antialiased selection:bg-forest-wash selection:text-forest" data-review-kind="app">
+<!-- Desktop App Shell Structure (1440px base artboard, min-h-screen) -->
+<div class="min-h-full flex flex-row w-full">
+<!-- SideNavBar (Fixed 224px w-56, clean white panel with 1px border) -->
+<aside class="fixed left-0 top-0 bottom-0 w-56 z-50 flex flex-col justify-between py-4 px-3 bg-surface border-r border-border select-none ef-sidebar"><div class="ef-brand">EquiFlow<small>Quản lý huấn luyện ngựa đua</small></div><nav class="ef-role-nav" aria-label="Điều hướng Quản lý CLB"><a href="M01.html">Tổng quan</a><a href="H01.html">Hồ sơ ngựa</a><a href="H04.html">Ô chuồng</a><a href="V01.html">Sức khỏe</a><a href="M02.html">Nhân sự</a><a href="M04.html">Nhật ký hệ thống</a></nav><div class="ef-role-label">Quản lý CLB<a href="AUTH01.html">Đăng xuất</a></div></aside>
+<!-- Main Workspace (Desktop Canvas: 64px TopBar + Padded Body Canvas) -->
+<div class="flex-1 ml-56 flex flex-col min-w-0">
+<!-- TopNavBar (64px, docked full width, surface background, crisp 1px separator) -->
+<header class="h-16 px-8 flex items-center justify-between bg-surface border-b border-border sticky top-0 z-40">
+<!-- Left: Club Title Context -->
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 text-ink">
+<span class="material-symbols-outlined text-forest text-xl" data-icon="holiday_village">holiday_village</span>
+<span class="font-section-heading text-section-heading text-ink font-semibold">CLB Đua Ngựa Tân Phú</span>
+</div>
+<span class="text-border">|</span>
+<span class="font-metadata text-metadata text-muted flex items-center gap-1.5 bg-surface-container-low px-2.5 py-1 rounded-md border border-border">
+<span class="w-1.5 h-1.5 rounded-full bg-positive-text"></span>
+            Máy chủ: Sài Gòn Zone 1
+          </span>
+</div>
+<!-- Right: Actions & User Meta -->
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1 border-r border-border pr-4">
+<button class="w-9 h-9 rounded-lg flex items-center justify-center text-muted hover:text-forest hover:bg-forest-wash transition-colors" title="Thông báo" type="button">
+<span class="material-symbols-outlined text-lg" data-icon="notifications">notifications</span>
+</button>
+<button class="w-9 h-9 rounded-lg flex items-center justify-center text-muted hover:text-forest hover:bg-forest-wash transition-colors" title="Trợ giúp" type="button">
+<span class="material-symbols-outlined text-lg" data-icon="help">help</span>
+</button>
+<button class="w-9 h-9 rounded-lg flex items-center justify-center text-muted hover:text-forest hover:bg-forest-wash transition-colors" title="Cài đặt" type="button">
+<span class="material-symbols-outlined text-lg" data-icon="settings">settings</span>
+</button>
+</div>
+<!-- User Profile Display -->
+<div class="flex items-center gap-3 pl-1">
+<div class="w-9 h-9 rounded-full bg-forest-wash border border-border flex items-center justify-center text-forest font-bold text-xs">
+              MQ
+            </div>
+<div class="flex flex-col text-left">
+<span class="font-label text-label text-ink leading-tight">Trần Minh Quân</span>
+<span class="font-metadata text-metadata text-muted">Quản lý CLB</span>
+</div>
+</div>
+</div>
+</header>
+<!-- Content Area: Canvas #F5F6F3 with 32px padding -->
+<main class="flex-1 p-space-xl overflow-y-auto">
+<!-- Breadcrumb Tracker -->
+<div class="max-w-4xl mx-auto mb-6 flex items-center gap-2 font-metadata text-metadata text-muted">
+<a class="hover:text-forest transition-colors" href="#">EquiFlow</a>
+<span class="material-symbols-outlined text-xs" data-icon="chevron_right">chevron_right</span>
+<a class="hover:text-forest transition-colors" href="#">Chiến mã</a>
+<span class="material-symbols-outlined text-xs" data-icon="chevron_right">chevron_right</span>
+<span class="text-ink font-medium">Bảo vệ quyền truy cập</span>
+</div>
+<!-- Central Secure Card (Strict Corporate Minimalist Panel with 10px radius and 1px border) -->
+<div class="max-w-4xl mx-auto bg-surface rounded-[10px] border border-border p-8 lg:p-10 mb-8 shadow-none">
+<div class="flex flex-col md:flex-row items-start gap-8">
+<!-- Left Visual Anchor: Error Code & Shield Token -->
+<div class="flex flex-col items-center justify-center shrink-0 w-full md:w-44 p-6 rounded-lg bg-surface-container-low border border-border">
+<div class="w-14 h-14 rounded-full bg-forest-wash flex items-center justify-center text-forest-deep mb-3">
+<span class="material-symbols-outlined text-3xl" data-icon="gpp_maybe">gpp_maybe</span>
+</div>
+<span class="font-page-title text-4xl font-extrabold tracking-tight text-forest-deep leading-none">403</span>
+<span class="font-metadata text-metadata uppercase tracking-wider text-muted font-semibold mt-2">Mã lỗi hệ thống</span>
+<span class="mt-3 px-2 py-0.5 rounded text-[11px] font-medium bg-quarantine-bg text-quarantine-text border border-quarantine-text/20">
+                SYS01 · Restricted
+              </span>
+</div>
+<!-- Right Content & Action Cluster -->
+<div class="flex-1 flex flex-col">
+<!-- Primary Header -->
+<div class="mb-4">
+<h1 class="font-page-title text-page-title text-ink font-bold tracking-tight">
+                  Từ chối quyền truy cập (Access Denied)
+                </h1>
+<p class="font-body text-body text-muted mt-2">
+                  Tài khoản của bạn (<strong class="text-ink font-semibold">Vai trò: Chủ ngựa</strong>) không có quyền hạn xem hoặc thao tác trên tài nguyên này. Hồ sơ chiến mã hoặc khu vực chuồng trại này thuộc quyền quản lý của chủ sở hữu khác hoặc chỉ dành riêng cho Bác sĩ thú y / Quản lý CLB.
+                </p>
+</div>
+<!-- Data Isolation & Privacy Guarantee Box -->
+<div class="p-3.5 mb-6 rounded-lg bg-forest-wash border border-border flex items-start gap-3">
+<span class="material-symbols-outlined text-forest mt-0.5 shrink-0" data-icon="verified_user">verified_user</span>
+<div class="flex flex-col">
+<span class="font-label text-label text-forest font-semibold">Chính sách bảo mật dữ liệu độc lập (Tenant Privacy)</span>
+<span class="font-metadata text-metadata text-muted mt-0.5">
+                    EquiFlow thực thi chính sách Zero-Knowledge: Các thông số chi tiết như mã microchip, bệnh án thú y, lịch trình thi đấu và danh tính chủ sở hữu liên quan được che giấu tuyệt đối để đảm bảo quyền riêng tư của từng chuồng ngựa.
+                  </span>
+</div>
+</div>
+<!-- Action Buttons Cluster (44px height, exact 7px radius) -->
+<div class="flex flex-wrap items-center gap-3 pt-2 border-t border-border">
+<!-- Primary Action Button -->
+<button class="h-[44px] px-4 rounded-[7px] bg-forest hover:bg-forest-deep active:scale-[0.99] text-surface font-label text-label flex items-center gap-2 transition-all" type="button">
+<span class="material-symbols-outlined text-lg" data-icon="dashboard">dashboard</span>
+<span>Về trang tổng quan của tôi</span>
+</button>
+<!-- Secondary Action Button -->
+<button class="h-[44px] px-4 rounded-[7px] bg-surface hover:bg-forest-wash active:scale-[0.99] border border-border text-ink font-label text-label flex items-center gap-2 transition-all" type="button">
+<span class="material-symbols-outlined text-lg text-forest" data-icon="format_list_bulleted">format_list_bulleted</span>
+<span>Xem danh sách ngựa của tôi</span>
+</button>
+<!-- Plain Auxiliary Link -->
+<a class="h-[44px] px-3 flex items-center gap-1 font-body text-body text-forest hover:underline transition-all" href="#">
+<span>Gửi yêu cầu hỗ trợ phân quyền</span>
+<span class="material-symbols-outlined text-base" data-icon="arrow_forward">arrow_forward</span>
+</a>
+</div>
+</div>
+</div>
+</div>
+<!-- Context & Policy Audit Scenarios (Bento-style 3 columns, clean tabular inspection) -->
+<div class="max-w-4xl mx-auto">
+<div class="flex items-center justify-between mb-3 px-1">
+<span class="font-label text-label text-ink">Bảng quy chuẩn an toàn truy cập (Matrix Scenarios)</span>
+<span class="font-metadata text-metadata text-muted">Cập nhật theo phân quyền RBAC v2.4</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- Scenario A -->
+<div class="bg-surface rounded-[10px] border border-border p-4 flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-2">
+<span class="px-2 py-0.5 rounded text-[11px] font-label bg-surface-container text-muted">Kịch bản A</span>
+<span class="material-symbols-outlined text-forest text-sm" data-icon="shield">shield</span>
+</div>
+<h4 class="font-label text-label text-ink mb-1">Chủ ngựa &amp; Hồ sơ ngoại vi</h4>
+<p class="font-body text-xs text-muted leading-relaxed">
+                  Chủ ngựa cố truy cập đường dẫn URL trực tiếp tới hồ sơ chiến mã mà mình không đứng tên sở hữu hợp đồng.
+                </p>
+</div>
+<div class="mt-4 pt-3 border-t border-border flex items-center gap-1.5 font-metadata text-[11px] text-positive-text">
+<span class="material-symbols-outlined text-xs" data-icon="check_circle">check_circle</span>
+<span>Chặn tự động · Không leak URL</span>
+</div>
+</div>
+<!-- Scenario B -->
+<div class="bg-surface rounded-[10px] border border-border p-4 flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-2">
+<span class="px-2 py-0.5 rounded text-[11px] font-label bg-surface-container text-muted">Kịch bản B</span>
+<span class="material-symbols-outlined text-warning-text text-sm" data-icon="finance">finance</span>
+</div>
+<h4 class="font-label text-label text-ink mb-1">Nhân viên &amp; Tài chính</h4>
+<p class="font-body text-xs text-muted leading-relaxed">
+                  Nhân viên chăm sóc (Groom) truy cập trang Báo cáo tài chính, quyết toán doanh thu hoặc lương CLB.
+                </p>
+</div>
+<div class="mt-4 pt-3 border-t border-border flex items-center gap-1.5 font-metadata text-[11px] text-positive-text">
+<span class="material-symbols-outlined text-xs" data-icon="check_circle">check_circle</span>
+<span>Giới hạn cấp bậc · Chuyển hướng</span>
+</div>
+</div>
+<!-- Scenario C -->
+<div class="bg-surface rounded-[10px] border border-border p-4 flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-2">
+<span class="px-2 py-0.5 rounded text-[11px] font-label bg-surface-container text-muted">Kịch bản C</span>
+<span class="material-symbols-outlined text-critical-text text-sm" data-icon="lock_clock">lock_clock</span>
+</div>
+<h4 class="font-label text-label text-ink mb-1">HLV &amp; Khóa Y tế</h4>
+<p class="font-body text-xs text-muted leading-relaxed">
+                  Huấn luyện viên cố mở khóa Y tế (Medical Lock) của ngựa đang chấn thương mà không có chữ ký Bác sĩ.
+                </p>
+</div>
+<div class="mt-4 pt-3 border-t border-border flex items-center gap-1.5 font-metadata text-[11px] text-critical-text">
+<span class="material-symbols-outlined text-xs" data-icon="block">block</span>
+<span>Khóa cứng · Ghi log cảnh báo</span>
+</div>
+</div>
+</div>
+<!-- Bottom Audit Telemetry Strip -->
+<div class="mt-6 flex flex-wrap items-center justify-between text-xs text-muted px-2 border-t border-border pt-4">
+<div class="flex items-center gap-3">
+<span>Mã phiên truy vết: <code class="text-ink font-mono">REQ-20231015-8942</code></span>
+<span>•</span>
+<span>Thời gian ghi nhận: 14:32:08 GMT+7</span>
+</div>
+<div>
+<span>Nếu bạn tin rằng đây là sai sót, vui lòng liên hệ <a class="text-forest underline font-medium" href="#">Ban điều hành chuồng trại Tân Phú</a></span>
+</div>
+</div>
+</div>
+</main>
+</div>
+</div>
+</body></html>

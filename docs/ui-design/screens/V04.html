@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html class="h-full bg-canvas text-ink" lang="vi"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>[GH-BE-13][FR-011][V04] Quy trình Ban hành Lệnh Khóa huấn luyện khẩn cấp (Medical Lock) &amp; Tái khám mở khóa — Xác nhận khóa huấn luyện</title>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "primary-fixed-dim": "#a2d1ba",
+            "error": "#ba1a1a",
+            "positive-bg": "#E8F3EB",
+            "surface-variant": "#e2e3e0",
+            "quarantine-text": "#65517D",
+            "on-primary": "#ffffff",
+            "primary-fixed": "#bdedd6",
+            "surface-dim": "#d9dad7",
+            "surface-bright": "#f9faf7",
+            "surface-container-low": "#f3f4f1",
+            "primary": "#184535",
+            "critical-bg": "#FAE9EB",
+            "surface-container-high": "#e7e8e6",
+            "positive-text": "#276442",
+            "quarantine-bg": "#F1EDF6",
+            "critical-text": "#922D3C",
+            "surface": "#FFFFFF",
+            "on-surface": "#191c1b",
+            "on-background": "#191c1b",
+            "inverse-on-surface": "#f0f1ee",
+            "tertiary-fixed": "#ffdad7",
+            "on-secondary-fixed": "#002116",
+            "surface-container-lowest": "#ffffff",
+            "surface-container-highest": "#e2e3e0",
+            "primary-container": "#315d4b",
+            "inverse-primary": "#a2d1ba",
+            "inverse-surface": "#2e312f",
+            "on-error-container": "#93000a",
+            "secondary-fixed": "#c6ebd8",
+            "surface-tint": "#3b6754",
+            "background": "#f9faf7",
+            "on-primary-fixed": "#002115",
+            "secondary-container": "#c6ebd8",
+            "canvas": "#F5F6F3",
+            "ink": "#202B28",
+            "warning-bg": "#FFF4DD",
+            "on-primary-container": "#a5d4bd",
+            "secondary-fixed-dim": "#aacfbd",
+            "on-secondary": "#ffffff",
+            "on-surface-variant": "#414944",
+            "on-tertiary-fixed": "#34100e",
+            "on-error": "#ffffff",
+            "tertiary": "#5e312e",
+            "outline": "#717974",
+            "warning-text": "#875B15",
+            "secondary": "#446557",
+            "forest-deep": "#234437",
+            "tertiary-fixed-dim": "#f9b6b1",
+            "forest-wash": "#EAF1EC",
+            "error-container": "#ffdad6",
+            "on-tertiary": "#ffffff",
+            "forest": "#315D4B",
+            "on-secondary-fixed-variant": "#2c4d40",
+            "outline-variant": "#c0c8c2",
+            "border": "#DCE3DD",
+            "tertiary-container": "#794744",
+            "on-primary-fixed-variant": "#224f3d",
+            "muted": "#65716B",
+            "on-tertiary-container": "#fcb9b4",
+            "surface-container": "#edeeeb",
+            "on-tertiary-fixed-variant": "#693937",
+            "on-secondary-container": "#4a6b5d"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-md": "16px",
+            "space-lg": "24px",
+            "margin": "32px",
+            "gutter": "24px",
+            "space-xs": "4px",
+            "space-sm": "8px",
+            "space-xl": "32px"
+          },
+          "fontFamily": {
+            "section-heading": ["Manrope"],
+            "label": ["Manrope"],
+            "page-title": ["Manrope"],
+            "metadata": ["Manrope"],
+            "body-lg": ["Manrope"],
+            "body": ["Manrope"],
+            "auth-heading": ["Manrope"]
+          },
+          "fontSize": {
+            "section-heading": ["18px", { "lineHeight": "26px", "fontWeight": "650" }],
+            "label": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "page-title": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "metadata": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "body": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "auth-heading": ["32px", { "lineHeight": "40px", "fontWeight": "700" }]
+          }
+        }
+      }
+    }
+  </script>
+<style id="equiflow-reviewed-layout">
+   html,body{max-width:100%;} .ef-sidebar{width:224px!important;min-width:224px;background:#fff!important;border-right:1px solid #dce3dd;padding:24px 14px!important;display:flex;flex-direction:column;gap:24px}.ef-brand{font:700 24px/1.2 Manrope,'Segoe UI',sans-serif;color:#315d4b}.ef-brand small{display:block;font:11px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin-top:8px}.ef-role-nav{display:flex;flex-direction:column;gap:5px}.ef-role-nav a{padding:11px 12px;min-height:44px;border-radius:6px;font:500 14px/22px Manrope,'Segoe UI',sans-serif;color:#3e4e45;text-decoration:none;white-space:normal}.ef-role-nav a:hover,.ef-role-nav a[aria-current=page]{background:#eaf1ec;color:#315d4b}.ef-role-label{margin-top:auto;font-size:12px;color:#65716b}.ef-role-label a{display:block;padding-top:12px;color:#315d4b}.ef-sample-notice{font:12px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin:0 0 14px}.ef-mobile-nav{display:none}input,select,textarea{max-width:100%}button,a,input,select,textarea{touch-action:manipulation}
+   @media(max-width:1023px){[data-review-kind=app] header,[data-review-kind=app] main .flex{flex-wrap:wrap}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important}[data-review-kind=app] .flex-1{min-width:0}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{max-width:100%;min-width:0}[data-review-kind=app] header>div{max-width:100%;flex-wrap:wrap}}
+   @media(max-width:767px){body[data-review-kind=app]{display:block!important;height:auto!important;min-height:100dvh}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important;height:auto}}
+   @media(max-width:767px){.ef-sidebar{display:none!important}.ef-mobile-nav{display:block;position:relative;z-index:200;background:white;border-bottom:1px solid #dce3dd;padding:12px 16px}.ef-mobile-nav summary{min-height:44px;cursor:pointer;display:flex;align-items:center;font-weight:700;color:#315d4b}.ml-56,.ml-64,[class~='ml-[224px]'],[class~='ml-[240px]'],main[style*='margin-left']{margin-left:0!important}main{min-width:0!important;max-width:100%!important}header{flex-wrap:wrap!important;gap:8px!important;height:auto!important}footer{flex-wrap:wrap!important;gap:12px}h1{overflow-wrap:anywhere}.ef-role-nav{max-width:100%}[data-review-kind=app] .grid{grid-template-columns:minmax(0,1fr)!important}[data-review-kind=app] .flex{min-width:0;flex-wrap:wrap}[data-review-kind=app] table,[data-review-kind=app] tbody,[data-review-kind=app] tr{display:block;width:100%}[data-review-kind=app] thead{display:none}[data-review-kind=app] tr{padding:12px 0;border-bottom:1px solid #dce3dd}[data-review-kind=app] td{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;white-space:normal!important;padding:8px 12px;min-width:0;overflow-wrap:anywhere}[data-review-kind=app] td:before{content:attr(data-label);color:#65716b;font-size:12px;flex:0 0 35%}[data-review-kind=app] td>*{min-width:0;max-width:100%}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{width:100%}}
+  </style></head>
+<body class="h-full font-body text-body bg-canvas text-ink antialiased overflow-x-hidden selection:bg-forest-wash selection:text-forest" data-review-kind="app">
+<!-- Main Background Container (Simulating the EquiFlow Clinical & Veterinary Console) -->
+<div class="flex h-screen w-full overflow-hidden select-none filter blur-[2px] opacity-70 pointer-events-none">
+<!-- SideNavBar (Authority Component) -->
+<aside class="docked left top-0 bottom-0 w-56 flex flex-col justify-between shrink-0 bg-surface dark:bg-inverse-surface border-r border-border dark:border-outline-variant p-space-sm z-10 ef-sidebar"><div class="ef-brand">EquiFlow<small>Quản lý huấn luyện ngựa đua</small></div><nav class="ef-role-nav" aria-label="Điều hướng Bác sĩ thú y"><a href="V01.html">Sức khỏe đàn ngựa</a><a href="V02.html">Bệnh án</a><a href="V03.html">Sơ đồ giải phẫu 2D</a><a href="V06.html">Lịch y tế dự phòng</a></nav><div class="ef-role-label">Bác sĩ thú y<a href="AUTH01.html">Đăng xuất</a></div></aside>
+<!-- Background Content Canvas -->
+<div class="flex-1 flex flex-col h-full bg-canvas overflow-y-auto">
+<!-- TopNavBar -->
+<header class="h-16 w-full flex items-center justify-between px-gutter bg-surface border-b border-border shrink-0">
+<div class="flex items-center gap-space-md w-96">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-2.5 text-muted text-lg" data-icon="search">search</span>
+<input class="w-full h-10 pl-9 pr-3 rounded bg-canvas border border-border text-label font-label text-ink placeholder-muted focus:outline-none" placeholder="Tìm kiếm chiến mã, hồ sơ bệnh án..." type="text">
+</div>
+</div>
+<div class="flex items-center gap-space-md">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-muted" data-icon="calendar_today">calendar_today</span>
+<span class="material-symbols-outlined text-muted" data-icon="notifications">notifications</span>
+</div>
+<div class="h-6 w-px bg-border"></div>
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-forest text-on-primary flex items-center justify-center font-bold text-xs">LH</div>
+<div class="text-left">
+<p class="font-label text-label leading-tight">BS. Lê Thanh Hà</p>
+<p class="font-metadata text-metadata text-muted">Trưởng ban Thú y</p>
+</div>
+</div>
+</div>
+</header>
+<!-- Background Record View Header -->
+<main class="p-space-lg flex flex-col gap-space-lg"><p class="ef-sample-notice">Dữ liệu minh họa · Bản thiết kế giao diện</p>
+<div class="flex justify-between items-center bg-surface p-space-md rounded-xl border border-border">
+<div class="flex items-center gap-space-md">
+<div class="w-14 h-14 rounded-lg bg-surface-container flex items-center justify-center border border-border">
+<span class="material-symbols-outlined text-3xl text-forest" data-icon="pets">pets</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h1 class="font-page-title text-page-title text-ink">Hồng Ngọc</h1>
+<span class="px-2 py-0.5 rounded bg-critical-bg text-critical-text font-metadata text-metadata font-bold border border-critical-text/20">Chỉ định Khóa Y tế</span>
+</div>
+<p class="font-body text-body text-muted">Mã chip: VNM-246813579024 · Giống Thoroughbred · 5 Tuổi · Ô chuồng A03</p>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="h-10 px-4 rounded bg-surface border border-border font-label text-label text-ink">Bệnh án chi tiết</button>
+<button class="h-10 px-4 rounded bg-critical-text text-on-primary font-label text-label">Khóa Y tế khẩn cấp</button>
+</div>
+</div>
+</main>
+</div>
+</div>
+<!-- Focused Modal Backdrop & Dialog System (Centerpiece) -->
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-ink/50 backdrop-blur-sm overflow-y-auto">
+<!-- Modal Card (Strict 10px rounded, 1px border #DCE3DD, Shadowed) -->
+<div class="relative w-full max-w-3xl bg-surface rounded-[10px] border border-border shadow-2xl flex flex-col my-auto overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+<!-- Modal Header: Clinical Alert Accent -->
+<div class="p-space-lg border-b border-border bg-surface flex items-start gap-space-md">
+<div class="w-12 h-12 rounded-lg bg-critical-bg text-critical-text flex items-center justify-center shrink-0 border border-critical-text/25">
+<span class="material-symbols-outlined text-2xl" data-icon="lock" style="font-variation-settings: 'FILL' 1;">lock</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-2">
+<h2 class="font-section-heading text-section-heading text-ink font-bold flex items-center gap-2">
+<span>Kích hoạt Khóa An toàn Y tế (Medical Lock)</span>
+</h2>
+<span class="px-2.5 py-1 rounded bg-critical-bg text-critical-text font-metadata text-metadata font-semibold border border-critical-text/30 flex items-center gap-1">
+<span class="material-symbols-outlined text-sm" data-icon="shield">shield</span>
+              Chuyên khoa Lâm sàng
+            </span>
+</div>
+<p class="font-label text-label text-forest mt-0.5 font-semibold">
+            Chiến mã: Hồng Ngọc <span class="text-muted font-normal">(Mã chip: VNM-246813579024 · Ô chuồng A03)</span>
+</p>
+</div>
+</div>
+<!-- Modal Body (Form & Impact Evaluation) -->
+<div class="p-space-lg space-y-space-md max-h-[calc(85vh-160px)] overflow-y-auto bg-canvas/30">
+<!-- Critical Warning Callout -->
+<div class="p-space-md rounded-lg bg-critical-bg/80 border border-critical-text/25 flex items-start gap-space-sm text-critical-text">
+<span class="material-symbols-outlined text-xl shrink-0 mt-0.5" data-icon="warning" style="font-variation-settings: 'FILL' 1;">warning</span>
+<div class="font-body text-body">
+<p class="font-label font-bold text-critical-text leading-tight mb-1">Cảnh báo hệ thống điều hành EquiFlow:</p>
+<p class="text-xs leading-relaxed text-critical-text/95">
+              Quyết định này sẽ <span class="font-bold underline">vô hiệu hóa ngay lập tức</span> khả năng xếp lịch tập tốc độ cao và hủy tư cách đăng ký thi đấu cho chiến mã trên toàn hệ thống cho đến khi Bác sĩ thú y xác nhận tái khám đủ điều kiện.
+            </p>
+</div>
+</div>
+<!-- Section 1: Required Clinical Rationale -->
+<div class="space-y-space-xs bg-surface p-space-md rounded-lg border border-border">
+<div class="flex justify-between items-center mb-1">
+<label class="font-label text-label text-ink flex items-center gap-1 font-semibold" for="lock_reason">
+              Lý do bắt buộc kích hoạt khóa <span class="text-critical-text">*</span>
+</label>
+<span class="font-metadata text-metadata text-muted italic bg-surface-container-low px-2 py-0.5 rounded">Dữ liệu minh họa</span>
+</div>
+<div class="relative">
+<textarea class="w-full p-3 rounded bg-surface border border-border font-body text-body text-ink focus:border-forest focus:ring-1 focus:ring-forest outline-none text-sm resize-none" id="lock_reason" readonly="" rows="3">Phát hiện tổn thương phù nề gân gấp ngón nông chi trước trái (SDFT strain - độ II), tăng nhiệt độ cục bộ vùng gân 1.8°C; nguy cơ rách hoặc đứt gân nghiêm trọng nếu tiếp tục vận động cường độ cao hoặc chạy bứt tốc.</textarea>
+</div>
+<p class="font-metadata text-metadata text-muted flex items-center gap-1">
+<span class="material-symbols-outlined text-xs" data-icon="info">info</span>
+            Nội dung được lưu vào Hồ sơ bệnh án điện tử và gửi thông báo khẩn cấp tới Ban Huấn luyện.
+          </p>
+</div>
+<!-- Section 2: Reassessment & Conditions Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<!-- Reassessment Date Panel -->
+<div class="bg-surface p-space-md rounded-lg border border-border flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-center mb-1.5">
+<label class="font-label text-label text-ink font-semibold" for="reassessment_date">
+                  Thời gian dự kiến đánh giá lại (Reassessment Date) <span class="text-critical-text">*</span>
+</label>
+</div>
+<div class="relative mb-2">
+<input class="w-full h-11 px-3 rounded bg-surface border border-border font-label text-label text-ink focus:border-forest focus:ring-1 focus:ring-forest outline-none" id="reassessment_date" type="date" value="2025-04-14">
+</div>
+</div>
+<div class="p-2.5 rounded bg-warning-bg border border-warning-text/25 text-warning-text flex items-start gap-2">
+<span class="material-symbols-outlined text-base shrink-0 mt-0.5" data-icon="notifications_paused">notifications_paused</span>
+<p class="font-metadata text-metadata text-xs leading-normal">
+<strong class="font-semibold">Lưu ý:</strong> Hệ thống <span class="underline font-bold">KHÔNG</span> tự động mở khóa vào ngày này. Khóa y tế chỉ được gỡ bỏ khi Bác sĩ thú y thực hiện phiên khám lại và ký số phê duyệt.
+              </p>
+</div>
+</div>
+<!-- Prerequisite Medical Clearance Criteria -->
+<div class="bg-surface p-space-md rounded-lg border border-border flex flex-col">
+<div class="flex justify-between items-center mb-2">
+<span class="font-label text-label text-ink font-semibold">Điều kiện y tế tiên quyết để được gỡ khóa <span class="text-critical-text">*</span></span>
+<span class="font-metadata text-metadata text-muted italic">Dữ liệu minh họa</span>
+</div>
+<ul class="space-y-2 flex-1 flex flex-col justify-center">
+<li class="flex items-center gap-2.5 p-2 rounded bg-forest-wash/50 border border-forest/10 font-body text-body text-xs text-forest-deep">
+<span class="material-symbols-outlined text-forest text-base shrink-0" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span>Kết quả siêu âm Doppler không còn tụ dịch bao gân chi trước trái</span>
+</li>
+<li class="flex items-center gap-2.5 p-2 rounded bg-forest-wash/50 border border-forest/10 font-body text-body text-xs text-forest-deep">
+<span class="material-symbols-outlined text-forest text-base shrink-0" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span>Không còn phản ứng đau, sưng nóng khi ấn sờ lâm sàng (palpation)</span>
+</li>
+<li class="flex items-center gap-2.5 p-2 rounded bg-forest-wash/50 border border-forest/10 font-body text-body text-xs text-forest-deep">
+<span class="material-symbols-outlined text-forest text-base shrink-0" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span>Dáng đi nhịp bước đạt chuẩn trot cân bằng, không còn biểu hiện khập khiễng</span>
+</li>
+</ul>
+</div>
+</div>
+<!-- Section 3: Affected Training & Competition Schedule -->
+<div class="bg-surface rounded-lg border border-border overflow-hidden">
+<div class="px-space-md py-3 bg-surface border-b border-border flex justify-between items-center">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-critical-text text-base" data-icon="event_busy">event_busy</span>
+<span class="font-label text-label text-ink font-semibold">Danh sách buổi tập &amp; sự kiện chịu ảnh hưởng trực tiếp</span>
+</div>
+<span class="px-2 py-0.5 rounded bg-critical-bg text-critical-text font-metadata text-metadata font-bold">3 lịch trình bị chặn</span>
+</div>
+<table class="w-full text-left border-collapse font-body text-body">
+<thead>
+<tr class="bg-canvas border-b border-border font-label text-metadata text-muted">
+<th class="py-2.5 px-space-md font-semibold">Thời gian</th>
+<th class="py-2.5 px-space-md font-semibold">Nội dung hoạt động / Sự kiện</th>
+<th class="py-2.5 px-space-md font-semibold">Cường độ</th>
+<th class="py-2.5 px-space-md font-semibold text-right">Trạng thái sau khóa</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border text-xs">
+<tr class="hover:bg-forest-wash/40 transition-colors">
+<td class="py-3 px-space-md font-semibold text-ink whitespace-nowrap" data-label="Thời gian">05/04/2025</td>
+<td class="py-3 px-space-md" data-label="Nội dung hoạt động / Sự kiện">
+<div class="font-medium text-ink">Chạy nước rút 400m Dirt</div>
+<div class="font-metadata text-muted">HLV phụ trách: Nguyễn Văn Hòa</div>
+</td>
+<td class="py-3 px-space-md whitespace-nowrap" data-label="Cường độ">
+<span class="px-2 py-0.5 rounded bg-critical-bg text-critical-text font-metadata font-medium">Tối đa (Sprint)</span>
+</td>
+<td class="py-3 px-space-md text-right whitespace-nowrap" data-label="Trạng thái sau khóa">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-critical-bg text-critical-text font-label font-bold border border-critical-text/25">
+<span class="material-symbols-outlined text-xs" data-icon="block">block</span>
+                    Tạm đình chỉ (Y tế)
+                  </span>
+</td>
+</tr>
+<tr class="hover:bg-forest-wash/40 transition-colors">
+<td class="py-3 px-space-md font-semibold text-ink whitespace-nowrap" data-label="Thời gian">07/04/2025</td>
+<td class="py-3 px-space-md" data-label="Nội dung hoạt động / Sự kiện">
+<div class="font-medium text-ink">Tập tăng tốc cự ly 1,200m Turf</div>
+<div class="font-metadata text-muted">HLV phụ trách: Lê Minh Trí</div>
+</td>
+<td class="py-3 px-space-md whitespace-nowrap" data-label="Cường độ">
+<span class="px-2 py-0.5 rounded bg-warning-bg text-warning-text font-metadata font-medium">Cường độ cao</span>
+</td>
+<td class="py-3 px-space-md text-right whitespace-nowrap" data-label="Trạng thái sau khóa">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-critical-bg text-critical-text font-label font-bold border border-critical-text/25">
+<span class="material-symbols-outlined text-xs" data-icon="block">block</span>
+                    Tạm đình chỉ (Y tế)
+                  </span>
+</td>
+</tr>
+<tr class="hover:bg-forest-wash/40 transition-colors">
+<td class="py-3 px-space-md font-semibold text-ink whitespace-nowrap" data-label="Thời gian">12/04/2025</td>
+<td class="py-3 px-space-md" data-label="Nội dung hoạt động / Sự kiện">
+<div class="font-medium text-ink">Đăng ký Vòng loại Cúp Mùa Xuân 2025</div>
+<div class="font-metadata text-muted">Ban tổ chức: Hiệp hội Đua ngựa Thống Nhất</div>
+</td>
+<td class="py-3 px-space-md whitespace-nowrap" data-label="Cường độ">
+<span class="px-2 py-0.5 rounded bg-critical-bg text-critical-text font-metadata font-medium">Thi đấu chính thức</span>
+</td>
+<td class="py-3 px-space-md text-right whitespace-nowrap" data-label="Trạng thái sau khóa">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-critical-bg text-critical-text font-label font-bold border border-critical-text/25">
+<span class="material-symbols-outlined text-xs" data-icon="cancel">cancel</span>
+                    Hủy đăng ký y tế
+                  </span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Section 4: Authorized Veterinarian Identity Stamp -->
+<div class="p-space-md rounded-lg bg-surface border border-border flex items-center justify-between">
+<div class="flex items-center gap-space-md">
+<div class="w-10 h-10 rounded-full bg-forest text-on-primary flex items-center justify-center font-bold text-sm">
+              LH
+            </div>
+<div>
+<div class="flex items-center gap-1.5">
+<span class="font-label text-label text-ink font-bold">BS. Lê Thanh Hà</span>
+<span class="material-symbols-outlined text-forest text-sm" data-icon="verified" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<p class="font-metadata text-metadata text-muted">Trưởng ban Thú y CLB Tân Phú · Giấy phép hành nghề số: VET-HCM-08942</p>
+</div>
+</div>
+<div class="text-right">
+<span class="font-metadata text-metadata text-muted block">Thời điểm ra quyết định:</span>
+<span class="font-label text-label font-bold text-forest">04/04/2025 · 09:45 (GMT+7)</span>
+</div>
+</div>
+</div>
+<!-- Modal Footer Action Bar (Fixed, High Utility, 44px Buttons) -->
+<div class="p-space-md border-t border-border bg-surface flex items-center justify-between">
+<div class="flex items-center gap-2 text-muted">
+<span class="material-symbols-outlined text-base" data-icon="encrypted">encrypted</span>
+<span class="font-metadata text-metadata">Xác thực chứng thư số y khoa bảo mật EquiFlow</span>
+</div>
+<div class="flex items-center gap-space-sm">
+<!-- Secondary Action: Dismiss/Cancel -->
+<button class="h-11 px-space-md rounded border border-border bg-surface hover:bg-canvas text-ink font-label text-label transition-colors duration-150" type="button">
+            Hủy bỏ
+          </button>
+<!-- Primary Destructive Action: Confirm Medical Safety Lock -->
+<button class="h-11 px-space-lg rounded bg-critical-text hover:bg-[#7e2634] text-on-primary font-label text-label font-bold flex items-center gap-2 shadow-sm transition-colors duration-150" type="button">
+<span class="material-symbols-outlined text-lg" data-icon="lock_clock">lock_clock</span>
+<span>Xác nhận kích hoạt Khóa Y tế</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</body></html>

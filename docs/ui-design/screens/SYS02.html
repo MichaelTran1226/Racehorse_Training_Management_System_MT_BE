@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html class="h-full bg-canvas" lang="vi"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>[GH-BE-02][AUTH-LOGIN][SYS02] Xác thực Đăng nhập &amp; Quản lý Session/JWT — Phiên đăng nhập hết hạn</title>
+<!-- Google Fonts: Manrope -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS with Forms & Container Queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "warning-text": "#875B15",
+            "primary-container": "#315d4b",
+            "on-background": "#191c1b",
+            "positive-text": "#276442",
+            "on-primary-fixed-variant": "#224f3d",
+            "on-primary-fixed": "#002115",
+            "secondary-container": "#c6ebd8",
+            "on-secondary": "#ffffff",
+            "secondary-fixed-dim": "#aacfbd",
+            "surface-container-lowest": "#ffffff",
+            "tertiary": "#5e312e",
+            "on-error": "#ffffff",
+            "on-tertiary-fixed-variant": "#693937",
+            "inverse-primary": "#a2d1ba",
+            "canvas": "#F5F6F3",
+            "surface-tint": "#3b6754",
+            "error-container": "#ffdad6",
+            "on-surface": "#191c1b",
+            "positive-bg": "#E8F3EB",
+            "quarantine-text": "#65517D",
+            "tertiary-fixed-dim": "#f9b6b1",
+            "on-primary": "#ffffff",
+            "on-secondary-container": "#4a6b5d",
+            "inverse-on-surface": "#f0f1ee",
+            "quarantine-bg": "#F1EDF6",
+            "surface-container": "#edeeeb",
+            "surface-container-highest": "#e2e3e0",
+            "tertiary-fixed": "#ffdad7",
+            "surface-variant": "#e2e3e0",
+            "warning-bg": "#FFF4DD",
+            "on-tertiary-fixed": "#34100e",
+            "forest": "#315D4B",
+            "on-error-container": "#93000a",
+            "surface-dim": "#d9dad7",
+            "background": "#f9faf7",
+            "primary": "#184535",
+            "surface": "#FFFFFF",
+            "surface-bright": "#f9faf7",
+            "outline": "#717974",
+            "critical-bg": "#FAE9EB",
+            "on-tertiary": "#ffffff",
+            "secondary-fixed": "#c6ebd8",
+            "ink": "#202B28",
+            "forest-wash": "#EAF1EC",
+            "forest-deep": "#234437",
+            "secondary": "#446557",
+            "border": "#DCE3DD",
+            "critical-text": "#922D3C",
+            "on-primary-container": "#a5d4bd",
+            "on-tertiary-container": "#fcb9b4",
+            "outline-variant": "#c0c8c2",
+            "on-secondary-fixed-variant": "#2c4d40",
+            "on-surface-variant": "#414944",
+            "on-secondary-fixed": "#002116",
+            "muted": "#65716B",
+            "surface-container-high": "#e7e8e6",
+            "primary-fixed-dim": "#a2d1ba",
+            "primary-fixed": "#bdedd6",
+            "error": "#ba1a1a",
+            "tertiary-container": "#794744",
+            "inverse-surface": "#2e312f",
+            "surface-container-low": "#f3f4f1"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem",
+            "panel": "10px",
+            "btn": "7px",
+            "field": "6px"
+          },
+          "spacing": {
+            "space-xs": "4px",
+            "space-xl": "32px",
+            "space-md": "16px",
+            "gutter": "24px",
+            "margin": "32px",
+            "space-lg": "24px",
+            "space-sm": "8px"
+          },
+          "fontFamily": {
+            "auth-heading": ["Manrope"],
+            "section-heading": ["Manrope"],
+            "page-title": ["Manrope"],
+            "metadata": ["Manrope"],
+            "body": ["Manrope"],
+            "body-lg": ["Manrope"],
+            "label": ["Manrope"]
+          },
+          "fontSize": {
+            "auth-heading": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+            "section-heading": ["18px", { "lineHeight": "26px", "fontWeight": "650" }],
+            "page-title": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "metadata": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "body": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "label": ["14px", { "lineHeight": "20px", "fontWeight": "600" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+  </style>
+<style id="equiflow-reviewed-layout">
+   html,body{max-width:100%;} .ef-sidebar{width:224px!important;min-width:224px;background:#fff!important;border-right:1px solid #dce3dd;padding:24px 14px!important;display:flex;flex-direction:column;gap:24px}.ef-brand{font:700 24px/1.2 Manrope,'Segoe UI',sans-serif;color:#315d4b}.ef-brand small{display:block;font:11px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin-top:8px}.ef-role-nav{display:flex;flex-direction:column;gap:5px}.ef-role-nav a{padding:11px 12px;min-height:44px;border-radius:6px;font:500 14px/22px Manrope,'Segoe UI',sans-serif;color:#3e4e45;text-decoration:none;white-space:normal}.ef-role-nav a:hover,.ef-role-nav a[aria-current=page]{background:#eaf1ec;color:#315d4b}.ef-role-label{margin-top:auto;font-size:12px;color:#65716b}.ef-role-label a{display:block;padding-top:12px;color:#315d4b}.ef-sample-notice{font:12px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin:0 0 14px}.ef-mobile-nav{display:none}input,select,textarea{max-width:100%}button,a,input,select,textarea{touch-action:manipulation}
+   @media(max-width:1023px){[data-review-kind=app] header,[data-review-kind=app] main .flex{flex-wrap:wrap}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important}[data-review-kind=app] .flex-1{min-width:0}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{max-width:100%;min-width:0}[data-review-kind=app] header>div{max-width:100%;flex-wrap:wrap}}
+   @media(max-width:767px){body[data-review-kind=app]{display:block!important;height:auto!important;min-height:100dvh}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important;height:auto}}
+   @media(max-width:767px){.ef-sidebar{display:none!important}.ef-mobile-nav{display:block;position:relative;z-index:200;background:white;border-bottom:1px solid #dce3dd;padding:12px 16px}.ef-mobile-nav summary{min-height:44px;cursor:pointer;display:flex;align-items:center;font-weight:700;color:#315d4b}.ml-56,.ml-64,[class~='ml-[224px]'],[class~='ml-[240px]'],main[style*='margin-left']{margin-left:0!important}main{min-width:0!important;max-width:100%!important}header{flex-wrap:wrap!important;gap:8px!important;height:auto!important}footer{flex-wrap:wrap!important;gap:12px}h1{overflow-wrap:anywhere}.ef-role-nav{max-width:100%}[data-review-kind=app] .grid{grid-template-columns:minmax(0,1fr)!important}[data-review-kind=app] .flex{min-width:0;flex-wrap:wrap}[data-review-kind=app] table,[data-review-kind=app] tbody,[data-review-kind=app] tr{display:block;width:100%}[data-review-kind=app] thead{display:none}[data-review-kind=app] tr{padding:12px 0;border-bottom:1px solid #dce3dd}[data-review-kind=app] td{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;white-space:normal!important;padding:8px 12px;min-width:0;overflow-wrap:anywhere}[data-review-kind=app] td:before{content:attr(data-label);color:#65716b;font-size:12px;flex:0 0 35%}[data-review-kind=app] td>*{min-width:0;max-width:100%}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{width:100%}}
+  </style></head>
+<body class="h-full font-body text-body text-ink antialiased bg-canvas overflow-hidden select-none" data-review-kind="app">
+<!-- ========================================================================= -->
+<!-- PHÔNG NỀN HỆ THỐNG PHÍA SAU (ĐÃ ĐƯỢC LÀM MỜ VÀ BẢO VỆ DỮ LIỆU BẰNG SKELETON) -->
+<!-- ========================================================================= -->
+<div aria-hidden="true" class="fixed inset-0 flex flex-col pointer-events-none filter blur-[3px] opacity-40">
+<!-- Top Navigation Mockup -->
+<header class="h-16 w-full bg-surface border-b border-border flex items-center justify-between px-6 shrink-0">
+<div class="flex items-center gap-6">
+<span class="font-page-title text-section-heading text-forest font-bold tracking-tight">EquiFlow</span>
+<div class="h-8 w-64 bg-surface-container-high rounded-field animate-pulse"></div>
+<div class="flex gap-4">
+<div class="h-4 w-20 bg-surface-container rounded"></div>
+<div class="h-4 w-24 bg-surface-container rounded"></div>
+<div class="h-4 w-28 bg-surface-container rounded"></div>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="h-8 w-24 bg-forest-wash rounded-btn"></div>
+<div class="w-8 h-8 rounded-full bg-surface-container-high"></div>
+</div>
+</header>
+<!-- Body Layout Mockup with Sidebar & Protected Data Canvas -->
+<div class="flex flex-1 overflow-hidden">
+<!-- Sidebar Skeleton -->
+<aside class="w-56 bg-surface border-r border-border p-4 flex flex-col gap-3 shrink-0">
+<div class="h-5 w-32 bg-surface-container-high rounded mb-4"></div>
+<div class="h-9 w-full bg-forest-wash rounded-lg"></div>
+<div class="h-9 w-full bg-surface-container rounded-lg"></div>
+<div class="h-9 w-full bg-surface-container rounded-lg"></div>
+<div class="h-9 w-full bg-surface-container rounded-lg"></div>
+<div class="h-9 w-full bg-surface-container rounded-lg"></div>
+</aside>
+<!-- Main Canvas Skeleton: Che giấu dữ liệu lâm sàng & chiến mã nhạy cảm -->
+<main class="flex-1 p-8 overflow-hidden bg-canvas">
+<div class="max-w-6xl mx-auto space-y-6">
+<!-- Page Header Skeleton -->
+<div class="flex justify-between items-center pb-4 border-b border-border">
+<div class="space-y-2">
+<div class="h-7 w-64 bg-surface-container-highest rounded"></div>
+<div class="h-4 w-96 bg-surface-container-high rounded"></div>
+</div>
+<div class="h-10 w-36 bg-forest/40 rounded-btn"></div>
+</div>
+<!-- Summary Metric Cards -->
+<div class="grid grid-cols-3 gap-6">
+<div class="bg-surface p-5 rounded-[10px] border border-border space-y-3">
+<div class="h-4 w-28 bg-surface-container rounded"></div>
+<div class="h-8 w-16 bg-surface-container-highest rounded"></div>
+<div class="h-3 w-40 bg-surface-container-low rounded"></div>
+</div>
+<div class="bg-surface p-5 rounded-[10px] border border-border space-y-3">
+<div class="h-4 w-32 bg-surface-container rounded"></div>
+<div class="h-8 w-20 bg-surface-container-highest rounded"></div>
+<div class="h-3 w-36 bg-surface-container-low rounded"></div>
+</div>
+<div class="bg-surface p-5 rounded-[10px] border border-border space-y-3">
+<div class="h-4 w-36 bg-surface-container rounded"></div>
+<div class="h-8 w-14 bg-surface-container-highest rounded"></div>
+<div class="h-3 w-44 bg-surface-container-low rounded"></div>
+</div>
+</div>
+<!-- Redacted Medical / Roster Records Table -->
+<div class="bg-surface rounded-[10px] border border-border p-6 space-y-4">
+<div class="flex justify-between items-center">
+<div class="h-5 w-48 bg-surface-container-highest rounded"></div>
+<div class="h-8 w-32 bg-surface-container rounded"></div>
+</div>
+<div class="space-y-3 pt-2">
+<div class="h-12 w-full bg-surface-container-low rounded flex items-center px-4 gap-4">
+<div class="h-4 w-12 bg-surface-container-high rounded"></div>
+<div class="h-4 w-36 bg-surface-container-high rounded"></div>
+<div class="h-4 w-24 bg-surface-container-high rounded"></div>
+<div class="h-4 w-28 bg-surface-container-high rounded ml-auto"></div>
+</div>
+<div class="h-12 w-full bg-surface-container-low rounded flex items-center px-4 gap-4">
+<div class="h-4 w-12 bg-surface-container-high rounded"></div>
+<div class="h-4 w-40 bg-surface-container-high rounded"></div>
+<div class="h-4 w-20 bg-surface-container-high rounded"></div>
+<div class="h-4 w-28 bg-surface-container-high rounded ml-auto"></div>
+</div>
+<div class="h-12 w-full bg-surface-container-low rounded flex items-center px-4 gap-4">
+<div class="h-4 w-12 bg-surface-container-high rounded"></div>
+<div class="h-4 w-32 bg-surface-container-high rounded"></div>
+<div class="h-4 w-28 bg-surface-container-high rounded"></div>
+<div class="h-4 w-28 bg-surface-container-high rounded ml-auto"></div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</div>
+<!-- ========================================================================= -->
+<!-- OVERLAY AN TOÀN BẢO VỆ DỮ LIỆU & MODAL DIALOG HẾT HẠN PHIÊN (SYS02)       -->
+<!-- ========================================================================= -->
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-ink/40 backdrop-blur-[2px]">
+<!-- Modal Container: Radius 10px, Viền #DCE3DD, Shadow phân cấp rõ rệt -->
+<div class="w-full max-w-[560px] bg-surface rounded-[10px] border border-border shadow-2xl overflow-hidden flex flex-col transition-all transform scale-100 animate-in fade-in zoom-in-95 duration-150">
+<!-- Top Subtle Security Status Strip -->
+<div class="bg-forest-wash/80 border-b border-border px-6 py-2.5 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-forest text-[18px]">verified_user</span>
+<span class="font-metadata text-metadata text-forest font-semibold">Cơ chế Bảo mật Dữ liệu Lâm sàng EquiFlow</span>
+</div>
+<span class="font-metadata text-metadata text-muted font-medium">Mã màn hình: SYS02</span>
+</div>
+<!-- Main Dialog Content -->
+<div class="p-6 sm:p-8 space-y-6">
+<!-- Header: Lock Icon & Error Status Badge -->
+<div class="flex items-start gap-4">
+<div class="w-12 h-12 rounded-[10px] bg-warning-bg border border-[#F2DEB0] flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-warning-text text-[26px]">lock_clock</span>
+</div>
+<div class="space-y-1 flex-1">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-surface-container text-muted font-metadata text-metadata border border-border">
+<span class="w-1.5 h-1.5 rounded-full bg-warning-text"></span>
+<span id="statusCodeLabel">Mã lỗi 401 · Phiên làm việc đã kết thúc</span>
+</div>
+<h1 class="font-page-title text-[24px] leading-[32px] text-ink font-bold pt-1">
+              Phiên đăng nhập đã hết hạn
+            </h1>
+</div>
+</div>
+<!-- Warning Narrative Section -->
+<div class="space-y-3.5 text-body text-ink">
+<p class="leading-[22px] text-on-surface" id="timeoutReasonNarrative">
+            Để đảm bảo an toàn thông tin vận hành và hồ sơ y tế chiến mã, phiên làm việc của bạn đã tự động kết thúc sau 30 phút không hoạt động.
+          </p>
+<!-- Safe Storage Alert Box -->
+<div class="bg-positive-bg border border-[#CDE3D4] rounded-[8px] p-3.5 flex items-start gap-3">
+<span class="material-symbols-outlined text-positive-text text-[20px] mt-0.5 shrink-0">save</span>
+<div class="font-body text-[13px] leading-[20px] text-[#1E4D34]">
+<span class="font-semibold block text-positive-text mb-0.5">Dữ liệu thao tác đã được bảo lưu an toàn</span>
+              Các biểu mẫu đang nhập dở (nếu có) đã được lưu tạm cục bộ trong phiên này. Vui lòng đăng nhập lại để tiếp tục công việc mà không bị mất dữ liệu.
+            </div>
+</div>
+</div>
+<!-- Routing Context & Diagnostic Meta -->
+<div class="bg-surface-container-low rounded-[8px] border border-border p-3 space-y-2">
+<div class="flex items-center gap-2 font-metadata text-metadata text-muted">
+<span class="material-symbols-outlined text-[16px] text-forest">near_me</span>
+<span>Ghi chú định tuyến:</span>
+<span class="font-mono text-[11px] text-ink bg-surface px-1.5 py-0.5 rounded border border-border" id="targetReturnUrl">
+              returnUrl = /clinical/records/EQU-4091-TRAUMA
+            </span>
+</div>
+<p class="font-metadata text-metadata text-muted leading-tight">
+            Hệ thống sẽ tự động chuyển hướng lại đúng trang bạn đang làm việc sau khi xác thực thành công (Redirect to returnUrl).
+          </p>
+</div>
+<!-- Interactive Testing Scenarios Switcher (Giả lập kiểm thử) -->
+
+<!-- Action Buttons -->
+<div class="pt-2 flex flex-col-reverse sm:flex-row items-center gap-3">
+<a class="w-full sm:w-auto flex-1 h-[44px] px-4 rounded-[7px] border border-border bg-surface hover:bg-forest-wash text-ink font-label text-label flex items-center justify-center transition-colors" href="#login">
+            Về trang chủ đăng nhập
+          </a>
+<a class="w-full sm:w-auto flex-1 h-[44px] px-4 rounded-[7px] bg-forest hover:bg-forest-deep text-on-primary font-label text-label flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.99]" href="#re-auth">
+<span class="material-symbols-outlined text-[18px]">login</span>
+<span>Đăng nhập lại ngay</span>
+</a>
+</div>
+</div>
+<!-- Security Stamp Footer -->
+<div class="px-6 py-3 bg-surface-bright border-t border-border flex items-center justify-between text-muted font-metadata text-metadata">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]">shield</span>
+<span>Chứng chỉ bảo mật HIPAA &amp; Chuồng trại ISO-27001</span>
+</div>
+<span>Phiên: #SES-9821-X</span>
+</div>
+</div>
+</div>
+<!-- Inline Logic for Scenario Simulation -->
+
+</body></html>

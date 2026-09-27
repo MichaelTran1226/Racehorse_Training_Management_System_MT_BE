@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html class="h-full bg-canvas text-ink" lang="vi"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>[GH-BE-03][AUTH-REGISTER][AUTH03] Đăng ký tài khoản Chủ sở hữu ngựa (Horse Owner) &amp; Xác thực OTP qua Email — Xác minh email</title>
+<!-- Google Fonts: Manrope -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "primary-container": "#315d4b",
+            "tertiary-container": "#794744",
+            "on-secondary-fixed-variant": "#2c4d40",
+            "forest": "#315D4B",
+            "secondary-fixed": "#c6ebd8",
+            "on-background": "#191c1b",
+            "ink": "#202B28",
+            "surface-container-lowest": "#ffffff",
+            "forest-deep": "#234437",
+            "quarantine-bg": "#F1EDF6",
+            "positive-bg": "#E8F3EB",
+            "on-error": "#ffffff",
+            "surface-container": "#edeeeb",
+            "on-secondary-fixed": "#002116",
+            "muted": "#65716B",
+            "surface-bright": "#f9faf7",
+            "tertiary-fixed-dim": "#f9b6b1",
+            "positive-text": "#276442",
+            "outline": "#717974",
+            "on-error-container": "#93000a",
+            "surface-container-high": "#e7e8e6",
+            "surface-dim": "#d9dad7",
+            "surface-container-highest": "#e2e3e0",
+            "on-tertiary": "#ffffff",
+            "canvas": "#F5F6F3",
+            "error-container": "#ffdad6",
+            "tertiary-fixed": "#ffdad7",
+            "on-tertiary-fixed": "#34100e",
+            "quarantine-text": "#65517D",
+            "primary-fixed": "#bdedd6",
+            "on-primary-container": "#a5d4bd",
+            "surface-variant": "#e2e3e0",
+            "critical-bg": "#FAE9EB",
+            "on-surface-variant": "#414944",
+            "on-primary-fixed": "#002115",
+            "on-primary": "#ffffff",
+            "warning-text": "#875B15",
+            "on-secondary": "#ffffff",
+            "warning-bg": "#FFF4DD",
+            "on-tertiary-fixed-variant": "#693937",
+            "critical-text": "#922D3C",
+            "inverse-surface": "#2e312f",
+            "primary-fixed-dim": "#a2d1ba",
+            "on-secondary-container": "#4a6b5d",
+            "on-surface": "#191c1b",
+            "secondary": "#446557",
+            "inverse-on-surface": "#f0f1ee",
+            "primary": "#184535",
+            "tertiary": "#5e312e",
+            "secondary-fixed-dim": "#aacfbd",
+            "inverse-primary": "#a2d1ba",
+            "surface": "#FFFFFF",
+            "on-tertiary-container": "#fcb9b4",
+            "background": "#f9faf7",
+            "outline-variant": "#c0c8c2",
+            "on-primary-fixed-variant": "#224f3d",
+            "surface-tint": "#3b6754",
+            "error": "#ba1a1a",
+            "secondary-container": "#c6ebd8",
+            "forest-wash": "#EAF1EC",
+            "border": "#DCE3DD",
+            "surface-container-low": "#f3f4f1"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-md": "16px",
+            "margin": "32px",
+            "space-sm": "8px",
+            "space-xs": "4px",
+            "space-lg": "24px",
+            "gutter": "24px",
+            "space-xl": "32px"
+          },
+          "fontFamily": {
+            "section-heading": ["Manrope"],
+            "metadata": ["Manrope"],
+            "auth-heading": ["Manrope"],
+            "body-lg": ["Manrope"],
+            "body": ["Manrope"],
+            "label": ["Manrope"],
+            "page-title": ["Manrope"]
+          },
+          "fontSize": {
+            "section-heading": ["18px", { "lineHeight": "26px", "fontWeight": "650" }],
+            "metadata": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "auth-heading": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "body": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "label": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "page-title": ["28px", { "lineHeight": "36px", "fontWeight": "700" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+      -webkit-appearance: none; 
+      margin: 0; 
+    }
+  </style>
+<style id="equiflow-reviewed-layout">
+   html,body{max-width:100%;} .ef-sidebar{width:224px!important;min-width:224px;background:#fff!important;border-right:1px solid #dce3dd;padding:24px 14px!important;display:flex;flex-direction:column;gap:24px}.ef-brand{font:700 24px/1.2 Manrope,'Segoe UI',sans-serif;color:#315d4b}.ef-brand small{display:block;font:11px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin-top:8px}.ef-role-nav{display:flex;flex-direction:column;gap:5px}.ef-role-nav a{padding:11px 12px;min-height:44px;border-radius:6px;font:500 14px/22px Manrope,'Segoe UI',sans-serif;color:#3e4e45;text-decoration:none;white-space:normal}.ef-role-nav a:hover,.ef-role-nav a[aria-current=page]{background:#eaf1ec;color:#315d4b}.ef-role-label{margin-top:auto;font-size:12px;color:#65716b}.ef-role-label a{display:block;padding-top:12px;color:#315d4b}.ef-sample-notice{font:12px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin:0 0 14px}.ef-mobile-nav{display:none}input,select,textarea{max-width:100%}button,a,input,select,textarea{touch-action:manipulation}
+   @media(max-width:1023px){[data-review-kind=app] header,[data-review-kind=app] main .flex{flex-wrap:wrap}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important}[data-review-kind=app] .flex-1{min-width:0}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{max-width:100%;min-width:0}[data-review-kind=app] header>div{max-width:100%;flex-wrap:wrap}}
+   @media(max-width:767px){body[data-review-kind=app]{display:block!important;height:auto!important;min-height:100dvh}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important;height:auto}}
+   @media(max-width:767px){.ef-sidebar{display:none!important}.ef-mobile-nav{display:block;position:relative;z-index:200;background:white;border-bottom:1px solid #dce3dd;padding:12px 16px}.ef-mobile-nav summary{min-height:44px;cursor:pointer;display:flex;align-items:center;font-weight:700;color:#315d4b}.ml-56,.ml-64,[class~='ml-[224px]'],[class~='ml-[240px]'],main[style*='margin-left']{margin-left:0!important}main{min-width:0!important;max-width:100%!important}header{flex-wrap:wrap!important;gap:8px!important;height:auto!important}footer{flex-wrap:wrap!important;gap:12px}h1{overflow-wrap:anywhere}.ef-role-nav{max-width:100%}[data-review-kind=app] .grid{grid-template-columns:minmax(0,1fr)!important}[data-review-kind=app] .flex{min-width:0;flex-wrap:wrap}[data-review-kind=app] table,[data-review-kind=app] tbody,[data-review-kind=app] tr{display:block;width:100%}[data-review-kind=app] thead{display:none}[data-review-kind=app] tr{padding:12px 0;border-bottom:1px solid #dce3dd}[data-review-kind=app] td{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;white-space:normal!important;padding:8px 12px;min-width:0;overflow-wrap:anywhere}[data-review-kind=app] td:before{content:attr(data-label);color:#65716b;font-size:12px;flex:0 0 35%}[data-review-kind=app] td>*{min-width:0;max-width:100%}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{width:100%}}
+  </style></head>
+<body class="h-full flex flex-col font-body text-body bg-canvas text-ink antialiased selection:bg-secondary-container selection:text-forest-deep">
+<!-- TopNavBar docked according to Shared Components JSON -->
+<header class="w-full h-16 px-gutter flex justify-between items-center bg-surface border-b border-border z-50 shrink-0">
+<div class="flex items-center gap-space-md">
+<div class="flex items-center gap-space-sm cursor-pointer select-none">
+<span class="material-symbols-outlined text-forest text-2xl" data-icon="sports_score">sports_score</span>
+<span class="font-section-heading text-section-heading font-bold text-ink tracking-tight">EquiFlow</span>
+</div>
+<div class="h-4 w-px bg-border mx-1"></div>
+<span class="font-metadata text-metadata text-muted">Hệ thống Quản trị Huấn luyện Ngựa đua</span>
+</div>
+<div class="flex items-center gap-space-lg">
+
+<div class="h-4 w-px bg-border hidden md:block"></div>
+<div class="flex items-center gap-space-xs font-label text-label text-muted">
+<span class="material-symbols-outlined text-base" data-icon="language">language</span>
+<span>Ngôn ngữ: Tiếng Việt</span>
+</div>
+</div>
+</header>
+<!-- Main Viewport: Split Layout (44% Form / 56% Editorial) -->
+<main class="flex-1 flex flex-col lg:flex-row w-full max-w-[1440px] mx-auto min-h-[calc(1000px-112px)] overflow-hidden">
+<!-- LEFT PANEL: Verification Form Canvas (44% Width) -->
+<section class="w-full lg:w-[44%] bg-surface flex flex-col justify-between p-6 sm:p-10 lg:p-12 border-r border-border overflow-y-auto">
+<div class="w-full max-w-[480px] mx-auto">
+<!-- Role & Process Stepper -->
+<div class="mb-8">
+<div class="flex items-center justify-between mb-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-forest-wash text-forest font-label text-metadata border border-border">
+<span class="material-symbols-outlined text-xs" data-icon="shield_person">shield_person</span>
+              Vai trò: Chủ ngựa mới (Dữ liệu minh họa)
+            </span>
+<span class="font-metadata text-metadata text-muted">Bước 2 / 3</span>
+</div>
+<!-- Stepper: 1. Tạo tài khoản -> 2. Xác minh email -> 3. Hoàn tất -->
+<div class="grid grid-cols-3 gap-2 pt-2 border-t border-border">
+<div class="flex flex-col gap-1">
+<div class="h-1 rounded-full bg-forest"></div>
+<div class="flex items-center gap-1 text-forest font-label text-metadata">
+<span class="material-symbols-outlined text-sm font-bold" data-icon="check_circle" data-weight="fill" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span>Tài khoản</span>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<div class="h-1 rounded-full bg-forest"></div>
+<div class="flex items-center gap-1 text-forest font-label text-metadata">
+<span class="w-2 h-2 rounded-full bg-forest"></span>
+<span class="font-bold">Xác minh email</span>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<div class="h-1 rounded-full bg-border"></div>
+<div class="flex items-center gap-1 text-muted font-label text-metadata">
+<span class="w-2 h-2 rounded-full bg-border"></span>
+<span>Hoàn tất</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Header Content -->
+<div class="mb-6">
+<h1 class="font-auth-heading text-auth-heading text-ink tracking-tight mb-2">Xác minh tài khoản email</h1>
+<p class="font-body text-body text-muted leading-relaxed">Mã xác thực gồm 6 chữ số đã được gửi đến địa chỉ email <span class="font-label text-ink font-semibold bg-forest-wash px-1.5 py-0.5 rounded border border-border">ch***@tanphuracing.vn</span></p>
+</div>
+<!-- Interactive OTP Inputs Form -->
+<form class="space-y-6" id="otpForm" onsubmit="event.preventDefault(); triggerVerify();">
+<div>
+<label class="block font-label text-label text-ink mb-3">Nhập mã xác thực 6 chữ số</label>
+<div class="flex items-center justify-between gap-2 sm:gap-3" id="otpContainer">
+<input autofocus="" class="otp-input w-12 h-14 sm:w-14 sm:h-14 text-center font-auth-heading text-2xl font-bold bg-canvas border border-border rounded-lg text-ink focus:bg-surface focus:border-forest focus:ring-1 focus:ring-forest outline-none transition-all duration-150" inputmode="numeric" maxlength="1" pattern="[0-9]*" type="text" value="8">
+<input class="otp-input w-12 h-14 sm:w-14 sm:h-14 text-center font-auth-heading text-2xl font-bold bg-canvas border border-border rounded-lg text-ink focus:bg-surface focus:border-forest focus:ring-1 focus:ring-forest outline-none transition-all duration-150" inputmode="numeric" maxlength="1" pattern="[0-9]*" type="text" value="4">
+<input class="otp-input w-12 h-14 sm:w-14 sm:h-14 text-center font-auth-heading text-2xl font-bold bg-canvas border border-border rounded-lg text-ink focus:bg-surface focus:border-forest focus:ring-1 focus:ring-forest outline-none transition-all duration-150" inputmode="numeric" maxlength="1" pattern="[0-9]*" type="text" value="0">
+<input class="otp-input w-12 h-14 sm:w-14 sm:h-14 text-center font-auth-heading text-2xl font-bold bg-canvas border border-border rounded-lg text-ink focus:bg-surface focus:border-forest focus:ring-1 focus:ring-forest outline-none transition-all duration-150" inputmode="numeric" maxlength="1" pattern="[0-9]*" type="text" value="9">
+<input class="otp-input w-12 h-14 sm:w-14 sm:h-14 text-center font-auth-heading text-2xl font-bold bg-canvas border border-border rounded-lg text-ink focus:bg-surface focus:border-forest focus:ring-1 focus:ring-forest outline-none transition-all duration-150" inputmode="numeric" maxlength="1" pattern="[0-9]*" type="text">
+<input class="otp-input w-12 h-14 sm:w-14 sm:h-14 text-center font-auth-heading text-2xl font-bold bg-canvas border border-border rounded-lg text-ink focus:bg-surface focus:border-forest focus:ring-1 focus:ring-forest outline-none transition-all duration-150" inputmode="numeric" maxlength="1" pattern="[0-9]*" type="text">
+</div>
+<!-- TTL and Cooldown Information -->
+<div class="flex items-center justify-between mt-3 font-metadata text-metadata"><span class="flex items-center gap-1 text-muted"><span class="material-symbols-outlined text-sm" data-icon="timer">timer</span>Mã có hiệu lực trong <strong class="text-ink font-semibold ml-0.5" id="ttlCounter">10:00</strong></span><span class="flex items-center gap-1 text-warning-text font-medium bg-warning-bg px-2 py-0.5 rounded border border-amber-200"><span class="material-symbols-outlined text-sm" data-icon="hourglass_top">hourglass_top</span>Gửi lại sau <span class="font-bold" id="cooldownSeconds">60</span>s</span></div>
+</div>
+<!-- Primary Submit CTA -->
+<div>
+<button class="w-full h-11 px-4 bg-forest text-on-primary font-label text-label rounded-lg flex items-center justify-center gap-2 hover:bg-forest-deep transition-colors duration-150 shadow-sm active:scale-[0.99]" id="btnSubmit" type="submit">
+<span id="btnText">Xác nhận mã kích hoạt</span>
+<span class="material-symbols-outlined text-lg" data-icon="arrow_forward" id="btnIcon">arrow_forward</span>
+</button>
+</div>
+<!-- Sub-Actions -->
+<div class="flex items-center justify-between pt-2 border-t border-border">
+<button class="text-muted font-label text-label cursor-not-allowed opacity-60 flex items-center gap-1 transition-colors" disabled="" id="btnResend" type="button"><span class="material-symbols-outlined text-base" data-icon="refresh">refresh</span>Gửi lại mã</button>
+<a class="text-forest hover:text-forest-deep font-label text-label underline decoration-forest/40 hover:decoration-forest underline-offset-4 flex items-center gap-1 transition-colors" href="#change-email">
+<span class="material-symbols-outlined text-base" data-icon="edit">edit</span>
+              Thay đổi địa chỉ email
+            </a>
+</div>
+</form>
+<!-- Dynamic State / System Feedback Panels Section -->
+</div>
+<!-- Footer Microcopy inside form panel -->
+<div class="w-full max-w-[480px] mx-auto mt-8 pt-4 border-t border-border flex items-center justify-between text-muted font-metadata text-metadata">
+<span>Giai đoạn 0: Xác thực · RBAC · Audit Log</span>
+<span>EquiFlow VN v2.4</span>
+</div>
+</section>
+<!-- RIGHT PANEL: Equestrian Editorial & Brand Heritage (56% Width) -->
+<section class="w-full lg:w-[56%] bg-canvas relative flex flex-col justify-between p-8 sm:p-12 lg:p-14 overflow-hidden border-t lg:border-t-0 border-border">
+<!-- Top Meta Bar in Editorial Panel -->
+<div class="relative z-10 flex items-center justify-between border-b border-border/80 pb-6">
+<div>
+<span class="font-metadata text-metadata uppercase tracking-widest text-muted">01 / NỀN TẢNG &amp; HỒ SƠ</span>
+<p class="font-label text-label text-ink font-bold mt-0.5">CON NGỰA TỐT HƠN · NHỮNG CHIẾN THẮNG LỚN HƠN</p>
+</div>
+<div class="text-right hidden sm:block">
+<span class="font-metadata text-metadata text-muted">HẠ TẦNG HUẤN LUYỆN SỐ</span>
+<p class="font-label text-label text-forest font-semibold">TÂN PHÚ RACING CLUB</p>
+</div>
+</div>
+<!-- Center Bento Feature Card with Photography -->
+<div class="relative z-10 my-auto py-6 max-w-[620px] mx-auto w-full"><div class="bg-surface rounded-xl border border-border shadow-sm overflow-hidden"><div class="w-full h-[460px] bg-forest-deep overflow-hidden relative"><img class="w-full h-full object-cover object-center" data-alt="A dignified thoroughbred racehorse portrait shot outdoors in soft morning light at an upscale equestrian stable, showcasing pristine grooming, focused calm expression, dark leather bridle, natural muted earth tones, and a clean professional atmosphere matching light green and slate minimalist aesthetics." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCkK2iUEa7NMgEp05zhOMN4sIduOX998V1iOVds4q2kCskOJGdfROVe_V7r-_j4o-q5d-_RWi_P5_1MZAbbhR-MqyK3Rhokt8r1xhom0sEqlxN1kw67O8T7xbOHCci-dXMSgMBKpbhxLs-AUPLU6ejk-iTzspZVgUvmIE42PBCh9IQ_pYVPlnK2yOdVwviqCziCzXA5-PR6WEb6ooMTe3CmtCKVwkihSGVD77S16rd4wKmR59aExNjO8OjssZgfvCGqxc_oTt9r3Q"></div><div class="p-4 bg-surface border-t border-border flex items-center justify-between"><p class="font-metadata text-metadata text-muted flex items-center gap-2"><span class="material-symbols-outlined text-forest text-base" data-icon="verified">verified</span>EquiFlow — Chuẩn hóa quy trình xác thực và bảo mật</p><span class="font-metadata text-metadata text-forest font-semibold">Hệ thống bảo mật</span></div></div></div>
+<!-- Bottom Trust Badge Footer in Editorial Panel -->
+<div class="relative z-10 flex flex-col sm:flex-row items-center justify-between text-muted font-metadata text-metadata pt-4 border-t border-border/80 gap-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-forest text-base" data-icon="verified_user">verified_user</span>
+<span>Bảo mật dữ liệu đường truyền 256-bit TLS · Tân Phú Equestrian Center</span>
+</div>
+<div>
+<span>VIETNAM · A STRONGER RACING TOMORROW</span>
+</div>
+</div>
+</section>
+</main>
+<!-- Docked Footer according to Shared Components JSON -->
+<footer class="w-full py-space-md px-gutter flex flex-col md:flex-row justify-between items-center text-center md:text-left gap-space-sm border-t border-border bg-canvas shrink-0">
+<div class="font-metadata text-metadata text-muted">
+      © 2025 EquiFlow - Hệ thống Quản lý &amp; Huấn luyện Ngựa đua Việt Nam. Bảo lưu mọi quyền.
+    </div>
+<div class="flex flex-wrap items-center justify-center gap-space-lg">
+<a class="text-muted font-metadata text-metadata hover:text-forest transition-colors duration-150" href="#privacy">Chính sách bảo mật</a>
+<a class="text-muted font-metadata text-metadata hover:text-forest transition-colors duration-150" href="#terms">Điều khoản sử dụng</a>
+<a class="text-muted font-metadata text-metadata hover:text-forest transition-colors duration-150" href="#contact">Liên hệ hỗ trợ</a>
+</div>
+</footer>
+<!-- Micro-interactions Script for OTP Autonavigate and Demo simulation -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const inputs = document.querySelectorAll('.otp-input');
+      const cooldownEl = document.getElementById('cooldownSeconds');
+      const resendBtn = document.getElementById('btnResend');
+      let cooldown = 45;
+
+      // OTP Inputs cursor & auto-advance
+      inputs.forEach((input, index) => {
+        input.addEventListener('input', (e) => {
+          if (e.target.value.length === 1 && index < inputs.length - 1) {
+            inputs[index + 1].focus();
+          }
+        });
+
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Backspace' && !e.target.value && index > 0) {
+            inputs[index - 1].focus();
+          }
+        });
+
+        // Paste complete code handling
+        input.addEventListener('paste', (e) => {
+          e.preventDefault();
+          const pasteData = (e.clipboardData || window.clipboardData).getData('text').trim();
+          if (/^\d+$/.test(pasteData)) {
+            const digits = pasteData.slice(0, 6).split('');
+            digits.forEach((digit, i) => {
+              if (inputs[i]) inputs[i].value = digit;
+            });
+            if (digits.length < 6) {
+              inputs[digits.length].focus();
+            } else {
+              inputs[5].focus();
+            }
+          }
+        });
+      });
+
+      // Cooldown timer simulation
+      const timer = setInterval(() => {
+        if (cooldown > 1) {
+          cooldown--;
+          cooldownEl.textContent = cooldown < 10 ? '0' + cooldown : cooldown;
+        } else {
+          clearInterval(timer);
+          cooldownEl.parentElement.classList.add('hidden');
+          resendBtn.disabled = false;
+          resendBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+          resendBtn.classList.add('text-forest', 'hover:text-forest-deep', 'cursor-pointer');
+        }
+      }, 1000);
+    });
+
+    function triggerVerify() {
+      const btn = document.getElementById('btnSubmit');
+      const btnText = document.getElementById('btnText');
+      const btnIcon = document.getElementById('btnIcon');
+
+      btnText.textContent = "Đang xác thực...";
+      btnIcon.setAttribute('data-icon', 'hourglass_empty');
+      btnIcon.textContent = 'hourglass_empty';
+      btn.classList.add('opacity-80', 'cursor-wait');
+
+      setTimeout(() => {
+        btnText.textContent = "Xác nhận mã kích hoạt";
+        btnIcon.setAttribute('data-icon', 'arrow_forward');
+        btnIcon.textContent = 'arrow_forward';
+        btn.classList.remove('opacity-80', 'cursor-wait');
+      }, 1200);
+    }
+  </script>
+</body></html>

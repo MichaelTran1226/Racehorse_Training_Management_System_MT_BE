@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html class="h-full" lang="vi"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>[GH-BE-04][AUTH-RESET][AUTH05] Quy trình Quên mật khẩu &amp; Đặt lại mật khẩu an toàn — Quên mật khẩu</title>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "warning-text": "#875B15",
+            "primary-container": "#315d4b",
+            "on-background": "#191c1b",
+            "positive-text": "#276442",
+            "on-primary-fixed-variant": "#224f3d",
+            "on-primary-fixed": "#002115",
+            "secondary-container": "#c6ebd8",
+            "on-secondary": "#ffffff",
+            "secondary-fixed-dim": "#aacfbd",
+            "surface-container-lowest": "#ffffff",
+            "tertiary": "#5e312e",
+            "on-error": "#ffffff",
+            "on-tertiary-fixed-variant": "#693937",
+            "inverse-primary": "#a2d1ba",
+            "canvas": "#F5F6F3",
+            "surface-tint": "#3b6754",
+            "error-container": "#ffdad6",
+            "on-surface": "#191c1b",
+            "positive-bg": "#E8F3EB",
+            "quarantine-text": "#65517D",
+            "tertiary-fixed-dim": "#f9b6b1",
+            "on-primary": "#ffffff",
+            "on-secondary-container": "#4a6b5d",
+            "inverse-on-surface": "#f0f1ee",
+            "quarantine-bg": "#F1EDF6",
+            "surface-container": "#edeeeb",
+            "surface-container-highest": "#e2e3e0",
+            "tertiary-fixed": "#ffdad7",
+            "surface-variant": "#e2e3e0",
+            "warning-bg": "#FFF4DD",
+            "on-tertiary-fixed": "#34100e",
+            "forest": "#315D4B",
+            "on-error-container": "#93000a",
+            "surface-dim": "#d9dad7",
+            "background": "#f9faf7",
+            "primary": "#184535",
+            "surface": "#FFFFFF",
+            "surface-bright": "#f9faf7",
+            "outline": "#717974",
+            "critical-bg": "#FAE9EB",
+            "on-tertiary": "#ffffff",
+            "secondary-fixed": "#c6ebd8",
+            "ink": "#202B28",
+            "forest-wash": "#EAF1EC",
+            "forest-deep": "#234437",
+            "secondary": "#446557",
+            "border": "#DCE3DD",
+            "critical-text": "#922D3C",
+            "on-primary-container": "#a5d4bd",
+            "on-tertiary-container": "#fcb9b4",
+            "outline-variant": "#c0c8c2",
+            "on-secondary-fixed-variant": "#2c4d40",
+            "on-surface-variant": "#414944",
+            "on-secondary-fixed": "#002116",
+            "muted": "#65716B",
+            "surface-container-high": "#e7e8e6",
+            "primary-fixed-dim": "#a2d1ba",
+            "primary-fixed": "#bdedd6",
+            "error": "#ba1a1a",
+            "tertiary-container": "#794744",
+            "inverse-surface": "#2e312f",
+            "surface-container-low": "#f3f4f1"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-xs": "4px",
+            "space-xl": "32px",
+            "space-md": "16px",
+            "gutter": "24px",
+            "margin": "32px",
+            "space-lg": "24px",
+            "space-sm": "8px"
+          },
+          "fontFamily": {
+            "auth-heading": ["Manrope"],
+            "section-heading": ["Manrope"],
+            "page-title": ["Manrope"],
+            "metadata": ["Manrope"],
+            "body": ["Manrope"],
+            "body-lg": ["Manrope"],
+            "label": ["Manrope"]
+          },
+          "fontSize": {
+            "auth-heading": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+            "section-heading": ["18px", { "lineHeight": "26px", "fontWeight": "650" }],
+            "page-title": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "metadata": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "body": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "label": ["14px", { "lineHeight": "20px", "fontWeight": "600" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+    }
+    .custom-input-focus:focus {
+      outline: none;
+      border-color: #315D4B;
+      box-shadow: 0 0 0 3px rgba(49, 93, 75, 0.12);
+    }
+  </style>
+<style id="equiflow-reviewed-layout">
+   html,body{max-width:100%;} .ef-sidebar{width:224px!important;min-width:224px;background:#fff!important;border-right:1px solid #dce3dd;padding:24px 14px!important;display:flex;flex-direction:column;gap:24px}.ef-brand{font:700 24px/1.2 Manrope,'Segoe UI',sans-serif;color:#315d4b}.ef-brand small{display:block;font:11px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin-top:8px}.ef-role-nav{display:flex;flex-direction:column;gap:5px}.ef-role-nav a{padding:11px 12px;min-height:44px;border-radius:6px;font:500 14px/22px Manrope,'Segoe UI',sans-serif;color:#3e4e45;text-decoration:none;white-space:normal}.ef-role-nav a:hover,.ef-role-nav a[aria-current=page]{background:#eaf1ec;color:#315d4b}.ef-role-label{margin-top:auto;font-size:12px;color:#65716b}.ef-role-label a{display:block;padding-top:12px;color:#315d4b}.ef-sample-notice{font:12px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin:0 0 14px}.ef-mobile-nav{display:none}input,select,textarea{max-width:100%}button,a,input,select,textarea{touch-action:manipulation}
+   @media(max-width:1023px){[data-review-kind=app] header,[data-review-kind=app] main .flex{flex-wrap:wrap}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important}[data-review-kind=app] .flex-1{min-width:0}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{max-width:100%;min-width:0}[data-review-kind=app] header>div{max-width:100%;flex-wrap:wrap}}
+   @media(max-width:767px){body[data-review-kind=app]{display:block!important;height:auto!important;min-height:100dvh}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important;height:auto}}
+   @media(max-width:767px){.ef-sidebar{display:none!important}.ef-mobile-nav{display:block;position:relative;z-index:200;background:white;border-bottom:1px solid #dce3dd;padding:12px 16px}.ef-mobile-nav summary{min-height:44px;cursor:pointer;display:flex;align-items:center;font-weight:700;color:#315d4b}.ml-56,.ml-64,[class~='ml-[224px]'],[class~='ml-[240px]'],main[style*='margin-left']{margin-left:0!important}main{min-width:0!important;max-width:100%!important}header{flex-wrap:wrap!important;gap:8px!important;height:auto!important}footer{flex-wrap:wrap!important;gap:12px}h1{overflow-wrap:anywhere}.ef-role-nav{max-width:100%}[data-review-kind=app] .grid{grid-template-columns:minmax(0,1fr)!important}[data-review-kind=app] .flex{min-width:0;flex-wrap:wrap}[data-review-kind=app] table,[data-review-kind=app] tbody,[data-review-kind=app] tr{display:block;width:100%}[data-review-kind=app] thead{display:none}[data-review-kind=app] tr{padding:12px 0;border-bottom:1px solid #dce3dd}[data-review-kind=app] td{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;white-space:normal!important;padding:8px 12px;min-width:0;overflow-wrap:anywhere}[data-review-kind=app] td:before{content:attr(data-label);color:#65716b;font-size:12px;flex:0 0 35%}[data-review-kind=app] td>*{min-width:0;max-width:100%}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{width:100%}}
+  </style></head>
+<body class="h-full bg-canvas text-ink font-body text-body antialiased selection:bg-forest selection:text-white">
+<!-- Desktop Split Screen Container (Auth Shell suppressed: focused transactional journey) -->
+<div class="min-h-full flex flex-col lg:flex-row w-full bg-surface">
+<!-- LEFT COLUMN: AUTH FORM (44% Width on Desktop) -->
+<div class="w-full lg:w-[44%] min-h-screen flex flex-col justify-between bg-surface px-6 sm:px-10 lg:px-14 py-8 border-r border-border relative z-10">
+<!-- Top Utility Header -->
+<header class="flex items-center justify-between gap-4 pb-6 border-b border-border/50">
+<!-- Logo -->
+<a class="flex items-center gap-2 group" href="#">
+<span class="w-8 h-8 rounded-lg bg-forest text-surface flex items-center justify-center font-bold text-base shadow-sm">
+<span class="material-symbols-outlined text-[20px]" data-icon="pets">pets</span>
+</span>
+<span class="font-page-title text-section-heading text-forest tracking-tight font-bold">EquiFlow</span>
+</a>
+<!-- Header Actions: Technical Support, Terms, Language -->
+
+</header>
+<!-- Center Main Interactive Form Card -->
+<main class="my-auto py-10 max-w-md w-full mx-auto">
+<!-- Meta Identifier Tag -->
+<!-- Heading & Description -->
+<h1 class="font-page-title text-page-title text-ink tracking-tight mb-2">Quên mật khẩu</h1>
+<p class="font-body text-body text-muted mb-6 leading-relaxed">
+          Nhập địa chỉ email đăng ký để nhận liên kết đặt lại mật khẩu.
+        </p>
+<!-- Dynamic State Banner Alert Container -->
+<div class="hidden mb-6 rounded-lg p-3.5 border transition-all duration-200" id="statusBanner">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-[20px] shrink-0 mt-0.5" data-icon="info" id="statusIcon">info</span>
+<div class="flex-1">
+<p class="font-label text-label mb-0.5 leading-snug" id="statusTitle"></p>
+<p class="font-metadata text-metadata leading-relaxed" id="statusMessage"></p>
+</div>
+</div>
+</div>
+<!-- Form Element -->
+<form class="space-y-5" id="forgotPasswordForm" onsubmit="event.preventDefault();">
+<!-- Email Input Group -->
+<div class="space-y-1.5">
+<div class="flex justify-between items-center">
+<label class="block font-label text-label text-ink" for="email">
+                Địa chỉ Email <span class="text-critical-text font-bold">*</span>
+</label>
+<span class="font-metadata text-metadata text-muted">Bảo mật SSL 256-bit</span>
+</div>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted">
+<span class="material-symbols-outlined text-[20px]" data-icon="mail">mail</span>
+</div>
+<input autocomplete="email" class="block w-full h-[44px] pl-10 pr-3.5 rounded-[6px] border border-border bg-surface text-ink text-body placeholder:text-outline/60 custom-input-focus transition duration-150 font-body" id="email" name="email" placeholder="quanly@equiflow.vn" type="email" value="manager@equiflow.vn">
+</div>
+<p class="hidden font-metadata text-metadata text-critical-text mt-1 flex items-center gap-1" id="inputErrorHelper">
+<span class="material-symbols-outlined text-[14px]" data-icon="error">error</span>
+              Email không đúng định dạng RFC 5322
+            </p>
+</div>
+<!-- Submit Button (44px height, 7px radius, #315D4B) -->
+<button class="w-full h-[44px] rounded-[7px] bg-forest text-surface font-label text-label px-4 flex items-center justify-center gap-2 hover:bg-forest-deep active:scale-[0.99] transition-all duration-150 shadow-none cursor-pointer focus:ring-2 focus:ring-forest/30 outline-none" id="submitBtn" type="submit">
+<span>Gửi liên kết đặt lại</span>
+<span class="material-symbols-outlined text-[18px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</form>
+<!-- General Security Notice -->
+<div class="mt-6 p-4 rounded-lg bg-canvas border border-border text-muted font-metadata text-metadata leading-relaxed">
+<div class="flex items-start gap-2.5">
+<span class="material-symbols-outlined text-[18px] text-forest shrink-0 mt-0.5" data-icon="verified_user">verified_user</span>
+<span>
+<strong class="font-semibold text-ink">Bảo mật thông tin:</strong> Vì lý do bảo mật, nếu email này tồn tại trong hệ thống, bạn sẽ nhận được liên kết trong ít phút. Chúng tôi không tiết lộ sự tồn tại của tài khoản.
+            </span>
+</div>
+</div>
+<!-- Back to Login Navigation Link -->
+<div class="mt-8 text-center">
+<a class="inline-flex items-center gap-1.5 font-label text-label text-forest hover:text-forest-deep transition-colors duration-150 p-2 rounded-lg hover:bg-forest-wash" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="arrow_back">arrow_back</span>
+<span>Quay lại đăng nhập</span>
+</a>
+</div>
+</main>
+<!-- Footer & Interactive Test State Switcher Bar -->
+<footer class="pt-6 border-t border-border/60">
+<!-- Interactive State Testing Controller (Requirement: Mockup các trạng thái giả lập) -->
+<div class="mt-3 flex items-center justify-between text-muted font-metadata text-[11px]">
+<span>© 2025 EquiFlow VN Inc. Vận hành Chuồng trại &amp; Chiến mã.</span>
+<span>Bản dựng v2.4.1</span>
+</div>
+</footer>
+</div>
+<!-- RIGHT COLUMN: RACING HORSE AESTHETIC & DISCIPLINE MESSAGE (56% Width on Desktop) -->
+<div class="w-full lg:w-[56%] min-h-[480px] lg:min-h-screen relative flex flex-col justify-between overflow-hidden bg-forest-deep text-surface p-8 sm:p-12 lg:p-16"><div class="flex-1 flex flex-col justify-center items-center p-8 sm:p-12 lg:p-16"><div class="w-full max-w-xl flex flex-col gap-4"><div class="w-full aspect-[4/3] rounded-xl overflow-hidden shadow-sm border border-surface/10 bg-forest relative"><img alt="Thoroughbred racing horse" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAU_b_mjuzaY5uVutkJqVaGTPo2wm-6GWN_WgAFCQ2asZg24e27QlYt9XjJRkkl-oe6Uyn55z3PLWW2DKvdwGWysKJoB9X_D-qTdvSceh4e1H2KyBh5vQ3sfuqqjUCPWQdSSTrHSxEm5VYkL8pAOGpf9GTQrQSpOctC4lGljOyHq2NTz1fE_K5qyBJnNT1BeA1KwRGepVgOlcibsJaqXjgvQdN3rfsR6UE_1EGxqdfw6IOVw5Dp8-QRf5jy_Eil2-y14F1HnSv36Q"></div><p class="text-center text-surface/80 font-metadata text-metadata tracking-wide">EquiFlow — Bảo mật tài khoản và dữ liệu lâm sàng thú y</p></div></div></div>
+</div>
+<!-- Inline Script for UI State Simulation (Vanilla JS for interactive testing) -->
+<script>
+    function resetButtons() {
+      const btnIds = ['btnStateNormal', 'btnStateFormatError', 'btnStateRateLimit', 'btnStateSuccess', 'btnStateNetError'];
+      btnIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.className = 'px-2 py-1.5 rounded text-[11px] font-medium border border-border bg-surface text-ink hover:bg-surface-container transition-colors text-center';
+        }
+      });
+    }
+
+    function setActiveButton(id) {
+      resetButtons();
+      const el = document.getElementById(id);
+      if (el) {
+        el.className = 'px-2 py-1.5 rounded text-[11px] font-medium border border-forest bg-forest text-surface transition-colors text-center shadow-xs';
+      }
+    }
+
+    function setUIState(state) {
+      const emailInput = document.getElementById('email');
+      const inputErrorHelper = document.getElementById('inputErrorHelper');
+      const statusBanner = document.getElementById('statusBanner');
+      const statusTitle = document.getElementById('statusTitle');
+      const statusMessage = document.getElementById('statusMessage');
+      const statusIcon = document.getElementById('statusIcon');
+      const submitBtn = document.getElementById('submitBtn');
+
+      // Reset base styles
+      emailInput.classList.remove('border-critical-text', 'bg-critical-bg/20');
+      emailInput.classList.add('border-border', 'bg-surface');
+      inputErrorHelper.classList.add('hidden');
+      statusBanner.classList.add('hidden');
+      submitBtn.removeAttribute('disabled');
+      submitBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+
+      if (state === 'normal') {
+        setActiveButton('btnStateNormal');
+        emailInput.value = 'manager@equiflow.vn';
+      } 
+      else if (state === 'format_error') {
+        setActiveButton('btnStateFormatError');
+        emailInput.value = 'manager-equiflow..invalid@domain';
+        emailInput.classList.remove('border-border', 'bg-surface');
+        emailInput.classList.add('border-critical-text', 'bg-critical-bg/20');
+        inputErrorHelper.classList.remove('hidden');
+        emailInput.focus();
+      } 
+      else if (state === 'rate_limit') {
+        setActiveButton('btnStateRateLimit');
+        statusBanner.className = 'mb-6 rounded-lg p-3.5 border border-[#E0B46E] bg-warning-bg text-warning-text block';
+        statusIcon.setAttribute('data-icon', 'hourglass_empty');
+        statusIcon.textContent = 'hourglass_empty';
+        statusIcon.className = 'material-symbols-outlined text-[20px] shrink-0 mt-0.5 text-warning-text';
+        statusTitle.textContent = 'Giới hạn tần suất yêu cầu';
+        statusMessage.textContent = 'Bạn đã gửi quá nhiều yêu cầu. Vui lòng thử lại sau 15 phút.';
+        submitBtn.setAttribute('disabled', 'true');
+        submitBtn.classList.add('opacity-60', 'cursor-not-allowed');
+      } 
+      else if (state === 'success') {
+        setActiveButton('btnStateSuccess');
+        statusBanner.className = 'mb-6 rounded-lg p-3.5 border border-secondary-container bg-positive-bg text-positive-text block';
+        statusIcon.setAttribute('data-icon', 'mark_email_read');
+        statusIcon.textContent = 'mark_email_read';
+        statusIcon.className = 'material-symbols-outlined text-[20px] shrink-0 mt-0.5 text-positive-text';
+        statusTitle.textContent = 'Đã gửi email hướng dẫn!';
+        statusMessage.textContent = 'Đã gửi email hướng dẫn! Vui lòng kiểm tra hộp thư đến hoặc thư rác.';
+      } 
+      else if (state === 'network_error') {
+        setActiveButton('btnStateNetError');
+        statusBanner.className = 'mb-6 rounded-lg p-3.5 border border-critical-text/30 bg-critical-bg text-critical-text block';
+        statusIcon.setAttribute('data-icon', 'wifi_off');
+        statusIcon.textContent = 'wifi_off';
+        statusIcon.className = 'material-symbols-outlined text-[20px] shrink-0 mt-0.5 text-critical-text';
+        statusTitle.textContent = 'Lỗi kết nối mạng';
+        statusMessage.textContent = 'Không thể kết nối đến máy chủ xác thực. Vui lòng kiểm tra đường truyền.';
+      }
+    }
+
+    // Default to Normal on load
+    window.addEventListener('DOMContentLoaded', () => {
+      setUIState('normal');
+    });
+  </script>
+</body></html>

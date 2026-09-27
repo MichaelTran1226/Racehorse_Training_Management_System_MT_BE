@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html class="light" lang="vi"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>[GH-BE-14][FR-004][T02] Lập kế hoạch giáo án huấn luyện chi tiết theo từng giai đoạn — Lập giáo án theo giai đoạn</title>
+<!-- Google Fonts: Manrope -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-secondary": "#ffffff",
+            "primary-fixed": "#bdedd6",
+            "outline-variant": "#c0c8c2",
+            "canvas": "#F5F6F3",
+            "surface-container-low": "#f3f4f1",
+            "on-primary-container": "#a5d4bd",
+            "on-error-container": "#93000a",
+            "warning-text": "#875B15",
+            "surface-dim": "#d9dad7",
+            "surface-bright": "#f9faf7",
+            "on-tertiary-container": "#fcb9b4",
+            "forest-wash": "#EAF1EC",
+            "inverse-on-surface": "#f0f1ee",
+            "forest-deep": "#234437",
+            "surface-container-highest": "#e2e3e0",
+            "critical-text": "#922D3C",
+            "inverse-surface": "#2e312f",
+            "on-tertiary": "#ffffff",
+            "ink": "#202B28",
+            "on-secondary-container": "#4a6b5d",
+            "critical-bg": "#FAE9EB",
+            "surface-tint": "#3b6754",
+            "primary-fixed-dim": "#a2d1ba",
+            "secondary-fixed-dim": "#aacfbd",
+            "background": "#f9faf7",
+            "secondary-container": "#c6ebd8",
+            "secondary": "#446557",
+            "on-tertiary-fixed-variant": "#693937",
+            "forest": "#315D4B",
+            "tertiary-fixed-dim": "#f9b6b1",
+            "primary": "#184535",
+            "surface": "#FFFFFF",
+            "secondary-fixed": "#c6ebd8",
+            "outline": "#717974",
+            "tertiary-container": "#794744",
+            "surface-container": "#edeeeb",
+            "muted": "#65716B",
+            "on-secondary-fixed-variant": "#2c4d40",
+            "warning-bg": "#FFF4DD",
+            "positive-bg": "#E8F3EB",
+            "surface-container-high": "#e7e8e6",
+            "quarantine-bg": "#F1EDF6",
+            "on-secondary-fixed": "#002116",
+            "on-surface-variant": "#414944",
+            "surface-variant": "#e2e3e0",
+            "error": "#ba1a1a",
+            "on-tertiary-fixed": "#34100e",
+            "on-primary-fixed": "#002115",
+            "surface-container-lowest": "#ffffff",
+            "tertiary-fixed": "#ffdad7",
+            "primary-container": "#315d4b",
+            "on-primary-fixed-variant": "#224f3d",
+            "positive-text": "#276442",
+            "on-surface": "#191c1b",
+            "quarantine-text": "#65517D",
+            "tertiary": "#5e312e",
+            "on-error": "#ffffff",
+            "on-background": "#191c1b",
+            "border": "#DCE3DD",
+            "error-container": "#ffdad6",
+            "on-primary": "#ffffff",
+            "inverse-primary": "#a2d1ba"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-xs": "4px",
+            "space-xl": "32px",
+            "space-md": "16px",
+            "gutter": "24px",
+            "margin": "32px",
+            "space-lg": "24px",
+            "space-sm": "8px"
+          },
+          "fontFamily": {
+            "page-title": ["Manrope"],
+            "auth-heading": ["Manrope"],
+            "metadata": ["Manrope"],
+            "body-lg": ["Manrope"],
+            "label": ["Manrope"],
+            "body": ["Manrope"],
+            "section-heading": ["Manrope"]
+          },
+          "fontSize": {
+            "page-title": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "auth-heading": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+            "metadata": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "label": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "body": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "section-heading": ["18px", { "lineHeight": "26px", "fontWeight": "650" }]
+          }
+        },
+      },
+    }
+  </script>
+<style id="equiflow-reviewed-layout">
+   html,body{max-width:100%;} .ef-sidebar{width:224px!important;min-width:224px;background:#fff!important;border-right:1px solid #dce3dd;padding:24px 14px!important;display:flex;flex-direction:column;gap:24px}.ef-brand{font:700 24px/1.2 Manrope,'Segoe UI',sans-serif;color:#315d4b}.ef-brand small{display:block;font:11px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin-top:8px}.ef-role-nav{display:flex;flex-direction:column;gap:5px}.ef-role-nav a{padding:11px 12px;min-height:44px;border-radius:6px;font:500 14px/22px Manrope,'Segoe UI',sans-serif;color:#3e4e45;text-decoration:none;white-space:normal}.ef-role-nav a:hover,.ef-role-nav a[aria-current=page]{background:#eaf1ec;color:#315d4b}.ef-role-label{margin-top:auto;font-size:12px;color:#65716b}.ef-role-label a{display:block;padding-top:12px;color:#315d4b}.ef-sample-notice{font:12px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin:0 0 14px}.ef-mobile-nav{display:none}input,select,textarea{max-width:100%}button,a,input,select,textarea{touch-action:manipulation}
+   @media(max-width:1023px){[data-review-kind=app] header,[data-review-kind=app] main .flex{flex-wrap:wrap}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important}[data-review-kind=app] .flex-1{min-width:0}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{max-width:100%;min-width:0}[data-review-kind=app] header>div{max-width:100%;flex-wrap:wrap}}
+   @media(max-width:767px){body[data-review-kind=app]{display:block!important;height:auto!important;min-height:100dvh}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important;height:auto}}
+   @media(max-width:767px){.ef-sidebar{display:none!important}.ef-mobile-nav{display:block;position:relative;z-index:200;background:white;border-bottom:1px solid #dce3dd;padding:12px 16px}.ef-mobile-nav summary{min-height:44px;cursor:pointer;display:flex;align-items:center;font-weight:700;color:#315d4b}.ml-56,.ml-64,[class~='ml-[224px]'],[class~='ml-[240px]'],main[style*='margin-left']{margin-left:0!important}main{min-width:0!important;max-width:100%!important}header{flex-wrap:wrap!important;gap:8px!important;height:auto!important}footer{flex-wrap:wrap!important;gap:12px}h1{overflow-wrap:anywhere}.ef-role-nav{max-width:100%}[data-review-kind=app] .grid{grid-template-columns:minmax(0,1fr)!important}[data-review-kind=app] .flex{min-width:0;flex-wrap:wrap}[data-review-kind=app] table,[data-review-kind=app] tbody,[data-review-kind=app] tr{display:block;width:100%}[data-review-kind=app] thead{display:none}[data-review-kind=app] tr{padding:12px 0;border-bottom:1px solid #dce3dd}[data-review-kind=app] td{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;white-space:normal!important;padding:8px 12px;min-width:0;overflow-wrap:anywhere}[data-review-kind=app] td:before{content:attr(data-label);color:#65716b;font-size:12px;flex:0 0 35%}[data-review-kind=app] td>*{min-width:0;max-width:100%}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{width:100%}}
+  </style></head>
+<body class="bg-canvas text-ink antialiased min-h-screen font-body text-body selection:bg-secondary-container selection:text-ink" data-review-kind="app">
+<!-- ================= TOP APP BAR (Shared Components JSON Anchor) ================= -->
+<header class="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-6 h-16 bg-surface border-b border-border shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+<!-- Trái: Tên ứng dụng + Tìm kiếm -->
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-lg bg-forest flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-xl">sports_score</span>
+</div>
+<div class="flex flex-col">
+<span class="font-page-title text-section-heading text-primary tracking-tight font-bold leading-tight">EquiFlow</span>
+<span class="font-metadata text-metadata text-muted">Hệ thống Vận hành Chuồng trại</span>
+</div>
+</div>
+<!-- Ô tìm kiếm on_left theo JSON -->
+<div class="relative w-72">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-lg pointer-events-none">search</span>
+<input class="w-full h-9 pl-9 pr-3 text-body font-body bg-canvas border border-border rounded-lg text-ink placeholder:text-muted focus:outline-none focus:border-forest focus:ring-1 focus:ring-forest text-sm" placeholder="Tìm kiếm chiến mã, hồ sơ, mã chip..." type="text">
+</div>
+</div>
+<!-- Giữa: Navigation links từ JSON (Chọn tab Lịch tập luyện là active) -->
+
+<!-- Phải: Hành động khẩn cấp, thêm mới, chuông, trợ giúp & avatar -->
+<div class="flex items-center gap-3">
+<button class="h-9 px-3 text-sm font-label rounded-lg border border-critical-text text-critical-text hover:bg-critical-bg transition-colors flex items-center gap-1.5 active:scale-[0.99]" type="button">
+<span class="material-symbols-outlined text-base">warning</span>
+        Khẩn cấp
+      </button>
+<button class="h-9 px-3.5 text-sm font-label rounded-lg bg-forest text-on-primary hover:bg-forest-deep transition-colors flex items-center gap-1.5 shadow-sm active:scale-[0.99]" type="button">
+<span class="material-symbols-outlined text-base">add</span>
+        Thêm mới
+      </button>
+<div class="h-5 w-px bg-border mx-1"></div>
+<!-- Trailing icon actions -->
+<button aria-label="Thông báo" class="w-9 h-9 rounded-lg flex items-center justify-center text-muted hover:text-forest hover:bg-forest-wash transition-colors relative" type="button">
+<span class="material-symbols-outlined text-xl">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-error"></span>
+</button>
+<button aria-label="Trợ giúp" class="w-9 h-9 rounded-lg flex items-center justify-center text-muted hover:text-forest hover:bg-forest-wash transition-colors" type="button">
+<span class="material-symbols-outlined text-xl">help</span>
+</button>
+<button aria-label="Cài đặt" class="w-9 h-9 rounded-lg flex items-center justify-center text-muted hover:text-forest hover:bg-forest-wash transition-colors" type="button">
+<span class="material-symbols-outlined text-xl">settings</span>
+</button>
+<!-- Profile Avatar -->
+<div class="flex items-center gap-2 pl-2">
+<div class="w-9 h-9 rounded-full bg-surface-container-high border border-border flex items-center justify-center text-forest font-label font-bold text-sm">
+          HLV
+        </div>
+<div class="hidden xl:flex flex-col text-left">
+<span class="font-label text-xs text-ink leading-tight">Lê Hoàng Quân</span>
+<span class="font-metadata text-[11px] text-muted">HLV Trưởng</span>
+</div>
+</div>
+</div>
+</header>
+<!-- ================= SIDE NAV BAR (Shared Components JSON Anchor) ================= -->
+<aside class="fixed left-0 top-0 bottom-0 w-56 z-50 flex flex-col justify-between py-4 px-3 bg-surface border-r border-border mt-16 ef-sidebar"><div class="ef-brand">EquiFlow<small>Quản lý huấn luyện ngựa đua</small></div><nav class="ef-role-nav" aria-label="Điều hướng HLV trưởng"><a href="T01.html">Tổng quan huấn luyện</a><a href="H01.html">Hồ sơ ngựa</a><a href="T02.html" aria-current="page">Giáo án</a><a href="T03.html">Lịch tập</a><a href="T04.html">Kết quả buổi tập</a></nav><div class="ef-role-label">HLV trưởng<a href="AUTH01.html">Đăng xuất</a></div></aside>
+<!-- ================= MAIN CONTENT CANVAS ================= -->
+<main class="ml-56 pt-20 pb-16 px-8 min-h-screen"><p class="ef-sample-notice">Dữ liệu minh họa · Bản thiết kế giao diện</p>
+<div class="max-w-6xl mx-auto space-y-6">
+<!-- Breadcrumb & Header Info -->
+<section>
+<div class="flex items-center gap-2 text-sm text-muted font-metadata mb-2">
+<a class="hover:text-forest transition-colors" href="#">Lịch tập luyện</a>
+<span class="material-symbols-outlined text-xs">chevron_right</span>
+<span class="text-ink font-medium">Lập giáo án</span>
+<span class="ml-2 px-2 py-0.5 text-[11px] font-medium bg-surface-container-high rounded text-muted">Dữ liệu minh họa</span>
+</div>
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div>
+<h1 class="font-page-title text-page-title text-ink font-bold tracking-tight">
+              Lập giáo án huấn luyện theo giai đoạn
+            </h1>
+<p class="font-body text-body text-muted mt-1 max-w-3xl">
+              Thiết lập mục tiêu cự ly, tốc độ và cường độ theo chu kỳ thể lực của chiến mã. Đảm bảo quy chuẩn an toàn trước khi ban hành cho kíp nài.
+            </p>
+</div>
+<div class="flex items-center gap-3 self-start md:self-auto">
+<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-label bg-positive-bg text-positive-text border border-positive-text/20">
+<span class="w-2 h-2 rounded-full bg-positive-text animate-pulse"></span>
+              Phòng Huấn luyện: Sẵn sàng
+            </span>
+</div>
+</div>
+</section>
+<!-- Banner Thông tin quy chuẩn thể lực -->
+<div class="bg-surface rounded-[10px] border border-border p-4 flex items-start gap-3.5 shadow-sm">
+<div class="w-9 h-9 rounded-lg bg-warning-bg flex items-center justify-center text-warning-text shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-xl">verified_user</span>
+</div>
+<div class="flex-1 text-sm">
+<div class="flex items-center gap-2">
+<span class="font-label text-ink font-semibold">Quy chuẩn kiểm soát an toàn thể lực &amp; Khóa Y tế (Medical Lock)</span>
+
+</div>
+<p class="text-muted mt-1 leading-relaxed">
+            Hệ thống EquiFlow áp dụng cơ chế bảo vệ kép: <strong>Khóa Y tế</strong> sẽ tự động kích hoạt nếu chiến mã đang có chỉ định chấn thương, sốt, hoặc bị bác sĩ thú y phong tỏa cách ly. Giáo án huấn luyện lập mới sẽ bị chặn lưu nếu chiến mã chưa có chứng nhận “Đủ điều kiện vận động tải cao”.
+          </p>
+</div>
+</div>
+<!-- Form cấu trúc 2 cột -->
+<form class="space-y-6" onsubmit="event.preventDefault();">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+<!-- ================= CỘT 1: ĐỐI TƯỢNG & CHU KỲ ÁP DỤNG ================= -->
+<div class="bg-surface rounded-[10px] border border-border p-6 space-y-6 shadow-sm">
+<div class="border-b border-border pb-3.5 flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-7 h-7 rounded-md bg-forest-wash flex items-center justify-center text-forest font-semibold text-sm">1</div>
+<h2 class="font-section-heading text-section-heading text-ink font-bold">Đối tượng &amp; Chu kỳ áp dụng</h2>
+</div>
+<span class="font-metadata text-xs text-muted">Bước 1/2</span>
+</div>
+<!-- Field 1: Chọn chiến mã -->
+<div class="space-y-1.5">
+<label class="block font-label text-label text-ink" for="horseSelect">
+                Chiến mã tham gia huấn luyện <span class="text-error">*</span>
+</label>
+<div class="relative">
+<select class="w-full h-11 pl-3.5 pr-10 text-body font-body bg-surface border border-border rounded-lg text-ink focus:border-forest focus:ring-1 focus:ring-forest appearance-none cursor-pointer" id="horseSelect">
+<option selected="" value="pv123">Phong Vũ — Chip: VNM-123456789012 — Ô A01 [Đủ điều kiện]</option>
+<option class="text-muted bg-surface-container-low" disabled="" value="hn999">Hồng Ngọc — Chip: VNM-987654321000 — Ô B04 [BỊ KHÓA Y TẾ - Bong gân cổ chân]</option>
+<option value="bl456">Bạch Long — Chip: VNM-567890123456 — Ô A05 [Đủ điều kiện]</option>
+<option value="xm789">Xích Thố — Chip: VNM-789012345678 — Ô C02 [Đủ điều kiện]</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none">unfold_more</span>
+</div>
+<!-- Context Card cho chiến mã được chọn -->
+<div class="p-3 bg-forest-wash/60 rounded-lg border border-border/80 flex items-center justify-between text-xs mt-2">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-positive-text text-lg">check_circle</span>
+<div>
+<span class="font-label text-ink">Thể trạng: Tuyệt hảo (98/100)</span>
+<span class="text-muted block">Bác sĩ phụ trách: TS. Trần Văn Minh (Ký duyệt sáng nay)</span>
+</div>
+</div>
+<span class="px-2 py-1 rounded bg-positive-bg text-positive-text font-label text-[11px]">Hợp lệ</span>
+</div>
+<!-- Ghi chú cảnh báo Medical lock vô hiệu hóa -->
+<p class="font-metadata text-metadata text-muted flex items-center gap-1.5 pt-1">
+<span class="material-symbols-outlined text-sm text-critical-text">lock</span>
+<span>Chiến mã có <strong class="text-critical-text">Medical Lock</strong> (như Hồng Ngọc) bị vô hiệu hóa hoàn toàn khỏi danh sách lựa chọn.</span>
+</p>
+</div>
+<!-- Field 2: Chọn Giai đoạn huấn luyện chu kỳ (Segment radio card) -->
+<div class="space-y-2">
+<div class="flex items-center justify-between">
+<label class="block font-label text-label text-ink">
+                  Giai đoạn huấn luyện chu kỳ <span class="text-error">*</span>
+</label>
+<span class="font-metadata text-[11px] text-muted italic">Chú thích: Giai đoạn tập luyện khác với giai đoạn dự án</span>
+</div>
+<div class="grid grid-cols-1 gap-2.5">
+<!-- Option 1: Cơ bản -->
+<label class="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-forest-wash/40 cursor-pointer transition-colors">
+<input class="mt-1 text-forest focus:ring-forest" name="training_phase" type="radio" value="foundation">
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<span class="font-label text-sm text-ink">Cơ bản</span>
+<span class="text-[11px] font-metadata text-muted">Giai đoạn I</span>
+</div>
+<p class="font-metadata text-xs text-muted mt-0.5">Thích nghi &amp; Xây dựng nền tảng cơ bắp, vận động nhẹ thả lỏng.</p>
+</div>
+</label>
+<!-- Option 2: Tăng sức bền (Đang chọn) -->
+<label class="flex items-start gap-3 p-3 rounded-lg border-2 border-forest bg-forest-wash/50 cursor-pointer transition-colors shadow-sm">
+<input checked="" class="mt-1 text-forest focus:ring-forest" name="training_phase" type="radio" value="endurance">
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<span class="font-label text-sm text-forest font-bold">Tăng sức bền (Đang chọn)</span>
+<span class="text-[11px] font-label px-2 py-0.5 bg-forest text-on-primary rounded">Giai đoạn II</span>
+</div>
+<p class="font-metadata text-xs text-ink/80 mt-0.5 font-medium">Nâng dung tích phổi, cự ly dài ổn định, nhịp tim đều đặn có kiểm soát.</p>
+</div>
+</label>
+<!-- Option 3: Tốc độ -->
+<label class="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-forest-wash/40 cursor-pointer transition-colors">
+<input class="mt-1 text-forest focus:ring-forest" name="training_phase" type="radio" value="speed">
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<span class="font-label text-sm text-ink">Tốc độ (Speed work)</span>
+<span class="text-[11px] font-metadata text-muted">Giai đoạn III</span>
+</div>
+<p class="font-metadata text-xs text-muted mt-0.5">Nước rút &amp; Bứt phá đoạn ngắn, kích hoạt sợi cơ co rút nhanh.</p>
+</div>
+</label>
+<!-- Option 4: Trước giải đấu -->
+<label class="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-forest-wash/40 cursor-pointer transition-colors">
+<input class="mt-1 text-forest focus:ring-forest" name="training_phase" type="radio" value="tapering">
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<span class="font-label text-sm text-ink">Trước giải đấu</span>
+<span class="text-[11px] font-metadata text-muted">Giai đoạn IV</span>
+</div>
+<p class="font-metadata text-xs text-muted mt-0.5">Điểm rơi phong độ, giảm khối lượng duy trì cường độ cao, phục hồi thần kinh.</p>
+</div>
+</label>
+</div>
+</div>
+<!-- Field 3: Ngày bắt đầu & kết thúc -->
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-1.5">
+<label class="block font-label text-label text-ink" for="startDate">Ngày bắt đầu <span class="text-error">*</span></label>
+<div class="relative">
+<input class="w-full h-11 pl-3.5 pr-9 text-body font-body bg-surface border border-border rounded-lg text-ink focus:border-forest focus:ring-1 focus:ring-forest" id="startDate" type="text" value="03/01/2025">
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-muted text-base pointer-events-none">calendar_today</span>
+</div>
+<span class="font-metadata text-[11px] text-muted">Định dạng MM/DD/YYYY</span>
+</div>
+<div class="space-y-1.5">
+<label class="block font-label text-label text-ink" for="endDate">Ngày kết thúc <span class="text-error">*</span></label>
+<div class="relative">
+<input class="w-full h-11 pl-3.5 pr-9 text-body font-body bg-surface border border-border rounded-lg text-ink focus:border-forest focus:ring-1 focus:ring-forest" id="endDate" type="text" value="03/21/2025">
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-muted text-base pointer-events-none">event</span>
+</div>
+<span class="font-metadata text-[11px] text-positive-text font-medium">Chu kỳ 21 ngày (3 tuần)</span>
+</div>
+</div>
+<!-- Field 4: Mặt sân tập chính -->
+<div class="space-y-1.5">
+<label class="block font-label text-label text-ink">
+                Mặt sân tập chính <span class="text-error">*</span>
+</label>
+<div class="grid grid-cols-3 gap-3">
+<label class="border-2 border-forest bg-forest-wash/40 rounded-lg p-3 text-center cursor-pointer flex flex-col items-center gap-1">
+<input checked="" class="sr-only" name="track_type" type="radio" value="turf">
+<span class="material-symbols-outlined text-forest text-xl">grass</span>
+<span class="font-label text-xs text-forest font-bold">Turf track</span>
+<span class="font-metadata text-[10px] text-muted">Cỏ tự nhiên</span>
+</label>
+<label class="border border-border bg-surface hover:bg-forest-wash/30 rounded-lg p-3 text-center cursor-pointer flex flex-col items-center gap-1 transition-colors">
+<input class="sr-only" name="track_type" type="radio" value="dirt">
+<span class="material-symbols-outlined text-muted text-xl">terrain</span>
+<span class="font-label text-xs text-ink">Dirt track</span>
+<span class="font-metadata text-[10px] text-muted">Đường cát</span>
+</label>
+<label class="border border-border bg-surface hover:bg-forest-wash/30 rounded-lg p-3 text-center cursor-pointer flex flex-col items-center gap-1 transition-colors">
+<input class="sr-only" name="track_type" type="radio" value="synthetic">
+<span class="material-symbols-outlined text-muted text-xl">layers</span>
+<span class="font-label text-xs text-ink">Synthetic</span>
+<span class="font-metadata text-[10px] text-muted">Tổng hợp All-weather</span>
+</label>
+</div>
+</div>
+</div>
+<!-- ================= CỘT 2: CHỈ SỐ TẢI TRỌNG & CHIẾN THUẬT ================= -->
+<div class="bg-surface rounded-[10px] border border-border p-6 space-y-6 shadow-sm">
+<div class="border-b border-border pb-3.5 flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-7 h-7 rounded-md bg-forest-wash flex items-center justify-center text-forest font-semibold text-sm">2</div>
+<h2 class="font-section-heading text-section-heading text-ink font-bold">Chỉ số tải trọng &amp; Chỉ đạo chiến thuật</h2>
+</div>
+<span class="font-metadata text-xs text-muted">Bước 2/2</span>
+</div>
+<!-- Cự ly mục tiêu & Tốc độ mục tiêu -->
+<div class="grid grid-cols-2 gap-4">
+<!-- Mục tiêu cự ly (validate min 1) -->
+<div class="space-y-1.5">
+<label class="block font-label text-label text-ink" for="distanceInput">
+                  Mục tiêu cự ly <span class="text-error">*</span>
+</label>
+<div class="relative">
+<input class="w-full h-11 pl-3.5 pr-14 text-body font-body bg-surface border border-border rounded-lg text-ink focus:border-forest focus:ring-1 focus:ring-forest" id="distanceInput" max="5000" min="100" step="50" type="number" value="1200">
+<span class="absolute right-3 top-1/2 -translate-y-1/2 text-muted font-label text-xs">mét</span>
+</div>
+<span class="font-metadata text-[11px] text-muted">Tối thiểu: 100m (Không cho nhập số âm)</span>
+</div>
+<!-- Tốc độ mục tiêu -->
+<div class="space-y-1.5">
+<label class="block font-label text-label text-ink" for="speedInput">
+                  Tốc độ mục tiêu <span class="text-error">*</span>
+</label>
+<div class="relative">
+<input class="w-full h-11 pl-3.5 pr-14 text-body font-body bg-surface border border-border rounded-lg text-ink focus:border-forest focus:ring-1 focus:ring-forest" id="speedInput" max="75" min="10" step="0.5" type="number" value="58.5">
+<span class="absolute right-3 top-1/2 -translate-y-1/2 text-muted font-label text-xs">km/h</span>
+</div>
+<span class="font-metadata text-[11px] text-muted">Tương đương ~ 14.6 m/s</span>
+</div>
+</div>
+<!-- Khối lượng & Cường độ tập luyện Dropdown -->
+<div class="space-y-1.5">
+<label class="block font-label text-label text-ink" for="intensitySelect">
+                Khối lượng &amp; Cường độ tập luyện <span class="text-error">*</span>
+</label>
+<div class="relative">
+<select class="w-full h-11 pl-3.5 pr-10 text-body font-body bg-surface border border-border rounded-lg text-ink focus:border-forest focus:ring-1 focus:ring-forest appearance-none cursor-pointer" id="intensitySelect">
+<option value="light">Thấp 50% — Vận động thích ứng, phục hồi chủ động</option>
+<option selected="" value="medium">Trung bình 70% — Tăng tải từ từ (Khuyến nghị cho Giai đoạn II)</option>
+<option value="high">Cao 85% — Cận ngưỡng lactate, phát triển sức mạnh</option>
+<option value="max">Tối đa 100% — Mô phỏng điều kiện thi đấu chính thức</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none">expand_more</span>
+</div>
+<p class="font-metadata text-xs text-muted">Hệ thống khuyến cáo duy trì 70% trong 10 ngày đầu trước khi tăng bậc.</p>
+</div>
+<!-- Nhịp tim trần cảnh báo -->
+<div class="space-y-1.5">
+<div class="flex items-center justify-between">
+<label class="block font-label text-label text-ink" for="maxHeartRate">
+                  Nhịp tim trần cảnh báo (Max Heart Rate Threshold) <span class="text-error">*</span>
+</label>
+<span class="text-xs font-semibold text-critical-text flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">favorite</span>
+                  Ngưỡng sinh trắc an toàn
+                </span>
+</div>
+<div class="relative">
+<input class="w-full h-11 pl-3.5 pr-14 text-body font-body bg-surface border border-border rounded-lg text-ink focus:border-forest focus:ring-1 focus:ring-forest" id="maxHeartRate" max="240" min="150" type="number" value="210">
+<span class="absolute right-3 top-1/2 -translate-y-1/2 text-muted font-label text-xs">bpm</span>
+</div>
+<div class="flex items-center gap-1.5 text-xs text-warning-text bg-warning-bg/60 p-2.5 rounded-lg border border-warning-bg">
+<span class="material-symbols-outlined text-base shrink-0">vibration</span>
+<span>Khi vòng đeo cảm biến trên chiến mã vượt <strong>210 bpm</strong> liên tục 15 giây, đai rung của nài sẽ báo động yêu cầu giảm nước kiệu ngay.</span>
+</div>
+</div>
+<!-- Ghi chú chiến thuật & Chỉ đạo nài ngựa / Groom -->
+<div class="space-y-1.5">
+<label class="block font-label text-label text-ink" for="tacticalNotes">
+                Ghi chú chiến thuật &amp; Chỉ đạo nài ngựa / Groom
+              </label>
+<textarea class="w-full p-3.5 text-body font-body bg-surface border border-border rounded-lg text-ink focus:border-forest focus:ring-1 focus:ring-forest text-sm" id="tacticalNotes" placeholder="Nhập chỉ dẫn phân bổ sức, bước phi, điều kiện bứt tốc vòng cua hoặc dặn dò chế độ làm nguội cơ sau bài tập..." rows="4">Giữ nhịp canter đều đặn ở 800m đầu tiên, tránh kích gậy sớm. Đoạn 400m cuối yêu cầu nài ghìm cương chuyển nước đại gallop tăng dần tốc độ theo cột mốc. Sau bài tập: Groom dắt thả lỏng 20 phút, chườm lạnh gân khoeo chân trước trong 15 phút.</textarea>
+<div class="flex items-center justify-between text-muted font-metadata text-[11px]">
+<span>Hướng dẫn: Ghi chú sẽ hiển thị trực tiếp trên tablet của Kíp nài và nhật ký chuồng.</span>
+<span>218/500 ký tự</span>
+</div>
+</div>
+</div>
+</div>
+<!-- ================= CHÂN TRANG FORM (ACTIONS & COMPLIANCE) ================= -->
+<div class="bg-surface rounded-[10px] border border-border p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+<!-- Huy hiệu an toàn -->
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-forest-wash border border-forest/20 flex items-center justify-center text-forest">
+<span class="material-symbols-outlined text-2xl">health_and_safety</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-label text-sm text-ink font-bold">Chứng thực tuân thủ an toàn y khoa EquiFlow Vet Standard</span>
+<span class="px-1.5 py-0.5 text-[10px] font-bold bg-forest text-on-primary rounded">ĐÃ DUYỆT</span>
+</div>
+<p class="font-metadata text-xs text-muted">
+                Giáo án tuân thủ hạn mức tải trọng hiệp hội ngựa đua, bảo vệ hệ gân cơ và khớp chân của chiến mã.
+              </p>
+</div>
+</div>
+<!-- Buttons -->
+<div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+<button class="h-11 px-5 rounded-[7px] border border-border bg-surface text-ink hover:bg-forest-wash hover:text-forest font-label text-label transition-colors active:scale-[0.99]" type="button">
+              Hủy bỏ
+            </button>
+<button class="h-11 px-6 rounded-[7px] bg-forest hover:bg-forest-deep text-on-primary font-label text-label transition-colors shadow-sm flex items-center gap-2 active:scale-[0.99]" type="submit">
+<span class="material-symbols-outlined text-lg">save</span>
+              Lưu giáo án huấn luyện
+            </button>
+</div>
+</div>
+</form>
+<!-- Bảng phụ trợ tham khảo nhanh: Lộ trình chu kỳ thể lực -->
+<section class="bg-surface rounded-[10px] border border-border p-5 space-y-3">
+<div class="flex items-center justify-between">
+<h3 class="font-section-heading text-sm text-ink font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-forest text-base">timeline</span>
+            Bảng tham chiếu chu kỳ thể lực tiêu chuẩn chiến mã (Dữ liệu minh họa)
+          </h3>
+<span class="font-metadata text-xs text-muted">Cập nhật bởi Trưởng ban Huấn luyện</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left text-xs border-collapse">
+<thead>
+<tr class="border-b border-border bg-canvas/60 text-muted font-label">
+<th class="py-2.5 px-3">Giai đoạn</th>
+<th class="py-2.5 px-3">Cự ly trung bình (m)</th>
+<th class="py-2.5 px-3">Tốc độ trần (km/h)</th>
+<th class="py-2.5 px-3">Nhịp tim mục tiêu (bpm)</th>
+<th class="py-2.5 px-3">Thời gian phục hồi khớp</th>
+<th class="py-2.5 px-3">Trạng thái khóa Y tế</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border">
+<tr class="hover:bg-forest-wash/40 transition-colors">
+<td class="py-3 px-3 font-semibold text-ink" data-label="Giai đoạn">Giai đoạn I: Thích nghi &amp; Cơ bản</td>
+<td class="py-3 px-3 text-muted" data-label="Cự ly trung bình (m)">800 - 1,000</td>
+<td class="py-3 px-3 text-muted" data-label="Tốc độ trần (km/h)">45.0</td>
+<td class="py-3 px-3 text-muted" data-label="Nhịp tim mục tiêu (bpm)">140 - 165</td>
+<td class="py-3 px-3 text-muted" data-label="Thời gian phục hồi khớp">12 giờ</td>
+<td class="py-3 px-3" data-label="Trạng thái khóa Y tế"><span class="px-2 py-0.5 rounded text-[11px] bg-positive-bg text-positive-text font-medium">Bình thường</span></td>
+</tr>
+<tr class="bg-forest-wash/20 font-medium">
+<td class="py-3 px-3 text-forest font-bold flex items-center gap-1.5" data-label="Giai đoạn">
+<span class="w-1.5 h-1.5 rounded-full bg-forest"></span>
+                  Giai đoạn II: Tăng sức bền (Hiện tại)
+                </td>
+<td class="py-3 px-3 text-ink font-semibold" data-label="Cự ly trung bình (m)">1,200 - 1,600</td>
+<td class="py-3 px-3 text-ink font-semibold" data-label="Tốc độ trần (km/h)">58.5</td>
+<td class="py-3 px-3 text-ink font-semibold" data-label="Nhịp tim mục tiêu (bpm)">180 - 210</td>
+<td class="py-3 px-3 text-ink font-semibold" data-label="Thời gian phục hồi khớp">24 giờ</td>
+<td class="py-3 px-3" data-label="Trạng thái khóa Y tế"><span class="px-2 py-0.5 rounded text-[11px] bg-positive-bg text-positive-text font-medium">Đủ điều kiện</span></td>
+</tr>
+<tr class="hover:bg-forest-wash/40 transition-colors">
+<td class="py-3 px-3 font-semibold text-ink" data-label="Giai đoạn">Giai đoạn III: Tốc độ bứt phá</td>
+<td class="py-3 px-3 text-muted" data-label="Cự ly trung bình (m)">600 - 1,000</td>
+<td class="py-3 px-3 text-muted" data-label="Tốc độ trần (km/h)">65.0 - 68.0</td>
+<td class="py-3 px-3 text-muted" data-label="Nhịp tim mục tiêu (bpm)">210 - 225</td>
+<td class="py-3 px-3 text-muted" data-label="Thời gian phục hồi khớp">36 giờ</td>
+<td class="py-3 px-3" data-label="Trạng thái khóa Y tế"><span class="px-2 py-0.5 rounded text-[11px] bg-warning-bg text-warning-text font-medium">Cần đo ECG trước tập</span></td>
+</tr>
+<tr class="hover:bg-forest-wash/40 transition-colors">
+<td class="py-3 px-3 font-semibold text-ink" data-label="Giai đoạn">Giai đoạn IV: Điểm rơi phong độ</td>
+<td class="py-3 px-3 text-muted" data-label="Cự ly trung bình (m)">800 - 1,200</td>
+<td class="py-3 px-3 text-muted" data-label="Tốc độ trần (km/h)">62.0</td>
+<td class="py-3 px-3 text-muted" data-label="Nhịp tim mục tiêu (bpm)">190 - 215</td>
+<td class="py-3 px-3 text-muted" data-label="Thời gian phục hồi khớp">48 giờ</td>
+<td class="py-3 px-3" data-label="Trạng thái khóa Y tế"><span class="px-2 py-0.5 rounded text-[11px] bg-positive-bg text-positive-text font-medium">Bác sĩ duyệt riêng</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+</main>
+<script>
+    // Xử lý logic cơ bản phòng ngừa số âm ở input số
+    const distanceInput = document.getElementById('distanceInput');
+    const speedInput = document.getElementById('speedInput');
+    const maxHeartRate = document.getElementById('maxHeartRate');
+
+    [distanceInput, speedInput, maxHeartRate].forEach(input => {
+      input.addEventListener('change', (e) => {
+        if (parseFloat(e.target.value) < 0) {
+          e.target.value = Math.abs(e.target.value);
+        }
+      });
+    });
+  </script>
+</body></html>

@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html class="h-full bg-canvas text-ink" lang="vi"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>[GH-BE-16][FR-006][T03] Phân công lịch tập luyện hàng ngày &amp; Điều phối lượt chạy thử (Time Trial) — Lịch tập và phân công</title>
+<!-- Google Fonts: Manrope -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-secondary": "#ffffff",
+            "primary-fixed": "#bdedd6",
+            "outline-variant": "#c0c8c2",
+            "canvas": "#F5F6F3",
+            "surface-container-low": "#f3f4f1",
+            "on-primary-container": "#a5d4bd",
+            "on-error-container": "#93000a",
+            "warning-text": "#875B15",
+            "surface-dim": "#d9dad7",
+            "surface-bright": "#f9faf7",
+            "on-tertiary-container": "#fcb9b4",
+            "forest-wash": "#EAF1EC",
+            "inverse-on-surface": "#f0f1ee",
+            "forest-deep": "#234437",
+            "surface-container-highest": "#e2e3e0",
+            "critical-text": "#922D3C",
+            "inverse-surface": "#2e312f",
+            "on-tertiary": "#ffffff",
+            "ink": "#202B28",
+            "on-secondary-container": "#4a6b5d",
+            "critical-bg": "#FAE9EB",
+            "surface-tint": "#3b6754",
+            "primary-fixed-dim": "#a2d1ba",
+            "secondary-fixed-dim": "#aacfbd",
+            "background": "#f9faf7",
+            "secondary-container": "#c6ebd8",
+            "secondary": "#446557",
+            "on-tertiary-fixed-variant": "#693937",
+            "forest": "#315D4B",
+            "tertiary-fixed-dim": "#f9b6b1",
+            "primary": "#184535",
+            "surface": "#FFFFFF",
+            "secondary-fixed": "#c6ebd8",
+            "outline": "#717974",
+            "tertiary-container": "#794744",
+            "surface-container": "#edeeeb",
+            "muted": "#65716B",
+            "on-secondary-fixed-variant": "#2c4d40",
+            "warning-bg": "#FFF4DD",
+            "positive-bg": "#E8F3EB",
+            "surface-container-high": "#e7e8e6",
+            "quarantine-bg": "#F1EDF6",
+            "on-secondary-fixed": "#002116",
+            "on-surface-variant": "#414944",
+            "surface-variant": "#e2e3e0",
+            "error": "#ba1a1a",
+            "on-tertiary-fixed": "#34100e",
+            "on-primary-fixed": "#002115",
+            "surface-container-lowest": "#ffffff",
+            "tertiary-fixed": "#ffdad7",
+            "primary-container": "#315d4b",
+            "on-primary-fixed-variant": "#224f3d",
+            "positive-text": "#276442",
+            "on-surface": "#191c1b",
+            "quarantine-text": "#65517D",
+            "tertiary": "#5e312e",
+            "on-error": "#ffffff",
+            "on-background": "#191c1b",
+            "border": "#DCE3DD",
+            "error-container": "#ffdad6",
+            "on-primary": "#ffffff",
+            "inverse-primary": "#a2d1ba"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-xs": "4px",
+            "space-xl": "32px",
+            "space-md": "16px",
+            "gutter": "24px",
+            "margin": "32px",
+            "space-lg": "24px",
+            "space-sm": "8px"
+          },
+          "fontFamily": {
+            "page-title": ["Manrope"],
+            "auth-heading": ["Manrope"],
+            "metadata": ["Manrope"],
+            "body-lg": ["Manrope"],
+            "label": ["Manrope"],
+            "body": ["Manrope"],
+            "section-heading": ["Manrope"]
+          },
+          "fontSize": {
+            "page-title": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "auth-heading": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+            "metadata": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "label": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "body": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "section-heading": ["18px", { "lineHeight": "26px", "fontWeight": "650" }]
+          }
+        }
+      }
+    }
+  </script>
+<style id="equiflow-reviewed-layout">
+   html,body{max-width:100%;} .ef-sidebar{width:224px!important;min-width:224px;background:#fff!important;border-right:1px solid #dce3dd;padding:24px 14px!important;display:flex;flex-direction:column;gap:24px}.ef-brand{font:700 24px/1.2 Manrope,'Segoe UI',sans-serif;color:#315d4b}.ef-brand small{display:block;font:11px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin-top:8px}.ef-role-nav{display:flex;flex-direction:column;gap:5px}.ef-role-nav a{padding:11px 12px;min-height:44px;border-radius:6px;font:500 14px/22px Manrope,'Segoe UI',sans-serif;color:#3e4e45;text-decoration:none;white-space:normal}.ef-role-nav a:hover,.ef-role-nav a[aria-current=page]{background:#eaf1ec;color:#315d4b}.ef-role-label{margin-top:auto;font-size:12px;color:#65716b}.ef-role-label a{display:block;padding-top:12px;color:#315d4b}.ef-sample-notice{font:12px/1.5 Manrope,'Segoe UI',sans-serif;color:#65716b;margin:0 0 14px}.ef-mobile-nav{display:none}input,select,textarea{max-width:100%}button,a,input,select,textarea{touch-action:manipulation}
+   @media(max-width:1023px){[data-review-kind=app] header,[data-review-kind=app] main .flex{flex-wrap:wrap}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important}[data-review-kind=app] .flex-1{min-width:0}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{max-width:100%;min-width:0}[data-review-kind=app] header>div{max-width:100%;flex-wrap:wrap}}
+   @media(max-width:767px){body[data-review-kind=app]{display:block!important;height:auto!important;min-height:100dvh}[data-review-kind=app] .flex-col{flex-wrap:nowrap!important;height:auto}}
+   @media(max-width:767px){.ef-sidebar{display:none!important}.ef-mobile-nav{display:block;position:relative;z-index:200;background:white;border-bottom:1px solid #dce3dd;padding:12px 16px}.ef-mobile-nav summary{min-height:44px;cursor:pointer;display:flex;align-items:center;font-weight:700;color:#315d4b}.ml-56,.ml-64,[class~='ml-[224px]'],[class~='ml-[240px]'],main[style*='margin-left']{margin-left:0!important}main{min-width:0!important;max-width:100%!important}header{flex-wrap:wrap!important;gap:8px!important;height:auto!important}footer{flex-wrap:wrap!important;gap:12px}h1{overflow-wrap:anywhere}.ef-role-nav{max-width:100%}[data-review-kind=app] .grid{grid-template-columns:minmax(0,1fr)!important}[data-review-kind=app] .flex{min-width:0;flex-wrap:wrap}[data-review-kind=app] table,[data-review-kind=app] tbody,[data-review-kind=app] tr{display:block;width:100%}[data-review-kind=app] thead{display:none}[data-review-kind=app] tr{padding:12px 0;border-bottom:1px solid #dce3dd}[data-review-kind=app] td{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;white-space:normal!important;padding:8px 12px;min-width:0;overflow-wrap:anywhere}[data-review-kind=app] td:before{content:attr(data-label);color:#65716b;font-size:12px;flex:0 0 35%}[data-review-kind=app] td>*{min-width:0;max-width:100%}[data-review-kind=app] [class*='min-w-']{min-width:0!important}[data-review-kind=app] select{width:100%}}
+  </style></head>
+<body class="h-full bg-canvas text-ink font-body text-body flex flex-col antialiased overflow-hidden" data-review-kind="app">
+<!-- TOP APP BAR -->
+<header class="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-6 h-16 bg-surface border-b border-border">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3">
+<span class="w-8 h-8 rounded-lg bg-forest text-on-primary flex items-center justify-center font-bold text-base shadow-sm">EF</span>
+<span class="font-page-title text-section-heading text-primary tracking-tight font-bold">EquiFlow</span>
+</div>
+<div class="relative w-72">
+<span class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-muted">
+<span class="material-symbols-outlined text-[18px]">search</span>
+</span>
+<input class="w-full h-9 pl-9 pr-3 text-body bg-canvas border border-border rounded-lg text-ink placeholder-muted focus:outline-none focus:border-forest text-xs" placeholder="Tìm kiếm chiến mã, nài, groom..." type="text">
+</div>
+</div>
+<!-- Navigation Links -->
+
+<!-- Actions & User Profile -->
+<div class="flex items-center gap-3">
+<button class="h-9 px-3.5 rounded-lg border border-border bg-surface text-ink font-label text-label hover:bg-forest-wash transition-colors flex items-center gap-1.5 active:scale-[0.99]">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span>Thêm mới</span>
+</button>
+<button class="h-9 px-3 rounded-lg border border-critical-text/30 bg-critical-bg text-critical-text font-label text-label hover:bg-critical-text hover:text-surface transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">warning</span>
+<span>Khẩn cấp</span>
+</button>
+<div class="h-5 w-px bg-border mx-1"></div>
+<button class="p-1.5 text-muted hover:text-primary hover:bg-forest-wash rounded-lg transition-colors" title="Thông báo">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+</button>
+<button class="p-1.5 text-muted hover:text-primary hover:bg-forest-wash rounded-lg transition-colors" title="Trợ giúp">
+<span class="material-symbols-outlined text-[20px]">help</span>
+</button>
+<button class="p-1.5 text-muted hover:text-primary hover:bg-forest-wash rounded-lg transition-colors" title="Cài đặt">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+</button>
+<div class="flex items-center gap-2 pl-2">
+<div class="w-8 h-8 rounded-full bg-forest text-on-primary font-bold flex items-center justify-center text-xs border border-forest">
+          HLV
+        </div>
+<div class="flex flex-col text-left">
+<span class="font-label text-xs text-ink leading-tight">Lê Tuấn Hùng</span>
+<span class="font-metadata text-[11px] text-muted">HLV Trưởng</span>
+</div>
+</div>
+</div>
+</header>
+<!-- MAIN APP CONTAINER (Below TopAppBar) -->
+<div class="pt-16 flex h-full">
+<!-- FIXED SIDE NAV BAR (224px) -->
+<aside class="fixed left-0 top-16 bottom-0 w-56 z-30 flex flex-col justify-between py-4 px-3 bg-surface border-r border-border ef-sidebar"><div class="ef-brand">EquiFlow<small>Quản lý huấn luyện ngựa đua</small></div><nav class="ef-role-nav" aria-label="Điều hướng HLV trưởng"><a href="T01.html">Tổng quan huấn luyện</a><a href="H01.html">Hồ sơ ngựa</a><a href="T02.html">Giáo án</a><a href="T03.html" aria-current="page">Lịch tập</a><a href="T04.html">Kết quả buổi tập</a></nav><div class="ef-role-label">HLV trưởng<a href="AUTH01.html">Đăng xuất</a></div></aside>
+<!-- MAIN CONTENT AREA (Offset by 224px sidebar) -->
+<main class="ml-56 flex-1 flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-canvas"><p class="ef-sample-notice">Dữ liệu minh họa · Bản thiết kế giao diện</p>
+<!-- TOP HEADER & CONTROLS SECTION -->
+<section class="bg-surface border-b border-border px-8 py-4 flex flex-col gap-3">
+<!-- Title & Primary CTA -->
+<div class="flex items-center justify-between">
+<div>
+<div class="flex items-center gap-2">
+
+<span class="text-xs text-muted font-metadata">Quản lý lịch tập chuyên sâu</span>
+</div>
+<h1 class="font-page-title text-xl text-primary font-bold tracking-tight mt-0.5">
+              Lịch tập tuần &amp; Phân công nhân sự
+            </h1>
+<p class="font-metadata text-xs text-muted">
+              Thời khóa biểu huấn luyện chi tiết từ Thứ Hai đến Chủ Nhật · Chú thích: Nài &amp; Groom là nhân sự vận hành trực tiếp ca tập
+            </p>
+</div>
+<div class="flex items-center gap-3">
+<a class="h-9 px-4 rounded-lg bg-forest text-on-primary font-label text-label flex items-center gap-2 hover:bg-forest-deep transition-all shadow-sm active:scale-[0.99]" href="T03-CREATE.html">
+add_circle
++ Tạo buổi tập mới
+</a>
+</div>
+</div>
+<!-- FILTERS ROW -->
+<div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-border">
+<div class="flex items-center gap-2.5">
+<!-- Week selector -->
+<div class="flex items-center bg-canvas border border-border rounded-lg px-2.5 py-1 text-xs">
+<button class="p-0.5 text-muted hover:text-ink"><span class="material-symbols-outlined text-[16px]">chevron_left</span></button>
+<span class="font-label text-xs text-ink px-2 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-forest">calendar_month</span>
+                Tuần 11 · 10/03/2025 - 16/03/2025
+              </span>
+<button class="p-0.5 text-muted hover:text-ink"><span class="material-symbols-outlined text-[16px]">chevron_right</span></button>
+</div>
+<!-- Surface Filter -->
+<div class="flex items-center gap-1.5">
+<label class="font-metadata text-xs text-muted">Mặt sân:</label>
+<select class="h-8 text-xs bg-canvas border border-border rounded-lg px-2.5 py-0 text-ink focus:outline-none focus:border-forest font-body">
+<option selected="">Tất cả mặt sân</option>
+<option>Cỏ Turf</option>
+<option>Cát Dirt</option>
+</select>
+</div>
+<!-- Personnel Filter -->
+<div class="flex items-center gap-1.5">
+<label class="font-metadata text-xs text-muted">Nhân sự:</label>
+<select class="h-8 text-xs bg-canvas border border-border rounded-lg px-2.5 py-0 text-ink focus:outline-none focus:border-forest font-body">
+<option selected="">Tất cả Nài &amp; Groom</option>
+<option>Nài Đỗ Cao Thắng</option>
+<option>Nài Nguyễn Hoàng Gia</option>
+<option>Groom Trần Văn Nam</option>
+<option>Groom Lê Quang Bình</option>
+</select>
+</div>
+<!-- Horse Filter -->
+<div class="flex items-center gap-1.5">
+<label class="font-metadata text-xs text-muted">Chiến mã:</label>
+<select class="h-8 text-xs bg-canvas border border-border rounded-lg px-2.5 py-0 text-ink focus:outline-none focus:border-forest font-body">
+<option selected="">Tất cả chiến mã</option>
+<option>Phong Vũ (A01)</option>
+<option>Lôi Bão (B04)</option>
+<option>Hồng Ngọc (C02)</option>
+<option>Hắc Long (A03)</option>
+</select>
+</div>
+</div>
+<!-- Quick Legend Status Indicators -->
+<div class="flex items-center gap-4 text-xs font-metadata text-muted">
+<span class="flex items-center gap-1">
+<span class="w-2.5 h-2.5 rounded-full bg-positive-text inline-block"></span> Đã hoàn thành
+            </span>
+<span class="flex items-center gap-1">
+<span class="w-2.5 h-2.5 rounded-full bg-forest inline-block"></span> Đang chọn / Sắp tới
+            </span>
+<span class="flex items-center gap-1">
+<span class="w-2.5 h-2.5 rounded-full bg-critical-text inline-block"></span> Khóa y tế
+            </span>
+</div>
+</div>
+</section>
+<!-- SPLIT VIEW: 7-DAY CALENDAR GRID + SIDE DETAIL DRAWER -->
+<div class="flex-1 flex overflow-hidden p-6 gap-6">
+<!-- 7-DAY WEEKLY CALENDAR GRID (Left Canvas) -->
+<div class="flex-1 bg-surface border border-border rounded-lg flex flex-col overflow-hidden shadow-sm">
+<!-- Calendar Days Header (7 Cols) -->
+<div class="grid grid-cols-7 border-b border-border bg-surface-container-low text-xs font-label">
+<div class="p-2.5 text-center border-r border-border">
+<span class="text-muted block text-[11px]">Thứ Hai</span>
+<span class="font-bold text-ink text-sm">10/03</span>
+</div>
+<div class="p-2.5 text-center border-r border-border bg-forest-wash text-forest">
+<span class="block text-[11px] font-semibold text-forest">Thứ Ba (Hôm nay)</span>
+<span class="font-bold text-sm">11/03</span>
+</div>
+<div class="p-2.5 text-center border-r border-border">
+<span class="text-muted block text-[11px]">Thứ Tư</span>
+<span class="font-bold text-ink text-sm">12/03</span>
+</div>
+<div class="p-2.5 text-center border-r border-border">
+<span class="text-muted block text-[11px]">Thứ Năm</span>
+<span class="font-bold text-ink text-sm">13/03</span>
+</div>
+<div class="p-2.5 text-center border-r border-border">
+<span class="text-muted block text-[11px]">Thứ Sáu</span>
+<span class="font-bold text-ink text-sm">14/03</span>
+</div>
+<div class="p-2.5 text-center border-r border-border">
+<span class="text-muted block text-[11px]">Thứ Bảy</span>
+<span class="font-bold text-ink text-sm">15/03</span>
+</div>
+<div class="p-2.5 text-center bg-surface-container">
+<span class="text-muted block text-[11px]">Chủ Nhật</span>
+<span class="font-bold text-ink text-sm">16/03</span>
+</div>
+</div>
+<!-- Calendar Days Columns Scroll Container -->
+<div class="flex-1 grid grid-cols-7 divide-x divide-border overflow-y-auto bg-canvas/30 text-xs">
+<!-- THỨ HAI 10/03: Đã hoàn thành -->
+<div class="p-2 space-y-2.5">
+<!-- Completed session card 1 -->
+<div class="bg-surface border border-positive-text/30 rounded-lg p-2.5 relative hover:border-positive-text transition-all shadow-sm">
+<div class="flex items-center justify-between mb-1.5">
+<span class="font-bold text-xs text-ink flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-positive-text" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                    06:00
+                  </span>
+<span class="px-1.5 py-0.5 rounded bg-positive-bg text-positive-text font-metadata text-[10px] font-semibold">Đã tập</span>
+</div>
+<div class="font-label text-xs text-ink">Lôi Bão <span class="text-muted font-normal">(B04)</span></div>
+<div class="text-[11px] text-muted mt-0.5">Sức bền cơ bản · 1200m Dirt</div>
+<div class="mt-2 pt-2 border-t border-border/60 text-[11px] space-y-0.5">
+<div class="flex items-center gap-1 text-muted">
+<span class="material-symbols-outlined text-[13px]">sports_score</span>
+<span class="truncate">Nài: Nguyễn H. Gia</span>
+</div>
+<div class="flex items-center gap-1 text-muted">
+<span class="material-symbols-outlined text-[13px]">pan_tool</span>
+<span class="truncate">Groom: Lê Q. Bình</span>
+</div>
+</div>
+</div>
+<!-- Completed session card 2 -->
+<div class="bg-surface border border-positive-text/30 rounded-lg p-2.5 relative hover:border-positive-text transition-all shadow-sm opacity-90">
+<div class="flex items-center justify-between mb-1.5">
+<span class="font-bold text-xs text-ink flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-positive-text" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                    15:30
+                  </span>
+<span class="px-1.5 py-0.5 rounded bg-positive-bg text-positive-text font-metadata text-[10px] font-semibold">Đã tập</span>
+</div>
+<div class="font-label text-xs text-ink">Hắc Long <span class="text-muted font-normal">(A03)</span></div>
+<div class="text-[11px] text-muted mt-0.5">Đi bộ thư giãn &amp; Tắm bùn</div>
+<div class="mt-2 pt-2 border-t border-border/60 text-[11px] space-y-0.5">
+<div class="flex items-center gap-1 text-muted">
+<span class="material-symbols-outlined text-[13px]">pan_tool</span>
+<span class="truncate">Groom: Trần V. Nam</span>
+</div>
+</div>
+</div>
+</div>
+<!-- THỨ BA 11/03: Đang chọn (Selected) -->
+<div class="p-2 space-y-2.5 bg-forest-wash/30">
+<!-- Active/Selected Session Card -->
+<div class="bg-surface border-2 border-forest rounded-lg p-2.5 relative shadow-sm ring-2 ring-forest/20">
+<div class="flex items-center justify-between mb-1">
+<span class="font-bold text-xs text-forest flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">schedule</span>
+                    06:30
+                  </span>
+<span class="px-1.5 py-0.5 rounded bg-forest text-on-primary font-metadata text-[10px] font-semibold">Đang chọn</span>
+</div>
+<div class="font-label text-xs text-ink font-bold">Phong Vũ <span class="text-muted font-normal">(A01)</span></div>
+<div class="text-[11px] text-forest font-medium mt-0.5">Chạy nước rút 400m Turf</div>
+<div class="mt-2 pt-2 border-t border-forest/20 text-[11px] space-y-1">
+<div class="flex items-center gap-1 text-ink font-medium">
+<span class="material-symbols-outlined text-[13px] text-forest">sports_score</span>
+<span class="truncate">Nài: Đỗ Cao Thắng</span>
+</div>
+<div class="flex items-center gap-1 text-ink font-medium">
+<span class="material-symbols-outlined text-[13px] text-forest">pan_tool</span>
+<span class="truncate">Groom: Trần Văn Nam</span>
+</div>
+</div>
+</div>
+<!-- Afternoon Session Card -->
+<div class="bg-surface border border-border rounded-lg p-2.5 relative hover:border-forest transition-all shadow-sm">
+<div class="flex items-center justify-between mb-1">
+<span class="font-bold text-xs text-ink flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-muted">schedule</span>
+                    16:00
+                  </span>
+<span class="px-1.5 py-0.5 rounded bg-canvas text-muted font-metadata text-[10px]">Chờ ca</span>
+</div>
+<div class="font-label text-xs text-ink">Bạch Mã Hoàng Tử <span class="text-muted font-normal">(B02)</span></div>
+<div class="text-[11px] text-muted mt-0.5">Nhảy rào phối hợp 80cm</div>
+<div class="mt-2 pt-2 border-t border-border/60 text-[11px] space-y-0.5">
+<div class="flex items-center gap-1 text-muted">
+<span class="material-symbols-outlined text-[13px]">sports_score</span>
+<span class="truncate">Nài: Nguyễn H. Gia</span>
+</div>
+<div class="flex items-center gap-1 text-muted">
+<span class="material-symbols-outlined text-[13px]">pan_tool</span>
+<span class="truncate">Groom: Lê Q. Bình</span>
+</div>
+</div>
+</div>
+</div>
+<!-- THỨ TƯ 12/03: ĐÌNH CHỈ DO KHÓA Y TẾ -->
+<div class="p-2 space-y-2.5">
+<!-- Suspended session card due to medical lock -->
+<div class="bg-critical-bg border-2 border-critical-text/40 rounded-lg p-2.5 relative shadow-sm">
+<div class="flex items-center justify-between mb-1">
+<span class="font-bold text-xs text-critical-text flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-critical-text" style="font-variation-settings: 'FILL' 1;">lock</span>
+                    06:00
+                  </span>
+<span class="px-1 py-0.5 rounded bg-critical-text text-surface font-metadata text-[9px] font-bold tracking-tight">KHÓA Y TẾ</span>
+</div>
+<div class="font-label text-xs text-critical-text font-bold">Hồng Ngọc <span class="font-normal">(C02)</span></div>
+<div class="text-[11px] font-semibold text-critical-text mt-0.5 flex items-center gap-1">
+<span>TẠM ĐÌNH CHỈ</span>
+</div>
+<p class="text-[10px] text-critical-text/90 mt-1 leading-snug bg-surface/60 p-1.5 rounded border border-critical-text/20">
+                  BS. Phan Văn Thanh chỉ định: Viêm nhẹ gân cổ chân sau trái, yêu cầu nghỉ ngơi tuyệt đối.
+                </p>
+<div class="mt-2 pt-1.5 border-t border-critical-text/20 text-[11px] text-muted flex items-center justify-between">
+<span>Groom: Trần V. Nam</span>
+<span class="text-[10px] text-critical-text font-medium">Bảo lưu ca</span>
+</div>
+</div>
+<!-- Afternoon Session Card -->
+<div class="bg-surface border border-border rounded-lg p-2.5 relative hover:border-forest transition-all shadow-sm">
+<div class="flex items-center justify-between mb-1">
+<span class="font-bold text-xs text-ink flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-muted">schedule</span>
+                    15:00
+                  </span>
+<span class="px-1.5 py-0.5 rounded bg-canvas text-muted font-metadata text-[10px]">Chờ ca</span>
+</div>
+<div class="font-label text-xs text-ink">Bão Táp <span class="text-muted font-normal">(A05)</span></div>
+<div class="text-[11px] text-muted mt-0.5">Khởi động vòng xoay cát</div>
+<div class="mt-2 pt-2 border-t border-border/60 text-[11px] space-y-0.5">
+<div class="flex items-center gap-1 text-muted">
+<span class="material-symbols-outlined text-[13px]">sports_score</span>
+<span class="truncate">Nài: Đỗ C. Thắng</span>
+</div>
+<div class="flex items-center gap-1 text-muted">
+<span class="material-symbols-outlined text-[13px]">pan_tool</span>
+<span class="truncate">Groom: Trần V. Nam</span>
+</div>
+</div>
+</div>
+</div>
+<!-- THỨ NĂM 13/03 -->
+<div class="p-2 space-y-2.5">
+<div class="bg-surface border border-border rounded-lg p-2.5 relative hover:border-forest transition-all shadow-sm">
+<div class="flex items-center justify-between mb-1">
+<span class="font-bold text-xs text-ink">06:00</span>
+<span class="px-1.5 py-0.5 rounded bg-canvas text-muted font-metadata text-[10px]">Dự kiến</span>
+</div>
+<div class="font-label text-xs text-ink">Phong Vũ <span class="text-muted font-normal">(A01)</span></div>
+<div class="text-[11px] text-muted mt-0.5">Chạy bền cự ly dài 1800m</div>
+<div class="mt-2 pt-2 border-t border-border/60 text-[11px] space-y-0.5">
+<div class="flex items-center gap-1 text-muted">
+<span class="material-symbols-outlined text-[13px]">sports_score</span>
+<span class="truncate">Nài: Đỗ C. Thắng</span>
+</div>
+<div class="flex items-center gap-1 text-muted">
+<span class="material-symbols-outlined text-[13px]">pan_tool</span>
+<span class="truncate">Groom: Lê Q. Bình</span>
+</div>
+</div>
+</div>
+<div class="bg-surface border border-border rounded-lg p-2.5 relative hover:border-forest transition-all shadow-sm">
+<div class="flex items-center justify-between mb-1">
+<span class="font-bold text-xs text-ink">08:00</span>
+<span class="px-1.5 py-0.5 rounded bg-canvas text-muted font-metadata text-[10px]">Dự kiến</span>
+</div>
+<div class="font-label text-xs text-ink">Lôi Bão <span class="text-muted font-normal">(B04)</span></div>
+<div class="text-[11px] text-muted mt-0.5">Tập luyện xuất phát chuồng</div>
+<div class="mt-2 pt-2 border-t border-border/60 text-[11px] space-y-0.5">
+<div class="flex items-center gap-1 text-muted">
+<span class="material-symbols-outlined text-[13px]">sports_score</span>
+<span class="truncate">Nài: Nguyễn H. Gia</span>
+</div>
+<div class="flex items-center gap-1 text-muted">
+<span class="material-symbols-outlined text-[13px]">pan_tool</span>
+<span class="truncate">Groom: Trần V. Nam</span>
+</div>
+</div>
+</div>
+</div>
+<!-- THỨ SÁU 14/03 -->
+<div class="p-2 space-y-2.5">
+<div class="bg-surface border border-border rounded-lg p-2.5 relative hover:border-forest transition-all shadow-sm">
+<div class="flex items-center justify-between mb-1">
+<span class="font-bold text-xs text-ink">06:30</span>
+<span class="px-1.5 py-0.5 rounded bg-canvas text-muted font-metadata text-[10px]">Dự kiến</span>
+</div>
+<div class="font-label text-xs text-ink">Kim Quy <span class="text-muted font-normal">(C01)</span></div>
+<div class="text-[11px] text-muted mt-0.5">Nước rút bứt tốc 600m Turf</div>
+<div class="mt-2 pt-2 border-t border-border/60 text-[11px] space-y-0.5">
+<div class="flex items-center gap-1 text-muted">
+<span class="material-symbols-outlined text-[13px]">sports_score</span>
+<span class="truncate">Nài: Đỗ C. Thắng</span>
+</div>
+<div class="flex items-center gap-1 text-muted">
+<span class="material-symbols-outlined text-[13px]">pan_tool</span>
+<span class="truncate">Groom: Lê Q. Bình</span>
+</div>
+</div>
+</div>
+</div>
+<!-- THỨ BẢY 15/03 -->
+<div class="p-2 space-y-2.5">
+<div class="bg-surface border border-border rounded-lg p-2.5 relative hover:border-forest transition-all shadow-sm">
+<div class="flex items-center justify-between mb-1">
+<span class="font-bold text-xs text-ink">07:00</span>
+<span class="px-1.5 py-0.5 rounded bg-warning-bg text-warning-text font-metadata text-[10px] font-semibold">Thi thử nội bộ</span>
+</div>
+<div class="font-label text-xs text-ink font-bold">Chạy cự ly chuẩn 1600m</div>
+<div class="text-[11px] text-muted mt-0.5">Phong Vũ vs Lôi Bão</div>
+<div class="mt-2 pt-2 border-t border-border/60 text-[11px] space-y-0.5">
+<div class="flex items-center gap-1 text-muted">
+<span class="material-symbols-outlined text-[13px]">group</span>
+<span>Toàn bộ tổ nài &amp; groom</span>
+</div>
+</div>
+</div>
+</div>
+<!-- CHỦ NHẬT 16/03: NGÀY NGHỈ HỒI PHỤC -->
+<div class="p-2 bg-surface-container/40 flex flex-col justify-start">
+<div class="border border-border border-dashed rounded-lg p-3 text-center bg-surface/70 mt-1">
+<div class="w-8 h-8 rounded-full bg-forest-wash text-forest flex items-center justify-center mx-auto mb-2">
+<span class="material-symbols-outlined text-[18px]">spa</span>
+</div>
+<div class="font-label text-xs text-forest font-semibold">Chủ Nhật</div>
+<div class="font-body text-[11px] text-ink font-medium mt-1">Ngày nghỉ hồi phục chuồng trại</div>
+<p class="font-metadata text-[10px] text-muted mt-2 leading-relaxed">
+                  Toàn bộ chiến mã nghỉ tập nặng. Chỉ thực hiện dắt đi dạo nhẹ, kiểm tra móng và vệ sinh ô chuồng bởi Groom phụ trách.
+                </p>
+<div class="mt-3 inline-flex items-center gap-1 px-2 py-1 rounded bg-surface border border-border text-[10px] text-muted">
+<span class="material-symbols-outlined text-[12px]">medical_services</span>
+<span>Khám định kỳ 09:00</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- RIGHT DETAIL DRAWER / PANEL (Chi tiết buổi tập đã chọn) -->
+<aside class="w-96 bg-surface border border-border rounded-lg flex flex-col shadow-sm overflow-hidden">
+<!-- Panel Header -->
+<div class="p-4 border-b border-border bg-surface-bright flex items-center justify-between">
+<div>
+<div class="flex items-center gap-1.5 text-xs text-forest font-semibold">
+<span class="material-symbols-outlined text-[16px]">event_available</span>
+<span>Chi tiết buổi tập</span>
+</div>
+<h2 class="font-section-heading text-sm font-bold text-ink mt-0.5">
+                Chạy nước rút 400m - Phong Vũ (A01)
+              </h2>
+</div>
+<div class="flex items-center gap-1">
+<span class="px-2 py-0.5 rounded-full bg-forest-wash text-forest font-label text-xs">Thứ Ba · 06:30</span>
+</div>
+</div>
+<!-- Panel Scrollable Content -->
+<div class="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
+<!-- Horse Summary Card -->
+<div class="border border-border rounded-lg p-3 bg-surface-container-low/50">
+<div class="flex items-center justify-between mb-2">
+<span class="font-label text-xs text-muted uppercase tracking-wider">Thông tin chiến mã</span>
+<span class="px-2 py-0.5 rounded text-[10px] bg-positive-bg text-positive-text font-bold">Khỏe mạnh</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-lg bg-forest/10 border border-forest/20 flex items-center justify-center text-forest font-bold text-sm">
+                  PV
+                </div>
+<div>
+<div class="font-label text-sm text-ink font-bold">Phong Vũ</div>
+<div class="text-muted text-[11px]">Giống: Thoroughbred Thuần chủng · 4 tuổi</div>
+<div class="text-forest text-[11px] font-medium flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[13px]">warehouse</span>
+                    Ô chuồng: Dãy A - Chuồng A01
+                  </div>
+</div>
+</div>
+</div>
+<!-- Training Objectives (Mục tiêu bài tập) -->
+<div class="border border-border rounded-lg p-3 bg-surface">
+<div class="font-label text-xs text-ink font-bold mb-2 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-forest">flag</span>
+                Mục tiêu bài tập
+              </div>
+<div class="grid grid-cols-2 gap-2 text-[11px]">
+<div class="p-2 rounded bg-canvas border border-border/70">
+<span class="text-muted block text-[10px]">Tốc độ đỉnh</span>
+<span class="font-bold text-ink text-xs">62 km/h</span>
+</div>
+<div class="p-2 rounded bg-canvas border border-border/70">
+<span class="text-muted block text-[10px]">Cự ly &amp; Mặt sân</span>
+<span class="font-bold text-forest text-xs">400m Turf (Cỏ)</span>
+</div>
+<div class="p-2 rounded bg-canvas border border-border/70">
+<span class="text-muted block text-[10px]">Thời gian mục tiêu</span>
+<span class="font-bold text-ink text-xs">&lt; 24.5 giây</span>
+</div>
+<div class="p-2 rounded bg-canvas border border-border/70">
+<span class="text-muted block text-[10px]">Nhịp tim tối đa</span>
+<span class="font-bold text-ink text-xs">210 bpm</span>
+</div>
+</div>
+</div>
+<!-- Head Trainer Directives (Chỉ thị của HLV Trưởng) -->
+<div class="border border-border rounded-lg p-3 bg-surface">
+<div class="font-label text-xs text-ink font-bold mb-1.5 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-forest">campaign</span>
+                Chỉ thị của HLV Trưởng (Lê Tuấn Hùng)
+              </div>
+<p class="text-muted text-[11px] leading-relaxed bg-forest-wash/40 p-2.5 rounded border border-border">
+                "Khởi động kỹ 15 phút tại vòng xoay cát trước khi vào đường cỏ Turf. Cho chiến mã tăng tốc dứt khoát ở 150m cuối. Lưu ý nài giữ thăng bằng nhịp thở và kiểm tra nhịp chân phải sau khi hạ nhiệt."
+              </p>
+</div>
+<!-- Personnel Assignment (Phân công nhân sự vận hành) -->
+<div class="border border-border rounded-lg p-3 bg-surface space-y-2.5">
+<div class="flex items-center justify-between">
+<span class="font-label text-xs text-ink font-bold flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-forest">badge</span>
+                  Nhân sự vận hành phân công
+                </span>
+<span class="text-[10px] text-muted">Nhân viên ca trực</span>
+</div>
+<!-- Primary Jockey (Nài chính) -->
+<div class="flex items-center justify-between p-2 rounded-lg bg-canvas border border-border">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-forest text-on-primary flex items-center justify-center font-bold text-xs">
+                    ĐT
+                  </div>
+<div>
+<div class="font-label text-xs text-ink">Đỗ Cao Thắng</div>
+<div class="text-[10px] text-forest font-semibold">Nài chính điều khiển</div>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded bg-positive-bg text-positive-text text-[10px] font-medium">Sẵn sàng</span>
+</div>
+<!-- Responsible Groom (Groom phụ trách) -->
+<div class="flex items-center justify-between p-2 rounded-lg bg-canvas border border-border">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-secondary text-on-primary flex items-center justify-center font-bold text-xs">
+                    TN
+                  </div>
+<div>
+<div class="font-label text-xs text-ink">Trần Văn Nam</div>
+<div class="text-[10px] text-secondary font-semibold">Groom phụ trách chăm sóc</div>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded bg-positive-bg text-positive-text text-[10px] font-medium">Đã nhận việc</span>
+</div>
+</div>
+<!-- Safety / Pre-check Status -->
+<div class="p-2.5 rounded-lg border border-border bg-forest-wash/30 flex items-center justify-between text-[11px]">
+<div class="flex items-center gap-1.5 text-forest font-medium">
+<span class="material-symbols-outlined text-[16px]">verified</span>
+                Khám thú y tiền buổi tập
+              </div>
+<span class="font-bold text-positive-text">ĐẠT CHUẨN</span>
+</div>
+</div>
+<!-- Panel Footer Actions -->
+<div class="p-3 border-t border-border bg-surface flex flex-col gap-2">
+<button class="w-full h-10 rounded-lg bg-forest text-on-primary font-label text-xs font-semibold flex items-center justify-center gap-2 hover:bg-forest-deep transition-all shadow-sm active:scale-[0.99]">
+<span class="material-symbols-outlined text-[18px]">task_alt</span>
+              Cập nhật kết quả buổi tập
+            </button>
+<div class="grid grid-cols-2 gap-2">
+<button class="h-9 rounded-lg border border-border bg-surface text-ink font-label text-xs flex items-center justify-center gap-1 hover:bg-forest-wash transition-colors">
+<span class="material-symbols-outlined text-[16px] text-muted">edit</span>
+                Chỉnh sửa buổi tập
+              </button>
+<button class="h-9 rounded-lg border border-critical-text/30 bg-critical-bg text-critical-text font-label text-xs flex items-center justify-center gap-1 hover:bg-critical-text hover:text-surface transition-colors">
+<span class="material-symbols-outlined text-[16px]">event_busy</span>
+                Hủy ca tập
+              </button>
+</div>
+</div>
+</aside>
+</div>
+</main>
+</div>
+</body></html>
