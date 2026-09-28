@@ -1,0 +1,1708 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EquiFlow — Quản Lý Huấn Luyện Ngựa Đua (Head Trainer)</title>
+  
+  <!-- Google Fonts: Manrope -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            forest: {
+              DEFAULT: "#315D4B",
+              deep: "#184535",
+              dark: "#0E2F23",
+              wash: "#EAF1EC",
+              light: "#E2EEE7",
+              border: "#C5D8CD",
+            },
+            gold: {
+              DEFAULT: "#D4AF37",
+              light: "#F7E7A8",
+              dark: "#B8860B",
+              wash: "#FBF7EA",
+              hover: "#C59B27",
+            },
+            canvas: "#F5F6F3",
+            surface: {
+              DEFAULT: "#FFFFFF",
+              container: "#EDEEEB",
+              high: "#E7E8E6",
+              low: "#F3F4F1",
+            },
+            ink: {
+              DEFAULT: "#202B28",
+              light: "#3E4E45",
+            },
+            muted: "#65716B",
+            border: "#DCE3DD",
+            "critical-text": "#922D3C",
+            "critical-bg": "#FAE9EB",
+            "critical-border": "#F0CCD1",
+            "positive-text": "#276442",
+            "positive-bg": "#E8F3EB",
+            "warning-text": "#875B15",
+            "warning-bg": "#FFF4DD",
+          },
+          borderRadius: {
+            panel: "10px",
+            btn: "7px",
+            input: "6px",
+          },
+          fontFamily: {
+            sans: ["Manrope", "system-ui", "sans-serif"],
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    body {
+      background-color: #F5F6F3;
+      color: #202B28;
+      font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+  </style>
+
+  <!-- React & Babel Standalone for direct in-browser zero-install execution -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-canvas text-ink antialiased min-h-screen">
+  <div id="root"></div>
+
+  <!-- Inline App Bundle with Hash Routing -->
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    // --- MOCK DATA ---
+    const MOCK_HORSES = [
+      {
+        id: 'pv123',
+        code: 'A01',
+        name: 'Phong Vũ',
+        microchipRfid: 'VNM-123456789012',
+        stall: 'Ô A01',
+        age: 4,
+        breed: 'Thoroughbred (Thuần chủng Anh)',
+        gender: 'Đực',
+        fitnessScore: 98,
+        status: 'Fit_To_Race',
+        isMedicalLocked: false,
+        vetName: 'TS. Trần Văn Minh',
+        assignedTrainer: 'Nguyễn Văn Hòa',
+        primaryJockeyId: 'j1',
+      },
+      {
+        id: 'bl456',
+        code: 'A05',
+        name: 'Bạch Long',
+        microchipRfid: 'VNM-567890123456',
+        stall: 'Ô A05',
+        age: 3,
+        breed: 'Arabian Cross',
+        gender: 'Thiến',
+        fitnessScore: 94,
+        status: 'Training',
+        isMedicalLocked: false,
+        vetName: 'BS. Lê Thanh Hà',
+        assignedTrainer: 'Nguyễn Văn Hòa',
+        primaryJockeyId: 'j2',
+      },
+      {
+        id: 'xm789',
+        code: 'C02',
+        name: 'Xích Thố',
+        microchipRfid: 'VNM-789012345678',
+        stall: 'Ô C02',
+        age: 5,
+        breed: 'Quarter Horse',
+        gender: 'Đực',
+        fitnessScore: 91,
+        status: 'Fit_To_Race',
+        isMedicalLocked: false,
+        vetName: 'TS. Trần Văn Minh',
+        assignedTrainer: 'Nguyễn Văn Hòa',
+        primaryJockeyId: 'j3',
+      },
+      {
+        id: 'hl321',
+        code: 'B01',
+        name: 'Hắc Long',
+        microchipRfid: 'VNM-901234567890',
+        stall: 'Ô B01',
+        age: 4,
+        breed: 'Thoroughbred',
+        gender: 'Thiến',
+        fitnessScore: 88,
+        status: 'Training',
+        isMedicalLocked: false,
+        vetName: 'BS. Phạm Minh Tuấn',
+        assignedTrainer: 'Nguyễn Văn Hòa',
+        primaryJockeyId: 'j4',
+      },
+      {
+        id: 'kq654',
+        code: 'B02',
+        name: 'Kim Quy',
+        microchipRfid: 'VNM-345678901234',
+        stall: 'Ô B02',
+        age: 3,
+        breed: 'Warmblood',
+        gender: 'Cái',
+        fitnessScore: 85,
+        status: 'Training',
+        isMedicalLocked: false,
+        vetName: 'BS. Lê Thanh Hà',
+        assignedTrainer: 'Nguyễn Văn Hòa',
+        primaryJockeyId: 'j1',
+      },
+      {
+        id: 'hn999',
+        code: 'A03',
+        name: 'Hồng Ngọc',
+        microchipRfid: 'VNM-246813579024',
+        stall: 'Ô A03',
+        age: 4,
+        breed: 'Thuần chủng 4 tuổi',
+        gender: 'Cái',
+        fitnessScore: 54,
+        status: 'Injured',
+        isMedicalLocked: true,
+        vetName: 'BS. Lê Thanh Hà',
+        assignedTrainer: 'Nguyễn Văn Hòa',
+        medicalLockInfo: {
+          lockId: 'MED-LOCK-2025-09',
+          medicalRecordId: 'MED-2025-089A',
+          diagnosis:
+            'Phát hiện tổn thương phù nề gân gấp ngón nông chi trước trái (SDFT strain - Độ II). Viêm gân khoeo trước độ 1. Cấm hoàn toàn mọi bài tập tốc độ cao và thi đấu đường chạy.',
+          vetName: 'BS. Lê Thanh Hà',
+          vetTitle: 'Trưởng ban Thú y EquiFlow',
+          lockedAt: '15/03/2025 · 08:30 GMT+7',
+          expectedUnlockDate: '29/03/2025',
+          suspendedSessions: [
+            {
+              id: 'susp-1',
+              title: 'Chạy biến tốc cự ly 1.200m (Giai đoạn nước rút)',
+              date: 'Thứ Hai, 15/03/2025',
+              time: '14:00 - 15:30',
+              track: 'Đường chạy ngoài số 2 (Turf)',
+            },
+            {
+              id: 'susp-2',
+              title: 'Chạy nước đại Gallop 800m bứt phá tốc độ',
+              date: 'Thứ Tư, 17/03/2025',
+              time: '06:00 - 07:30',
+              track: 'Đường cát Dirt Track B',
+            },
+            {
+              id: 'susp-3',
+              title: 'Time Trial chạy thử vòng tiêu chuẩn 1.400m',
+              date: 'Thứ Sáu, 19/03/2025',
+              time: '07:00 - 08:30',
+              track: 'Đường cỏ Turf Track A',
+            },
+          ],
+          criteriaForUnlock:
+            'Tái khám siêu âm gân SDFT không còn tụ dịch, sờ nắn không đau khớp cổ chân, thử bước đi trot thả lỏng không khập khiễng, nhịp tim nghỉ ngơi <= 42 bpm.',
+        },
+      },
+    ];
+
+    const MOCK_JOCKEYS = [
+      { id: 'j1', name: 'Đỗ Cao Thắng', weightKg: 51.5, experienceYears: 6, performanceScore: 9.2 },
+      { id: 'j2', name: 'Nguyễn Hoàng Gia', weightKg: 49.0, experienceYears: 4, performanceScore: 8.8 },
+      { id: 'j3', name: 'Phạm Văn Tài', weightKg: 53.0, experienceYears: 8, performanceScore: 9.5 },
+      { id: 'j4', name: 'Vũ Mạnh Hùng', weightKg: 52.0, experienceYears: 5, performanceScore: 8.7 },
+    ];
+
+    const MOCK_GROOMS = [
+      { id: 'g1', name: 'Trần Văn Nam', specialty: 'Chăm sóc gân cơ & massage phục hồi chân lạnh' },
+      { id: 'g2', name: 'Lê Quang Bình', specialty: 'Dinh dưỡng khẩu phần cao đạm & kiểm tra móng' },
+      { id: 'g3', name: 'Đinh Quốc Toàn', specialty: 'Vệ sinh ô chuồng & chải lông tắm gội' },
+    ];
+
+    const MOCK_TRAINING_PLANS = [
+      {
+        id: 'plan-001',
+        title: 'Giáo án Tăng Sức Bền Chu Kỳ 2 (Phong Vũ)',
+        horseId: 'pv123',
+        horseName: 'Phong Vũ',
+        horseCode: 'A01',
+        phase: 'endurance',
+        startDate: '2025-03-01',
+        endDate: '2025-03-21',
+        distanceMeters: 1200,
+        jockeyWeightKg: 52.0,
+        intensity: 'medium',
+        trackType: 'turf',
+        targetSpeedKmh: 58.5,
+        maxHeartRateBpm: 210,
+        tacticalNotes:
+          'Giữ nhịp canter đều đặn ở 800m đầu tiên. 400m cuối ghìm cương chuyển nước đại gallop tăng dần tốc độ theo cột mốc. Sau bài tập: Groom dắt thả lỏng 20 phút, chườm lạnh 15 phút.',
+        status: 'active',
+        createdAt: '2025-02-28',
+      },
+      {
+        id: 'plan-002',
+        title: 'Giáo án Phát Triển Tốc Độ Nước Rút (Bạch Long)',
+        horseId: 'bl456',
+        horseName: 'Bạch Long',
+        horseCode: 'A05',
+        phase: 'speed',
+        startDate: '2025-03-05',
+        endDate: '2025-03-25',
+        distanceMeters: 1000,
+        jockeyWeightKg: 49.5,
+        intensity: 'high',
+        trackType: 'dirt',
+        targetSpeedKmh: 62.0,
+        maxHeartRateBpm: 215,
+        tacticalNotes:
+          'Luyện phản xạ xuất phát từ lồng Barrier Gate. Tăng tốc tối đa trong 300m giữa sân cát, kiểm tra độ bám móng.',
+        status: 'active',
+        createdAt: '2025-03-04',
+      },
+      {
+        id: 'plan-003',
+        title: 'Giáo án Thích Nghi Nền Tảng Cơ Bản (Xích Thố)',
+        horseId: 'xm789',
+        horseName: 'Xích Thố',
+        horseCode: 'C02',
+        phase: 'foundation',
+        startDate: '2025-03-10',
+        endDate: '2025-03-31',
+        distanceMeters: 1600,
+        jockeyWeightKg: 53.0,
+        intensity: 'light',
+        trackType: 'synthetic',
+        targetSpeedKmh: 52.0,
+        maxHeartRateBpm: 195,
+        tacticalNotes:
+          'Chạy nhẹ dẻo dai kiểm soát bước kiệu trot và canter chậm, nâng cao dung tích lồng ngực trên mặt sân tổng hợp All-weather.',
+        status: 'active',
+        createdAt: '2025-03-09',
+      },
+    ];
+
+    const MOCK_WEEKLY_SESSIONS = [
+      {
+        id: 'sess-mon-1',
+        dayOfWeek: 'Thứ Hai',
+        date: '2025-03-10',
+        shift: 'morning',
+        timeSlot: '05:30 - 06:45',
+        horseId: 'pv123',
+        horseName: 'Phong Vũ',
+        horseCode: 'A01',
+        stall: 'Ô A01',
+        exerciseTitle: 'Chạy cự ly dài rèn sức bền (1200m)',
+        distanceMeters: 1200,
+        trackType: 'turf',
+        intensity: 'medium',
+        jockeyId: 'j1',
+        jockeyName: 'Đỗ Cao Thắng',
+        groomId: 'g1',
+        groomName: 'Trần Văn Nam',
+        status: 'completed',
+        isMedicalLocked: false,
+      },
+      {
+        id: 'sess-mon-2',
+        dayOfWeek: 'Thứ Hai',
+        date: '2025-03-10',
+        shift: 'afternoon',
+        timeSlot: '15:30 - 16:30',
+        horseId: 'bl456',
+        horseName: 'Bạch Long',
+        horseCode: 'A05',
+        stall: 'Ô A05',
+        exerciseTitle: 'Khởi động lồng xuất phát & Bứt tốc ngắn',
+        distanceMeters: 800,
+        trackType: 'dirt',
+        intensity: 'high',
+        jockeyId: 'j2',
+        jockeyName: 'Nguyễn Hoàng Gia',
+        groomId: 'g2',
+        groomName: 'Lê Quang Bình',
+        status: 'completed',
+        isMedicalLocked: false,
+      },
+      {
+        id: 'sess-tue-1',
+        dayOfWeek: 'Thứ Ba',
+        date: '2025-03-11',
+        shift: 'morning',
+        timeSlot: '05:45 - 07:00',
+        horseId: 'pv123',
+        horseName: 'Phong Vũ',
+        horseCode: 'A01',
+        stall: 'Ô A01',
+        exerciseTitle: 'Time Trial chạy thử chuẩn 1.200m đo telemetry',
+        distanceMeters: 1200,
+        trackType: 'turf',
+        intensity: 'medium',
+        jockeyId: 'j1',
+        jockeyName: 'Đỗ Cao Thắng',
+        groomId: 'g1',
+        groomName: 'Trần Văn Nam',
+        status: 'in_progress',
+        isMedicalLocked: false,
+      },
+      {
+        id: 'sess-tue-2',
+        dayOfWeek: 'Thứ Ba',
+        date: '2025-03-11',
+        shift: 'morning',
+        timeSlot: '07:15 - 08:30',
+        horseId: 'bl456',
+        horseName: 'Bạch Long',
+        horseCode: 'A05',
+        stall: 'Ô A05',
+        exerciseTitle: 'Chạy cự ly trung bình trên sân cát (1000m)',
+        distanceMeters: 1000,
+        trackType: 'dirt',
+        intensity: 'medium',
+        jockeyId: 'j2',
+        jockeyName: 'Nguyễn Hoàng Gia',
+        groomId: 'g2',
+        groomName: 'Lê Quang Bình',
+        status: 'scheduled',
+        isMedicalLocked: false,
+      },
+      {
+        id: 'sess-tue-3',
+        dayOfWeek: 'Thứ Ba',
+        date: '2025-03-11',
+        shift: 'afternoon',
+        timeSlot: '15:30 - 16:45',
+        horseId: 'xm789',
+        horseName: 'Xích Thố',
+        horseCode: 'C02',
+        stall: 'Ô C02',
+        exerciseTitle: 'Tập canter thả lỏng nhịp thở & giãn cơ',
+        distanceMeters: 1600,
+        trackType: 'synthetic',
+        intensity: 'light',
+        jockeyId: 'j3',
+        jockeyName: 'Phạm Văn Tài',
+        groomId: 'g3',
+        groomName: 'Đinh Quốc Toàn',
+        status: 'scheduled',
+        isMedicalLocked: false,
+      },
+      {
+        id: 'sess-tue-4',
+        dayOfWeek: 'Thứ Ba',
+        date: '2025-03-11',
+        shift: 'afternoon',
+        timeSlot: '16:00 - 17:15',
+        horseId: 'hn999',
+        horseName: 'Hồng Ngọc',
+        horseCode: 'A03',
+        stall: 'Ô A03',
+        exerciseTitle: 'BỊ ĐÌNH CHỈ: Chạy bứt tốc 1.200m (Khóa Y Tế)',
+        distanceMeters: 1200,
+        trackType: 'turf',
+        intensity: 'high',
+        jockeyId: 'j4',
+        jockeyName: 'Vũ Mạnh Hùng',
+        groomId: 'g1',
+        groomName: 'Trần Văn Nam',
+        status: 'suspended',
+        isMedicalLocked: true,
+      },
+      {
+        id: 'sess-wed-1',
+        dayOfWeek: 'Thứ Tư',
+        date: '2025-03-12',
+        shift: 'morning',
+        timeSlot: '06:00 - 07:15',
+        horseId: 'hl321',
+        horseName: 'Hắc Long',
+        horseCode: 'B01',
+        stall: 'Ô B01',
+        exerciseTitle: 'Tập biến tốc ngắt quãng Intervals 1400m',
+        distanceMeters: 1400,
+        trackType: 'turf',
+        intensity: 'high',
+        jockeyId: 'j4',
+        jockeyName: 'Vũ Mạnh Hùng',
+        groomId: 'g1',
+        groomName: 'Trần Văn Nam',
+        status: 'scheduled',
+        isMedicalLocked: false,
+      },
+      {
+        id: 'sess-thu-1',
+        dayOfWeek: 'Thứ Năm',
+        date: '2025-03-13',
+        shift: 'morning',
+        timeSlot: '05:30 - 06:45',
+        horseId: 'pv123',
+        horseName: 'Phong Vũ',
+        horseCode: 'A01',
+        stall: 'Ô A01',
+        exerciseTitle: 'Luyện tốc độ đoạn thẳng 600m cuối sân cỏ',
+        distanceMeters: 1200,
+        trackType: 'turf',
+        intensity: 'high',
+        jockeyId: 'j1',
+        jockeyName: 'Đỗ Cao Thắng',
+        groomId: 'g1',
+        groomName: 'Trần Văn Nam',
+        status: 'scheduled',
+        isMedicalLocked: false,
+      },
+    ];
+
+    const MOCK_EVALUATION = {
+      horseName: 'Phong Vũ',
+      horseCode: 'A01',
+      horseChip: 'VNM-123456789012',
+      stall: 'Ô A01',
+      sessionDate: '11/03/2025',
+      sessionTime: '06:30',
+      trackType: 'turf',
+      exerciseTitle: 'Rèn thể lực · Cự ly kế hoạch 1.200 m · Mặt sân cỏ Turf',
+      plannedDistanceMeters: 1200,
+      actualDistanceMeters: 1200,
+      finishTimeSeconds: 74.35,
+      averageSpeedKmh: 58.1,
+      recoveryHeartRateBpm: 78,
+      measuredAfterMinutes: 10,
+      assessment: 'excellent',
+      score: 9.0,
+      trainerRemarks:
+        'Chiến mã có sải chân dài và rất nhịp nhàng ở 800m đầu tiên. Đoạn 400m cuối bứt tốc ấn tượng theo chỉ đạo của nài Đỗ Cao Thắng, không có biểu hiện thở dốc hay gượng chân. Nhịp tim phục hồi nhanh sau 10 phút ngâm chân nước lạnh đạt 78 bpm (ngưỡng an toàn tối ưu). Sẵn sàng nâng cự ly trong tuần tới.',
+      historyPoints: [
+        { date: '04/03', heartRateBpm: 86, finishTimeSeconds: 77.2, score: 7.5 },
+        { date: '06/03', heartRateBpm: 82, finishTimeSeconds: 75.8, score: 8.0 },
+        { date: '08/03', heartRateBpm: 80, finishTimeSeconds: 75.1, score: 8.5 },
+        { date: '10/03', heartRateBpm: 79, finishTimeSeconds: 74.8, score: 8.8 },
+        { date: '11/03', heartRateBpm: 78, finishTimeSeconds: 74.35, score: 9.0 },
+      ],
+    };
+
+    // --- MAIN REACT ROOT COMPONENT WITH HASH ROUTING ---
+    function EquiFlowApp() {
+      const [currentRoute, setCurrentRoute] = useState('/training/dashboard');
+      const [horses] = useState(MOCK_HORSES);
+      const [jockeys] = useState(MOCK_JOCKEYS);
+      const [grooms] = useState(MOCK_GROOMS);
+      const [plans, setPlans] = useState(MOCK_TRAINING_PLANS);
+      const [sessions, setSessions] = useState(MOCK_WEEKLY_SESSIONS);
+      const [isLockModalOpen, setIsLockModalOpen] = useState(false);
+      const [toastMsg, setToastMsg] = useState(null);
+
+      // Simple hash change listener
+      useEffect(() => {
+        const handleHash = () => {
+          const hash = window.location.hash.replace('#', '') || '/training/dashboard';
+          setCurrentRoute(hash);
+        };
+        handleHash();
+        window.addEventListener('hashchange', handleHash);
+        return () => window.removeEventListener('hashchange', handleHash);
+      }, []);
+
+      const navigateTo = (path) => {
+        window.location.hash = path;
+      };
+
+      const lockedHorse = horses.find((h) => h.isMedicalLocked);
+
+      return (
+        <div className="min-h-screen bg-canvas text-ink flex flex-col font-sans">
+          {/* Toast */}
+          {toastMsg && (
+            <div className="fixed bottom-6 right-6 z-50 bg-forest-deep text-white px-5 py-3 rounded-panel shadow-2xl flex items-center gap-3 border border-gold/40 animate-bounce">
+              <span className="text-gold text-lg">★</span>
+              <span className="text-sm font-semibold">{toastMsg}</span>
+            </div>
+          )}
+
+          {/* TOP NAVBAR (64px) */}
+          <header className="fixed top-0 left-0 right-0 z-40 h-16 bg-surface border-b border-border shadow-[0_1px_2px_rgba(0,0,0,0.03)] flex items-center justify-between px-6">
+            <div className="flex items-center gap-8">
+              <a href="#/training/dashboard" className="flex items-center gap-3 group">
+                <div className="w-10 h-10 rounded-lg bg-forest-deep flex items-center justify-center text-gold shadow-sm border border-gold/30">
+                  <span className="text-xl font-bold">🏇</span>
+                </div>
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-lg text-forest-deep tracking-tight">EquiFlow</span>
+                    <span className="px-1.5 py-0.5 text-[10px] font-bold bg-gold/15 text-gold-dark border border-gold/30 rounded">
+                      CLB ĐUA NGỰA
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-muted font-normal">Hệ Thống Huấn Luyện Chiến Mã</span>
+                </div>
+              </a>
+
+              {/* Search Box */}
+              <div className="relative w-80 hidden md:block">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-xs">🔍</span>
+                <input
+                  type="text"
+                  placeholder="Tìm mã ngựa (A01), tên nài, giáo án..."
+                  className="w-full h-9 pl-9 pr-3 text-xs bg-canvas border border-border rounded-lg text-ink placeholder:text-muted focus:outline-none focus:border-forest"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="hidden lg:flex items-center gap-2 px-3 py-1 bg-forest-wash border border-forest/20 rounded-full text-xs text-forest-deep">
+                <span className="w-2 h-2 rounded-full bg-positive-text animate-pulse"></span>
+                <span className="font-bold">Thứ Ba, 11/03/2025</span>
+                <span className="text-muted">·</span>
+                <span className="text-positive-text font-semibold">Ca sáng hoạt động</span>
+              </div>
+
+              {/* Emergency Medical Lock Badge */}
+              <button
+                onClick={() => setIsLockModalOpen(true)}
+                className="h-9 px-3 rounded-lg border border-critical-border bg-critical-bg text-critical-text hover:bg-critical-text hover:text-white transition-all text-xs font-bold flex items-center gap-1.5 shadow-xs"
+              >
+                <span>🔒 Khóa Y Tế (1)</span>
+              </button>
+
+              <button
+                onClick={() => navigateTo('/training/plans')}
+                className="h-9 px-3.5 rounded-lg bg-forest hover:bg-forest-deep text-white font-semibold text-xs flex items-center gap-1.5 shadow-sm transition-all"
+              >
+                <span>+ Lập giáo án</span>
+              </button>
+
+              <div className="flex items-center gap-2.5 pl-2 border-l border-border">
+                <div className="w-9 h-9 rounded-full bg-forest-deep text-gold flex items-center justify-center font-bold text-xs border border-gold/40">
+                  NVH
+                </div>
+                <div className="hidden xl:flex flex-col text-left">
+                  <span className="text-xs font-semibold text-ink leading-tight">Nguyễn Văn Hòa</span>
+                  <span className="text-[11px] text-muted">HLV Trưởng Vận hành</span>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          {/* SIDEBAR (224px) */}
+          <aside className="fixed left-0 top-16 bottom-0 w-56 z-30 bg-surface border-r border-border flex flex-col justify-between py-5 px-3.5 shadow-sm">
+            <div className="space-y-6">
+              <div className="px-2 pb-2 border-b border-border/80">
+                <div className="text-xs font-bold uppercase tracking-wider text-forest">
+                  Phòng Huấn Luyện
+                </div>
+                <p className="text-[11px] text-muted mt-0.5">Quy trình HLV Trưởng & Nài</p>
+              </div>
+
+              <nav className="flex flex-col gap-1.5">
+                {[
+                  { path: '/training/dashboard', label: 'Tổng quan huấn luyện', icon: '📊', badge: 'T01' },
+                  { path: '/training/plans', label: 'Lập giáo án', icon: '📋', badge: 'FR-004' },
+                  { path: '/training/schedule', label: 'Lịch tập tuần', icon: '📅', badge: 'FR-006' },
+                  { path: '/training/sessions/sess-tue-1', label: 'Kết quả buổi tập', icon: '⏱️', badge: 'FR-007' },
+                ].map((item) => {
+                  const isActive = currentRoute.startsWith(item.path);
+                  return (
+                    <a
+                      key={item.path}
+                      href={`#${item.path}`}
+                      className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold transition-all ${
+                        isActive
+                          ? 'bg-forest-wash text-forest border-l-4 border-forest shadow-xs'
+                          : 'text-ink-light hover:bg-forest-wash/50 hover:text-forest'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span>{item.icon}</span>
+                        <span>{item.label}</span>
+                      </div>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border text-muted font-mono">
+                        {item.badge}
+                      </span>
+                    </a>
+                  );
+                })}
+
+                <button
+                  onClick={() => setIsLockModalOpen(true)}
+                  className="mt-3 flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-bold text-critical-text bg-critical-bg/70 hover:bg-critical-bg border border-critical-border transition-all text-left"
+                >
+                  <div className="flex items-center gap-2">
+                    <span>🔒</span>
+                    <span>Lệnh Khóa Y Tế</span>
+                  </div>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-critical-text text-white font-bold animate-pulse">
+                    FR-005
+                  </span>
+                </button>
+              </nav>
+            </div>
+
+            <div className="pt-4 border-t border-border flex flex-col gap-2 text-xs">
+              <div className="px-3 py-2 rounded-lg bg-canvas border border-border flex items-center justify-between">
+                <div>
+                  <span className="font-bold text-forest block">Vai trò: HLV Trưởng</span>
+                  <span className="text-[10px] text-muted">Quyền duyệt ca tập</span>
+                </div>
+                <span className="w-2 h-2 rounded-full bg-forest animate-ping"></span>
+              </div>
+            </div>
+          </aside>
+
+          {/* MAIN CONTENT AREA */}
+          <main className="ml-56 pt-16 flex-1 min-h-screen">
+            <div className="max-w-[1440px] mx-auto p-7">
+              {currentRoute.includes('/training/dashboard') && (
+                <DashboardView
+                  horses={horses}
+                  sessions={sessions}
+                  onOpenMedicalLock={() => setIsLockModalOpen(true)}
+                  navigateTo={navigateTo}
+                />
+              )}
+
+              {currentRoute.includes('/training/plans') && (
+                <PlansView
+                  horses={horses}
+                  plans={plans}
+                  onCreatePlan={(newP) => {
+                    setPlans([newP, ...plans]);
+                    setToastMsg(`Đã ban hành thành công giáo án cho ${newP.horseName}!`);
+                    setTimeout(() => setToastMsg(null), 3500);
+                  }}
+                  onOpenMedicalLock={() => setIsLockModalOpen(true)}
+                />
+              )}
+
+              {currentRoute.includes('/training/schedule') && (
+                <ScheduleView
+                  horses={horses}
+                  jockeys={jockeys}
+                  grooms={grooms}
+                  sessions={sessions}
+                  onAddSession={(newS) => {
+                    setSessions([...sessions, newS]);
+                    setToastMsg(`Đã xếp lịch thành công cho chiến mã ${newS.horseName}!`);
+                    setTimeout(() => setToastMsg(null), 3500);
+                  }}
+                  onOpenMedicalLock={() => setIsLockModalOpen(true)}
+                  navigateTo={navigateTo}
+                />
+              )}
+
+              {currentRoute.includes('/training/sessions') && (
+                <EvaluationView
+                  navigateTo={navigateTo}
+                  onSaveSuccess={() => {
+                    setToastMsg('Đã lưu kết quả chấm điểm & cập nhật biểu đồ thể lực!');
+                    setTimeout(() => setToastMsg(null), 3500);
+                  }}
+                />
+              )}
+            </div>
+          </main>
+
+          {/* MEDICAL LOCK MODAL (Screen T05) */}
+          {isLockModalOpen && (
+            <MedicalLockDialog
+              horse={lockedHorse}
+              onClose={() => setIsLockModalOpen(false)}
+            />
+          )}
+        </div>
+      );
+    }
+
+    // --- VIEW 1: DASHBOARD (Screen T01) ---
+    function DashboardView({ horses, sessions, onOpenMedicalLock, navigateTo }) {
+      const todaySessions = sessions.filter((s) => s.dayOfWeek === 'Thứ Ba');
+      const lockedHorse = horses.find((h) => h.isMedicalLocked);
+
+      return (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between text-xs text-muted border-b border-border/60 pb-2">
+            <span>EquiFlow Management System · Phân hệ Huấn luyện viên trưởng (Flow 2 & Flow 5)</span>
+            <span className="font-mono bg-forest-wash text-forest px-2 py-0.5 rounded font-bold">
+              Màn hình T01 · STITCH DESIGN
+            </span>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="font-bold text-2xl text-forest-deep tracking-tight">
+                Tổng quan huấn luyện
+              </h1>
+              <p className="text-xs text-muted mt-1">
+                Phân bổ ca tập, kiểm soát an toàn vận động và duyệt chỉ số hồi phục thể lực theo thời gian thực.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigateTo('/training/schedule')}
+                className="h-10 px-4 rounded-btn border border-border bg-surface text-ink hover:bg-forest-wash font-semibold text-xs transition-colors shadow-xs"
+              >
+                📅 Xem lịch tuần
+              </button>
+              <button
+                onClick={() => navigateTo('/training/plans')}
+                className="h-10 px-4 rounded-btn bg-forest hover:bg-forest-deep text-white font-bold text-xs transition-colors shadow-sm"
+              >
+                + Lập giáo án mới
+              </button>
+            </div>
+          </div>
+
+          {/* Red Banner */}
+          {lockedHorse && (
+            <div className="rounded-panel border p-4.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm bg-critical-bg border-critical-border">
+              <div className="flex items-start gap-3.5">
+                <div className="w-9 h-9 rounded-full bg-critical-text text-white flex items-center justify-center shrink-0 mt-0.5 font-bold">
+                  🔒
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-xs uppercase tracking-wide text-critical-text">
+                      CẢNH BÁO AN TOÀN Y TẾ CẤP CAO (FR-005)
+                    </span>
+                    <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-white text-critical-text border border-critical-text/30">
+                      MÃ LỆNH: MED-LOCK-2025-09
+                    </span>
+                  </div>
+                  <p className="text-xs text-critical-text mt-1 leading-relaxed">
+                    Chiến mã <strong className="underline">Hồng Ngọc (A03)</strong> đang bị{' '}
+                    <strong>Khóa huấn luyện</strong> bởi <strong>BS. Lê Thanh Hà</strong> (Viêm gân khoeo trước độ 1 & phù nề SDFT độ 2). Toàn bộ lịch tập tốc độ cao đã bị phong tỏa tự động.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={onOpenMedicalLock}
+                className="shrink-0 px-3.5 py-2 rounded-btn bg-white text-critical-text border border-critical-border font-bold text-xs hover:bg-critical-text hover:text-white transition-colors"
+              >
+                Xem chi tiết lệnh khóa →
+              </button>
+            </div>
+          )}
+
+          {/* 4 KPI Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-surface rounded-panel border border-border p-4.5 shadow-xs">
+              <span className="text-[11px] font-bold uppercase text-muted block mb-1">Tổng ngựa huấn luyện</span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-bold text-ink">{horses.length}</span>
+                <span className="text-xs text-muted">chiến mã</span>
+              </div>
+              <div className="mt-3 pt-2 border-t border-border flex items-center justify-between text-xs text-positive-text font-bold">
+                <span>✓ 5 cá thể sẵn sàng Fit</span>
+                <span className="text-muted font-normal">100% chỉ tiêu</span>
+              </div>
+            </div>
+
+            <div className="bg-surface rounded-panel border border-border p-4.5 shadow-xs">
+              <span className="text-[11px] font-bold uppercase text-muted block mb-1">Buổi tập hôm nay</span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-bold text-ink">{todaySessions.length}</span>
+                <span className="text-xs text-muted">ca theo kế hoạch</span>
+              </div>
+              <div className="mt-3 pt-2 border-t border-border flex items-center justify-between text-xs text-ink font-semibold">
+                <span>2/4 ca hoàn thành (50%)</span>
+              </div>
+            </div>
+
+            <div className="bg-surface rounded-panel border border-border p-4.5 shadow-xs">
+              <span className="text-[11px] font-bold uppercase text-warning-text block mb-1">Cần chấm điểm sau ca</span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-bold text-warning-text">1</span>
+                <span className="text-xs text-muted">cá thể chờ duyệt</span>
+              </div>
+              <div className="mt-3 pt-2 border-t border-border flex items-center justify-between text-xs">
+                <button
+                  onClick={() => navigateTo('/training/sessions/sess-tue-1')}
+                  className="text-forest hover:underline font-bold"
+                >
+                  Phong Vũ (A01) →
+                </button>
+                <span className="text-muted">Ca sáng</span>
+              </div>
+            </div>
+
+            <div className="bg-surface rounded-panel border border-border p-4.5 shadow-xs">
+              <span className="text-[11px] font-bold uppercase text-critical-text block mb-1">Khóa Y Tế Toàn Phần</span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-bold text-critical-text">1</span>
+                <span className="text-xs text-muted">cá thể phong tỏa</span>
+              </div>
+              <div className="mt-3 pt-2 border-t border-border flex items-center justify-between text-xs">
+                <button onClick={onOpenMedicalLock} className="text-critical-text font-bold hover:underline">
+                  Hồng Ngọc (A03)
+                </button>
+                <span className="text-critical-text font-bold">CẤM CHẠY</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Today sessions roster */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 bg-surface rounded-panel border border-border p-6 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-border pb-3">
+                <h2 className="font-bold text-sm text-forest-deep">
+                  Lịch tập ca hôm nay (Thứ Ba, 11/03)
+                </h2>
+                <button
+                  onClick={() => navigateTo('/training/schedule')}
+                  className="text-xs font-bold text-forest hover:underline"
+                >
+                  Xem toàn tuần →
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {todaySessions.map((session) => (
+                  <div
+                    key={session.id}
+                    className={`p-3.5 rounded-lg border flex items-center justify-between text-xs ${
+                      session.isMedicalLocked
+                        ? 'bg-critical-bg/40 border-critical-border'
+                        : session.status === 'in_progress'
+                        ? 'bg-forest-wash border-forest'
+                        : 'bg-canvas/50 border-border'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-forest-deep text-gold flex items-center justify-center font-bold">
+                        {session.horseCode}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <strong className="text-ink">{session.horseName}</strong>
+                          <span className="text-muted">({session.stall})</span>
+                          {session.isMedicalLocked ? (
+                            <span className="px-2 py-0.5 rounded bg-critical-text text-white font-bold text-[10px]">
+                              ĐÌNH CHỈ
+                            </span>
+                          ) : session.status === 'in_progress' ? (
+                            <span className="px-2 py-0.5 rounded bg-forest text-white font-bold text-[10px]">
+                              ĐANG DIỄN RA
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="text-muted text-[11px] mt-0.5">{session.exerciseTitle}</p>
+                        <div className="text-[11px] text-muted mt-1">
+                          ⏱️ {session.timeSlot} · Cự ly: {session.distanceMeters}m · Nài: <strong>{session.jockeyName}</strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      {session.isMedicalLocked ? (
+                        <button
+                          onClick={onOpenMedicalLock}
+                          className="px-3 py-1.5 rounded-btn bg-white border border-critical-border text-critical-text text-[11px] font-bold"
+                        >
+                          Lý do khóa
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => navigateTo(`/training/sessions/${session.id}`)}
+                          className="px-3 py-1.5 rounded-btn bg-forest text-white hover:bg-forest-deep text-[11px] font-bold"
+                        >
+                          Chấm điểm →
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Top Fitness Ranking */}
+            <div className="bg-surface rounded-panel border border-border p-5 shadow-xs space-y-4">
+              <div className="border-b border-border pb-2 flex items-center justify-between">
+                <h3 className="font-bold text-sm text-forest-deep">Top Thể Lực Đàn Ngựa ★</h3>
+                <span className="text-[11px] text-muted">Fitness Score</span>
+              </div>
+              <div className="space-y-3">
+                {horses
+                  .filter((h) => !h.isMedicalLocked)
+                  .map((h, i) => (
+                    <div key={h.id} className="space-y-1 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-ink">
+                          {i + 1}. {h.name} ({h.code})
+                        </span>
+                        <span className="font-mono font-bold text-forest">{h.fitnessScore}/100</span>
+                      </div>
+                      <div className="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
+                        <div className="bg-forest h-1.5 rounded-full" style={{ width: `${h.fitnessScore}%` }}></div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // --- VIEW 2: TRAINING PLANS (FR-004, Screen T02) ---
+    function PlansView({ horses, plans, onCreatePlan, onOpenMedicalLock }) {
+      const [selectedHorseId, setSelectedHorseId] = useState(horses[0]?.id || 'pv123');
+      const [phase, setPhase] = useState('endurance');
+      const [distanceMeters, setDistanceMeters] = useState(1200);
+      const [jockeyWeightKg, setJockeyWeightKg] = useState(52.0);
+      const [intensity, setIntensity] = useState('medium');
+      const [trackType, setTrackType] = useState('turf');
+      const [targetSpeedKmh, setTargetSpeedKmh] = useState(58.5);
+      const [maxHeartRateBpm, setMaxHeartRateBpm] = useState(210);
+      const [tacticalNotes, setTacticalNotes] = useState(
+        'Giữ nhịp canter đều đặn ở 800m đầu tiên. 400m cuối bứt tốc theo cột mốc. Sau bài tập: Groom dắt thả lỏng 20 phút.'
+      );
+      const [filterPhase, setFilterPhase] = useState('all');
+
+      const selectedHorse = horses.find((h) => h.id === selectedHorseId);
+      const isLocked = selectedHorse?.isMedicalLocked;
+
+      const handlePublish = (e) => {
+        e.preventDefault();
+        if (isLocked) {
+          alert('LỖI CHẶN Y TẾ (FR-005): Không thể ban hành giáo án cho chiến mã đang chịu Medical Lock!');
+          return;
+        }
+
+        const newP = {
+          id: `plan-${Date.now()}`,
+          title: `Giáo án ${phase.toUpperCase()} (${selectedHorse.name})`,
+          horseId: selectedHorseId,
+          horseName: selectedHorse.name,
+          horseCode: selectedHorse.code,
+          phase,
+          startDate: '2025-03-15',
+          endDate: '2025-04-05',
+          distanceMeters,
+          jockeyWeightKg,
+          intensity,
+          trackType,
+          targetSpeedKmh,
+          maxHeartRateBpm,
+          tacticalNotes,
+          status: 'active',
+        };
+        onCreatePlan(newP);
+      };
+
+      return (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between text-xs text-muted border-b border-border/60 pb-2">
+            <span>Quản lý giáo án</span>
+            <span className="font-mono bg-forest-wash text-forest px-2 py-0.5 rounded font-bold">
+              Task GH-BE-14 (FR-004) · STITCH T02
+            </span>
+          </div>
+
+          <div>
+            <h1 className="font-bold text-2xl text-forest-deep tracking-tight">
+              Lập kế hoạch giáo án huấn luyện theo giai đoạn
+            </h1>
+            <p className="text-xs text-muted mt-1">
+              Quy chuẩn thiết lập bài tập theo cự ly (100-3000m), khối lượng nài (45-65kg), cường độ và loại mặt sân.
+            </p>
+          </div>
+
+          <form onSubmit={handlePublish} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Col 1 */}
+            <div className="bg-surface rounded-panel border border-border p-6 space-y-4 shadow-xs">
+              <h2 className="font-bold text-sm text-forest-deep border-b border-border pb-2">
+                1. Đối tượng & Chu kỳ áp dụng
+              </h2>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-ink">Chiến mã tham gia *</label>
+                <select
+                  value={selectedHorseId}
+                  onChange={(e) => setSelectedHorseId(e.target.value)}
+                  className={`w-full h-10 px-3 text-xs border rounded-lg ${
+                    isLocked ? 'border-critical-border bg-critical-bg text-critical-text font-bold' : 'border-border bg-surface'
+                  }`}
+                >
+                  {horses.map((h) => (
+                    <option key={h.id} value={h.id} disabled={h.isMedicalLocked}>
+                      {h.name} ({h.code}) · {h.stall} {h.isMedicalLocked ? '🔒 [BỊ KHÓA Y TẾ]' : '✓ [Sẵn sàng]'}
+                    </option>
+                  ))}
+                </select>
+
+                {isLocked ? (
+                  <div className="p-3 bg-critical-bg border border-critical-border rounded-lg text-xs text-critical-text mt-2 flex items-center justify-between">
+                    <span>🚫 Chiến mã đang bị Lệnh Khóa Y Tế từ BS. Lê Thanh Hà!</span>
+                    <button
+                      type="button"
+                      onClick={onOpenMedicalLock}
+                      className="px-2 py-1 bg-white text-critical-text border border-critical-border rounded font-bold"
+                    >
+                      Chi tiết
+                    </button>
+                  </div>
+                ) : (
+                  <div className="p-2.5 bg-forest-wash border border-forest/20 rounded-lg text-xs text-forest mt-2">
+                    ✓ Thể trạng: Tuyệt hảo ({selectedHorse?.fitnessScore}/100) · Bác sĩ: {selectedHorse?.vetName}
+                  </div>
+                )}
+              </div>
+
+              {/* Training Phase */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-ink">Giai đoạn huấn luyện *</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { id: 'foundation', name: 'Cơ bản (I)' },
+                    { id: 'endurance', name: 'Sức bền (II)' },
+                    { id: 'speed', name: 'Tốc độ (III)' },
+                    { id: 'tapering', name: 'Trước giải (IV)' },
+                  ].map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setPhase(p.id)}
+                      className={`p-2.5 rounded-lg border text-xs font-bold transition-all ${
+                        phase === p.id
+                          ? 'border-2 border-forest bg-forest-wash text-forest'
+                          : 'border-border bg-surface text-ink'
+                      }`}
+                    >
+                      {p.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Track Type */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-ink">Mặt sân tập chính *</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'turf', name: 'Cỏ Turf' },
+                    { id: 'dirt', name: 'Cát Dirt' },
+                    { id: 'synthetic', name: 'Synthetic' },
+                  ].map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setTrackType(t.id)}
+                      className={`p-2.5 rounded-lg border text-xs font-bold transition-all ${
+                        trackType === t.id
+                          ? 'border-2 border-forest bg-forest-wash text-forest'
+                          : 'border-border bg-surface text-ink'
+                      }`}
+                    >
+                      {t.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Col 2 */}
+            <div className="bg-surface rounded-panel border border-border p-6 space-y-4 shadow-xs">
+              <h2 className="font-bold text-sm text-forest-deep border-b border-border pb-2">
+                2. Chỉ số tải trọng & Chiến thuật
+              </h2>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs font-bold">
+                    <span>Mục tiêu cự ly *</span>
+                    <span className="text-forest">{distanceMeters}m</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="100"
+                    max="3000"
+                    step="50"
+                    value={distanceMeters}
+                    onChange={(e) => setDistanceMeters(Number(e.target.value))}
+                    className="w-full accent-forest cursor-pointer"
+                  />
+                  <span className="text-[10px] text-muted">Quy chuẩn 100m - 3000m</span>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs font-bold">
+                    <span>Khối lượng nài *</span>
+                    <span className="text-forest">{jockeyWeightKg}kg</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="45"
+                    max="65"
+                    step="0.5"
+                    value={jockeyWeightKg}
+                    onChange={(e) => setJockeyWeightKg(Number(e.target.value))}
+                    className="w-full accent-forest cursor-pointer"
+                  />
+                  <span className="text-[10px] text-muted">Quy chuẩn 45kg - 65kg</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-ink">Cường độ bài tập *</label>
+                  <select
+                    value={intensity}
+                    onChange={(e) => setIntensity(e.target.value)}
+                    className="w-full h-10 px-2.5 text-xs bg-surface border border-border rounded-lg"
+                  >
+                    <option value="light">Nhẹ (50%)</option>
+                    <option value="medium">Vừa (70%)</option>
+                    <option value="high">Nặng (85%)</option>
+                    <option value="max">Tối đa (100%)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-ink">Nhịp tim trần an toàn</label>
+                  <div className="h-10 px-3 bg-surface border border-border rounded-lg flex items-center justify-between text-xs">
+                    <span className="font-bold text-critical-text">{maxHeartRateBpm} bpm</span>
+                    <span className="text-[10px] text-muted">Báo rung nài</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-ink">Ghi chú chiến thuật & chỉ đạo</label>
+                <textarea
+                  rows="3"
+                  value={tacticalNotes}
+                  onChange={(e) => setTacticalNotes(e.target.value)}
+                  className="w-full p-2.5 text-xs bg-surface border border-border rounded-lg"
+                ></textarea>
+              </div>
+
+              <div className="pt-3 border-t border-border flex justify-end gap-3">
+                <button
+                  type="submit"
+                  disabled={isLocked}
+                  className={`px-5 py-2.5 rounded-btn text-xs font-bold transition-all shadow-sm ${
+                    isLocked ? 'bg-muted/40 text-muted cursor-not-allowed' : 'bg-forest hover:bg-forest-deep text-white'
+                  }`}
+                >
+                  {isLocked ? '🔒 Bị chặn bởi Medical Lock' : 'Ban hành giáo án mới'}
+                </button>
+              </div>
+            </div>
+          </form>
+
+          {/* List of plans */}
+          <div className="bg-surface rounded-panel border border-border p-5 shadow-xs space-y-3">
+            <h3 className="font-bold text-sm text-forest-deep">Danh sách giáo án đang áp dụng</h3>
+            <div className="divide-y divide-border">
+              {plans.map((p) => (
+                <div key={p.id} className="py-2.5 flex items-center justify-between text-xs">
+                  <div>
+                    <span className="font-bold text-ink">{p.title}</span>
+                    <span className="text-muted block text-[11px]">
+                      Cự ly: {p.distanceMeters}m · Tải nài: {p.jockeyWeightKg}kg · Sân: {p.trackType}
+                    </span>
+                  </div>
+                  <span className="px-2 py-0.5 rounded bg-positive-bg text-positive-text font-bold text-[10px]">
+                    Đang áp dụng
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // --- VIEW 3: SCHEDULE (FR-006, Screen T03) ---
+    function ScheduleView({ horses, jockeys, grooms, sessions, onAddSession, onOpenMedicalLock, navigateTo }) {
+      const [isModalOpen, setIsModalOpen] = useState(false);
+      const [newDay, setNewDay] = useState('Thứ Ba');
+      const [newShift, setNewShift] = useState('morning');
+      const [newHorseId, setNewHorseId] = useState('bl456');
+      const [newJockeyId, setNewJockeyId] = useState('j1');
+      const [newDistance, setNewDistance] = useState(1000);
+      const [newExercise, setNewExercise] = useState('Chạy cự ly 1.000m đo telemetry');
+
+      const days = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật'];
+
+      const selHorse = horses.find((h) => h.id === newHorseId);
+      const isHorseLocked = selHorse?.isMedicalLocked;
+
+      // Jockey Conflict Check
+      const conflict = sessions.find(
+        (s) => s.dayOfWeek === newDay && s.shift === newShift && s.jockeyId === newJockeyId && s.status !== 'suspended'
+      );
+
+      const handleSave = (e) => {
+        e.preventDefault();
+        if (isHorseLocked) {
+          alert('LỖI (FR-005): Ngựa bị khóa y tế không được xếp lịch tập!');
+          return;
+        }
+        if (conflict) {
+          alert(`LỖI TRÙNG NÀI (FR-006): Nài ${conflict.jockeyName} đã có ca tập cho ngựa ${conflict.horseName}!`);
+          return;
+        }
+
+        const jObj = jockeys.find((j) => j.id === newJockeyId);
+        onAddSession({
+          id: `sess-${Date.now()}`,
+          dayOfWeek: newDay,
+          shift: newShift,
+          timeSlot: newShift === 'morning' ? '06:00 - 07:15' : '16:00 - 17:15',
+          horseId: newHorseId,
+          horseName: selHorse.name,
+          horseCode: selHorse.code,
+          stall: selHorse.stall,
+          exerciseTitle: newExercise,
+          distanceMeters: newDistance,
+          trackType: 'turf',
+          intensity: 'medium',
+          jockeyId: newJockeyId,
+          jockeyName: jObj.name,
+          groomId: 'g1',
+          groomName: 'Trần Văn Nam',
+          status: 'scheduled',
+          isMedicalLocked: false,
+        });
+        setIsModalOpen(false);
+      };
+
+      return (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between text-xs text-muted border-b border-border/60 pb-2">
+            <span>Kế hoạch tuần 11</span>
+            <span className="font-mono bg-forest-wash text-forest px-2 py-0.5 rounded font-bold">
+              Task GH-BE-16 (FR-006) · STITCH T03
+            </span>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="font-bold text-2xl text-forest-deep tracking-tight">
+                Lịch tập tuần & Phân công nhân sự
+              </h1>
+              <p className="text-xs text-muted mt-1">
+                Lịch tập chi tiết từng ca sáng (05:30) / chiều (15:30), phân công nài ngựa và cơ chế chống trùng giờ nài.
+              </p>
+            </div>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="h-10 px-4 rounded-btn bg-forest hover:bg-forest-deep text-white font-bold text-xs shadow-sm"
+            >
+              + Tạo buổi tập mới
+            </button>
+          </div>
+
+          {/* Calendar 7 Days */}
+          <div className="bg-surface rounded-panel border border-border p-4 shadow-xs overflow-x-auto">
+            <div className="min-w-[900px] grid grid-cols-7 gap-3">
+              {days.map((day) => {
+                const daySess = sessions.filter((s) => s.dayOfWeek === day);
+                const morning = daySess.filter((s) => s.shift === 'morning');
+                const afternoon = daySess.filter((s) => s.shift === 'afternoon');
+
+                return (
+                  <div key={day} className="bg-canvas/50 border border-border/70 rounded-lg p-2 space-y-3">
+                    <div className="text-center font-bold text-xs py-1 border-b border-border bg-white rounded">
+                      {day}
+                    </div>
+
+                    {/* Morning */}
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] font-bold text-muted block">☀️ Ca Sáng</span>
+                      {morning.map((s) => (
+                        <div
+                          key={s.id}
+                          className={`p-2 rounded border text-xs space-y-1 ${
+                            s.isMedicalLocked
+                              ? 'bg-critical-bg border-critical-border'
+                              : s.status === 'in_progress'
+                              ? 'bg-forest-wash border-forest'
+                              : 'bg-white border-border'
+                          }`}
+                        >
+                          <div className="flex justify-between font-bold">
+                            <span>{s.horseName}</span>
+                            {s.isMedicalLocked ? (
+                              <button onClick={onOpenMedicalLock} className="text-critical-text text-[10px]">
+                                🔒 Khóa
+                              </button>
+                            ) : (
+                              <span className="text-muted font-normal">{s.distanceMeters}m</span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-forest block">🏇 {s.jockeyName}</span>
+                          {!s.isMedicalLocked && (
+                            <button
+                              onClick={() => navigateTo(`/training/sessions/${s.id}`)}
+                              className="text-[10px] text-forest hover:underline font-bold"
+                            >
+                              Chấm điểm →
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Afternoon */}
+                    <div className="space-y-1.5 pt-2 border-t border-border/80">
+                      <span className="text-[10px] font-bold text-muted block">⛅ Ca Chiều</span>
+                      {afternoon.map((s) => (
+                        <div
+                          key={s.id}
+                          className={`p-2 rounded border text-xs space-y-1 ${
+                            s.isMedicalLocked
+                              ? 'bg-critical-bg border-critical-border'
+                              : 'bg-white border-border'
+                          }`}
+                        >
+                          <div className="flex justify-between font-bold">
+                            <span>{s.horseName}</span>
+                            {s.isMedicalLocked ? (
+                              <button onClick={onOpenMedicalLock} className="text-critical-text text-[10px]">
+                                🔒 Khóa
+                              </button>
+                            ) : (
+                              <span className="text-muted font-normal">{s.distanceMeters}m</span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-forest block">🏇 {s.jockeyName}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Modal T03-CREATE */}
+          {isModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 backdrop-blur-[2px]">
+              <div className="w-full max-w-lg bg-surface rounded-panel border border-border shadow-2xl p-6 space-y-4">
+                <div className="flex justify-between items-center border-b border-border pb-3">
+                  <h3 className="font-bold text-base text-forest-deep">Tạo buổi tập & Phân công nài</h3>
+                  <button onClick={() => setIsModalOpen(false)}>✕</button>
+                </div>
+
+                {isHorseLocked && (
+                  <div className="p-2.5 bg-critical-bg text-critical-text text-xs rounded border border-critical-border font-bold">
+                    🚫 Chiến mã này đang chịu Lệnh Khóa Y Tế. Không thể xếp lịch!
+                  </div>
+                )}
+
+                {conflict && (
+                  <div className="p-2.5 bg-warning-bg text-warning-text text-xs rounded border border-warning-bg font-bold">
+                    ⚠️ CẢNH BÁO TRÙNG NÀI: {conflict.jockeyName} đã có ca tập cho {conflict.horseName}!
+                  </div>
+                )}
+
+                <form onSubmit={handleSave} className="space-y-3 text-xs">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="font-bold block mb-1">Ngày</label>
+                      <select value={newDay} onChange={(e) => setNewDay(e.target.value)} className="w-full h-9 border rounded px-2">
+                        {days.map((d) => (
+                          <option key={d} value={d}>
+                            {d}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="font-bold block mb-1">Ca tập</label>
+                      <select value={newShift} onChange={(e) => setNewShift(e.target.value)} className="w-full h-9 border rounded px-2">
+                        <option value="morning">Ca Sáng (05:30 - 08:30)</option>
+                        <option value="afternoon">Ca Chiều (15:30 - 17:30)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="font-bold block mb-1">Chiến mã</label>
+                    <select value={newHorseId} onChange={(e) => setNewHorseId(e.target.value)} className="w-full h-9 border rounded px-2">
+                      {horses.map((h) => (
+                        <option key={h.id} value={h.id} disabled={h.isMedicalLocked}>
+                          {h.name} ({h.code}) {h.isMedicalLocked ? '🔒 [BỊ KHÓA Y TẾ]' : '✓ [Sẵn sàng]'}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="font-bold block mb-1">Phân công Nài ngựa (Jockey)</label>
+                    <select value={newJockeyId} onChange={(e) => setNewJockeyId(e.target.value)} className="w-full h-9 border rounded px-2">
+                      {jockeys.map((j) => (
+                        <option key={j.id} value={j.id}>
+                          {j.name} ({j.weightKg}kg)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="pt-3 border-t border-border flex justify-end gap-2">
+                    <button type="button" onClick={() => setIsModalOpen(false)} className="px-3 py-1.5 border rounded">
+                      Hủy
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isHorseLocked || conflict}
+                      className={`px-4 py-1.5 rounded font-bold text-white ${
+                        isHorseLocked || conflict ? 'bg-muted cursor-not-allowed' : 'bg-forest hover:bg-forest-deep'
+                      }`}
+                    >
+                      Xác nhận xếp lịch
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // --- VIEW 4: EVALUATION (FR-007, Screen T04) ---
+    function EvaluationView({ navigateTo, onSaveSuccess }) {
+      const [finishTime, setFinishTime] = useState(74.35);
+      const [actualDistance, setActualDistance] = useState(1200);
+      const [recoveryHeartRate, setRecoveryHeartRate] = useState(78);
+      const [score, setScore] = useState(9.0);
+      const [remarks, setRemarks] = useState(MOCK_EVALUATION.trainerRemarks);
+
+      const calculatedSpeed = ((actualDistance / finishTime) * 3.6).toFixed(2);
+
+      const handleSave = (e) => {
+        e.preventDefault();
+        onSaveSuccess();
+      };
+
+      return (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between text-xs text-muted border-b border-border/60 pb-2">
+            <button onClick={() => navigateTo('/training/schedule')} className="text-forest hover:underline font-bold">
+              ← Quay lại Lịch tập
+            </button>
+            <span className="font-mono bg-forest-wash text-forest px-2 py-0.5 rounded font-bold">
+              Task GH-BE-17 (FR-007) · STITCH T04
+            </span>
+          </div>
+
+          <div>
+            <h1 className="font-bold text-2xl text-forest-deep tracking-tight">
+              Ghi nhận kết quả buổi tập & Chấm điểm phong độ
+            </h1>
+            <p className="text-xs text-muted mt-1">
+              Nhập thời gian chạy thử, nhịp tim hồi phục, chấm điểm 1-10 và đồng bộ sang hồ sơ ngựa.
+            </p>
+          </div>
+
+          {/* Context Banner */}
+          <div className="p-4 bg-surface rounded-panel border border-border flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🐴</span>
+              <div>
+                <strong className="text-sm font-bold text-ink">Phong Vũ (A01)</strong>
+                <span className="text-xs text-muted block">Chip VNM-123456789012 · Ô A01 · Nài: Đỗ Cao Thắng</span>
+              </div>
+            </div>
+            <span className="px-2 py-1 bg-positive-bg text-positive-text text-xs font-bold rounded">
+              Đủ điều kiện
+            </span>
+          </div>
+
+          <form onSubmit={handleSave} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 bg-surface rounded-panel border border-border p-6 space-y-4 shadow-xs">
+              <h2 className="font-bold text-sm text-forest-deep border-b border-border pb-2">
+                Thông số thực nghiệm sau ca tập
+              </h2>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs font-bold block mb-1">Thời gian hoàn thành (giây) *</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={finishTime}
+                    onChange={(e) => setFinishTime(Number(e.target.value))}
+                    className="w-full h-10 border rounded px-3 text-xs font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold block mb-1">Cự ly thực tế (m) *</label>
+                  <input
+                    type="number"
+                    value={actualDistance}
+                    onChange={(e) => setActualDistance(Number(e.target.value))}
+                    className="w-full h-10 border rounded px-3 text-xs font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold block mb-1">Tốc độ trung bình (km/h)</label>
+                  <div className="h-10 bg-forest-wash border border-forest/20 rounded flex items-center px-3 font-bold text-forest text-xs">
+                    {calculatedSpeed} km/h
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold block mb-1">Nhịp tim hồi phục (bpm) *</label>
+                  <input
+                    type="number"
+                    value={recoveryHeartRate}
+                    onChange={(e) => setRecoveryHeartRate(Number(e.target.value))}
+                    className="w-full h-10 border rounded px-3 text-xs font-bold"
+                  />
+                  <span className="text-[10px] text-muted">Đo sau 10 phút ngâm chân lạnh</span>
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-xs font-bold mb-1">
+                    <span>Chấm điểm phong độ (1 - 10) *</span>
+                    <span className="text-gold font-bold">{score} / 10</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="1"
+                    max="10"
+                    step="0.5"
+                    value={score}
+                    onChange={(e) => setScore(Number(e.target.value))}
+                    className="w-full accent-gold cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold block mb-1">Nhận xét của HLV trưởng *</label>
+                <textarea
+                  rows="4"
+                  value={remarks}
+                  onChange={(e) => setRemarks(e.target.value)}
+                  className="w-full p-3 border rounded text-xs"
+                ></textarea>
+              </div>
+
+              <div className="pt-3 border-t border-border flex justify-end gap-2">
+                <button type="submit" className="px-5 py-2 bg-forest hover:bg-forest-deep text-white font-bold text-xs rounded">
+                  Lưu kết quả & Cập nhật thể lực
+                </button>
+              </div>
+            </div>
+
+            {/* Right Chart */}
+            <div className="bg-surface rounded-panel border border-border p-5 space-y-4 shadow-xs">
+              <h3 className="font-bold text-xs uppercase text-forest-deep">Biểu đồ nhịp tim hồi phục (bpm)</h3>
+              <div className="h-40 flex items-end justify-between gap-2 border-b border-border pb-2">
+                {MOCK_EVALUATION.historyPoints.map((p, idx) => (
+                  <div key={p.date} className="flex-1 flex flex-col items-center gap-1">
+                    <span className="text-[10px] font-bold">{p.heartRateBpm}</span>
+                    <div
+                      className={`w-full rounded-t ${idx === 4 ? 'bg-forest' : 'bg-forest/40'}`}
+                      style={{ height: `${p.heartRateBpm}px` }}
+                    ></div>
+                    <span className="text-[9px] text-muted">{p.date}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[11px] text-muted leading-relaxed">
+                📈 Nhịp tim hồi phục giảm từ 86 xuống 78 bpm (-9.3%), thể lực Phong Vũ đang ở điểm rơi lý tưởng.
+              </p>
+            </div>
+          </form>
+        </div>
+      );
+    }
+
+    // --- VIEW 5: MEDICAL LOCK DIALOG (Screen T05) ---
+    function MedicalLockDialog({ horse, onClose }) {
+      const lockInfo = horse?.medicalLockInfo;
+
+      return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 backdrop-blur-[3px]">
+          <div className="w-full max-w-2xl bg-surface rounded-[10px] border border-border shadow-2xl overflow-hidden animate-in fade-in">
+            {/* Header */}
+            <div className="bg-critical-text px-6 py-4 flex items-center justify-between text-white">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🔒</span>
+                <div>
+                  <span className="text-[10px] font-bold uppercase bg-white text-critical-text px-1.5 py-0.5 rounded">
+                    FR-005 ENFORCEMENT
+                  </span>
+                  <h3 className="font-bold text-base mt-0.5">
+                    LỆNH CHẶN CƯỠNG CHẾ: Medical Lock Active
+                  </h3>
+                </div>
+              </div>
+              <button onClick={onClose} className="text-white hover:text-white/80">✕</button>
+            </div>
+
+            <div className="p-6 space-y-4 max-h-[80vh] overflow-y-auto text-xs">
+              <div className="p-3 bg-canvas rounded border border-border flex justify-between items-center">
+                <div>
+                  <strong className="text-sm text-ink">{horse?.name} ({horse?.code})</strong>
+                  <span className="text-muted block text-[11px]">Chip: {horse?.microchipRfid} · Ô {horse?.stall}</span>
+                </div>
+                <span className="px-2 py-0.5 rounded bg-critical-bg text-critical-text font-bold uppercase">
+                  CẤM TẬP LUYỆN
+                </span>
+              </div>
+
+              <div className="p-3 bg-critical-bg border border-critical-border rounded space-y-2">
+                <strong className="text-critical-text block">LÝ DO Y TẾ TỪ BAN THÚ Y:</strong>
+                <p className="text-ink leading-relaxed">{lockInfo?.diagnosis}</p>
+                <div className="pt-2 border-t border-critical-border/50 text-muted flex justify-between">
+                  <span>Chỉ định: <strong>{lockInfo?.vetName}</strong></span>
+                  <span>Tái khám: <strong>{lockInfo?.expectedUnlockDate}</strong></span>
+                </div>
+              </div>
+
+              <div>
+                <strong className="block mb-1 text-ink">Các buổi tập tự động đình chỉ:</strong>
+                <div className="border border-border rounded divide-y divide-border">
+                  {lockInfo?.suspendedSessions.map((s) => (
+                    <div key={s.id} className="p-2 flex justify-between text-[11px]">
+                      <span>{s.title} ({s.time})</span>
+                      <span className="text-critical-text font-bold">ĐÃ HỦY</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-3 bg-forest-wash border border-forest/20 rounded text-forest-deep leading-relaxed text-[11px]">
+                <strong>Quy định gỡ bỏ lệnh khóa:</strong> Chỉ có Bác sĩ Thú y phụ trách mới có quyền gỡ bỏ lệnh khóa sau khi tái khám và xác nhận thể lực đạt chuẩn.
+              </div>
+            </div>
+
+            <div className="bg-canvas px-6 py-3 border-t border-border flex justify-end">
+              <button onClick={onClose} className="px-4 py-1.5 bg-forest text-white rounded text-xs font-bold">
+                Đã hiểu & Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Mount
+    ReactDOM.render(<EquiFlowApp />, document.getElementById('root'));
+  </script>
+</body>
+</html>
