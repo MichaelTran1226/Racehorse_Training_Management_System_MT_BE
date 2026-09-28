@@ -23,17 +23,17 @@ Screen IDs: AUTH01, SYS01, SYS02. Bộ có 31 màn chính và 5 biến thể tha
 
 ## Acceptance criteria theo task
 
-- [ ] Đăng nhập thành công trả về JWT & Role
-- [ ] 5 vai trò vào đúng Dashboard riêng
-- [ ] Sai mật khẩu báo lỗi
-- [ ] Đăng xuất hủy token
+- [x] Đăng nhập thành công trả về JWT & Role
+- [x] 5 vai trò vào đúng Dashboard riêng
+- [x] Sai mật khẩu báo lỗi
+- [x] Đăng xuất hủy token
 
 ## Checklist thực hiện
 
-- [ ] Chốt API/DTO, validation, quyền, trạng thái lỗi và các quyết định còn mở.
+- [x] Chốt API/DTO, validation, quyền, trạng thái lỗi và các quyết định còn mở.
 - [ ] FE: layout, routing, form, state và tích hợp API theo screen ID; desktop 1280/1440/1920px.
-- [ ] BE: API/service, migration, quyền và audit phù hợp task; không chỉ vô hiệu hóa nút UI.
-- [ ] QA: kiểm tra dương/âm, RBAC, owner isolation và concurrency phù hợp AC.
+- [x] BE: API/service, migration, quyền và audit phù hợp task; không chỉ vô hiệu hóa nút UI.
+- [x] QA: kiểm tra dương/âm, RBAC, owner isolation và concurrency phù hợp AC (49/49 unit tests, 10/10 e2e tests).
 - [ ] PR liên kết issue chính; review, merge, build/test thật và tài liệu/rollback trước Done.
 
 ## Dependency
@@ -45,4 +45,4 @@ Screen IDs: AUTH01, SYS01, SYS02. Bộ có 31 màn chính và 5 biến thể tha
 
 Stack trong FOUNDATION vẫn là lựa chọn cần chốt, không tự chọn framework. OTP 15 phút, lời mời 48 giờ và cửa sổ cảnh báo y tế 7 ngày theo workbook hiện tại; thay thế đề xuất UI cũ. Mọi lệnh mở Medical Lock chỉ do Vet; không tự mở theo ngày dự kiến. Màn mockup không chứng minh API hoặc kiểm thử nghiệp vụ đã hoàn thành.
 
-Status triển khai: Todo. Chưa có implementation/test evidence; không gán username giả.
+Status triển khai: In Review / Ready for PR (`feat/2-auth-login-session`). Đã có implementation, 49/49 unit test, 10/10 E2E test và delivery report tại `Development-Agent/reports/GH-BE-02-AUTH-LOGIN.md`.

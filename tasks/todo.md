@@ -22,3 +22,4 @@ Chỉ website desktop Flow 1–3. Các mục optional ở `deferred/`, không n�
 - [ ] [[GH-BE-16][FR-006] Phân công lịch tập luyện hàng ngày & Điều phối lượt chạy thử (Time Trial)](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/16) · Sprint 3 · 13/10/2026–15/10/2026
 - [ ] [[GH-BE-17][FR-007] Ghi nhận kết quả buổi tập, đánh giá phong độ & Cập nhật biểu đồ thể lực](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/17) · Sprint 3 · 14/10/2026–16/10/2026
 - [ ] [[GH-BE-19][MVP-QA] Nghiệm thu toàn trình liên luồng MVP-QA (End-to-End Integration Testing)](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/19) · Sprint 3 · 15/10/2026–18/10/2026
+
