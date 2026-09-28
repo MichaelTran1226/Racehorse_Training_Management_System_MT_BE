@@ -1,0 +1,19 @@
+# CODEOWNERS - Enforce Review and Protection on Core Files
+# Any changes to governance, blueprints, or CI workflows require explicit approval from the Lead.
+
+* @MichaelTran1226
+
+# Governance & Agent Rules (Protected)
+/AGENTS.md @MichaelTran1226
+/BA-Blueprint-Agent/ @MichaelTran1226
+/Development-Agent/ @MichaelTran1226
+/.agents/ @MichaelTran1226
+
+# Requirements & Architecture Blueprints (Protected)
+/blueprint.md @MichaelTran1226
+/srs.txt @MichaelTran1226
+/docs/ @MichaelTran1226
+
+# CI/CD & Automated Gates (Protected)
+/.github/workflows/ @MichaelTran1226
+/.github/pull_request_template.md @MichaelTran1226

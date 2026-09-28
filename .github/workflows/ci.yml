@@ -18,10 +18,39 @@ on:
 
 jobs:
   # ==========================================
+  # STAGE 0: REPOSITORY SCOPE BOUNDARY GATE
+  # ==========================================
+  verify-repo-boundary:
+    name: "0. Scope Boundary Gate (Backend Only)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate Backend Scope (No Frontend Files)
+        run: |
+          echo "=== [GATE 0] VALIDATING BACKEND REPOSITORY BOUNDARY ==="
+          DISALLOWED_PATTERNS="(\.tsx$|\.jsx$|\.vue$|\.svelte$|vite\.config|next\.config|playwright\.config|^client/|^frontend/|^ui/|index\.html$)"
+          VIOLATIONS=$(git ls-files | grep -E "$DISALLOWED_PATTERNS" || true)
+          if [ -n "$VIOLATIONS" ]; then
+            echo "❌ [BOUNDARY VIOLATION] Phát hiện file Frontend trong Backend Repository:"
+            echo "$VIOLATIONS"
+            echo "------------------------------------------------------------------"
+            echo "Quy tắc: Backend repo chỉ chứa server, API, SQLite migration, model, test API."
+            echo "Toàn bộ mã nguồn giao diện (UI) phải chuyển sang repo Frontend:"
+            echo "MichaelTran1226/Racehorse_Training_Management_System_MT_FE"
+            exit 1
+          fi
+          echo "✅ Boundary Check Passed: Không có code Frontend trong repo Backend."
+
+  # ==========================================
   # STAGE 1: LINT & TYPECHECK
   # ==========================================
   lint-and-typecheck:
     name: "1. Lint & Typecheck"
+    needs: verify-repo-boundary
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
