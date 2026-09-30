@@ -98,7 +98,7 @@ describe('MedicalService', () => {
     }).compile();
 
     service = module.get<MedicalService>(MedicalService);
-    prisma = module.get<PrismaService>(PrismaService);
+    // prisma = module.get<PrismaService>(PrismaService);
     jest.clearAllMocks();
   });
 
