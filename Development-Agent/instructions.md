@@ -7,11 +7,11 @@ Development Agent nhận SRS, blueprint hoặc GitHub Project item và điều p
 ```text
 SRS/Project
   -> requirement traceability
-  -> stack decision
-  -> solution design
-  -> FE/BE codebase
-  -> SQLite schema/migration/seed/connection string
-  -> API
+  -> stack check (đã chốt: NestJS + Prisma + PostgreSQL / React + Vite)
+  -> solution design (API contract kèm mã lỗi)
+  -> FE/BE codebase theo convention hiện có
+  -> prisma/schema.prisma + db push + seed chạy lặp an toàn
+  -> API + FE mock handler
   -> white-box tests
   -> black-box API + Playwright UI tests
   -> Stitch/SonarQube quality review
@@ -28,21 +28,18 @@ SRS/Project
 - state hiện tại;
 - blocker và quyết định cần người dùng.
 
-Nếu stack chưa được quyết định, Agent chỉ được phân tích và hỏi người dùng. Không tạo package, folder scaffold hoặc code giả định stack trước khi có `Decision`.
+Stack **đã được phê duyệt** (`docs/DECISIONS.md` D-01, tóm tắt ở mục Project profile của `AGENTS.md`). Agent không hỏi lại stack và không scaffold lại dự án:
 
-Câu hỏi stack tối thiểu:
-
-| Nhóm | Lựa chọn cần xác nhận |
+| Nhóm | Đã chốt |
 |---|---|
-| FE | React/Vite, Next.js, Vue/Nuxt, Angular hoặc khác |
-| BE | Node/NestJS/Express, Python/FastAPI/Django, .NET hoặc khác |
-| Language | TypeScript, JavaScript, Python, C# hoặc khác |
-| Data access | Prisma, Drizzle, SQLAlchemy, EF hoặc khác |
-| API | REST, GraphQL hoặc khác |
-| Test | runner và coverage target |
-| Runtime | Docker/native và môi trường deploy |
+| FE | React 19 + Vite 8 + TypeScript 6 + react-router-dom 7, CSS Modules |
+| BE | NestJS 11 + TypeScript |
+| Data access | Prisma 6 + PostgreSQL (local hoặc Supabase) |
+| API | REST dưới `/api`, OpenAPI tại `/api/docs`, JWT access + refresh |
+| Test | Jest + Supertest (BE), Playwright (FE); mục tiêu coverage >= 85% cho business rules |
+| Runtime | Node.js >= 20.19 (CI chạy Node 24) |
 
-Nếu người dùng giao quyền chọn, Agent mới đề xuất một stack dựa trên constraint, trade-off và năng lực có sẵn; người dùng vẫn phải xác nhận trước scaffold.
+Chỉ khi yêu cầu cần công nghệ hoặc package ngoài bảng trên, Agent trình bày trade-off, ghi `Open Question` cho Lead và dừng phần đó tới khi có `Decision`.
 
 ## Coding style và Definition of Code Quality
 
@@ -89,17 +86,18 @@ Comment phải giải thích `why`, không chỉ mô tả `what`. Nếu cần qu
 
 ## Thiết kế và xây dựng
 
-Agent phải có một solution design ngắn trước implementation, gồm boundary FE/BE, module, auth/RBAC, API contract, lỗi, logging, SQLite schema, migration, seed, connection string, NFR và rollback.
+Agent phải có một solution design ngắn trước implementation, gồm boundary FE/BE, module, auth/RBAC, API contract (kèm mã lỗi `code`), logging, thay đổi `prisma/schema.prisma`, seed, NFR và rollback.
 
-SQLite tối thiểu phải có:
+Thay đổi database (PostgreSQL + Prisma) tối thiểu phải:
 
-- schema có khóa chính, foreign key, unique/index và trạng thái lifecycle;
-- migration có thể chạy lặp an toàn hoặc có cơ chế version;
-- seed dữ liệu demo không chứa PII thật;
-- connection string trong `.env.example`, không hard-code trong source;
-- ghi rõ khi nào cần chuyển PostgreSQL/MySQL do concurrency, scale hoặc HA.
+- chỉ sửa `prisma/schema.prisma`: khóa chính, quan hệ, `onDelete`, unique/index và enum trạng thái lifecycle khớp đặc tả;
+- áp dụng bằng `npx prisma generate && npx prisma db push`; nhóm chưa dùng migrations nên không `prisma migrate dev`, không commit `prisma/migrations/`;
+- không đổi tên cột/bảng (Prisma hiểu là xoá + tạo, mất dữ liệu) khi Lead chưa duyệt; cột bắt buộc mới trên bảng có dữ liệu cần `@default(...)` hoặc cho phép null;
+- seed trong `prisma/seed.ts` dùng `upsert`, chạy lặp an toàn, không chứa PII thật;
+- connection string chỉ nằm trong `.env` của từng máy; `.env.example` giữ giá trị giả;
+- PR ghi rõ *"Có đổi schema: sau khi pull chạy `npx prisma generate` + `npx prisma db push`"*.
 
-Codebase phải có script có thể kiểm tra được cho `dev`, `build`, `lint`, `typecheck`, `test`, `test:e2e` và database migration tương ứng với stack.
+Script dùng để kiểm tra (giống CI): BE `lint`, `typecheck`, `test:unit`, `test:e2e`, `db:seed`; FE `lint`, `typecheck`, `build`, `test:e2e`. Thay đổi DB dùng `npx prisma db push`, không dùng `db:migrate`.
 
 Sau mỗi vertical slice, Agent phải xem diff và chạy formatter/linter/typecheck hẹp trước khi sang slice tiếp theo. Không tạo file hoặc abstraction chỉ để lấp chỗ trống; mọi code mới phải phục vụ requirement, test, observability hoặc vận hành đã xác định.
 

@@ -27,8 +27,8 @@
 ## 3. Build Output
 
 - **Codebase paths:**
-- **SQLite schema/migrations/seed:**
-- **Connection string format:**
+- **Prisma schema changes (bảng/cột, cần `prisma generate` + `db push`?):**
+- **Seed (`prisma/seed.ts`, chạy lặp an toàn?):**
 - **API contract:**
 - **Environment/configuration:**
 - **Rollback plan:**

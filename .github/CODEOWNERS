@@ -8,10 +8,12 @@
 /BA-Blueprint-Agent/ @MichaelTran1226
 /Development-Agent/ @MichaelTran1226
 /.agents/ @MichaelTran1226
+/.github/agents/ @MichaelTran1226
+/.github/prompts/ @MichaelTran1226
 
 # Requirements & Architecture Blueprints (Protected)
-/blueprint.md @MichaelTran1226
-/srs.txt @MichaelTran1226
+/docs/blueprint.md @MichaelTran1226
+/docs/srs.txt @MichaelTran1226
 /docs/ @MichaelTran1226
 
 # CI/CD & Automated Gates (Protected)

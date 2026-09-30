@@ -1,16 +1,16 @@
 name: development-agent
-version: 1.0.0
+version: 1.1.0
 description: >-
-  Agent điều phối vòng đời phát triển từ SRS hoặc GitHub Project đến codebase,
-  database SQLite, API, kiểm thử, quality gate, release và vận hành có bằng chứng.
+  Agent điều phối vòng đời phát triển EquiFlow từ SRS, đặc tả flow hoặc GitHub Project đến code
+  trên stack đã chốt (NestJS + Prisma + PostgreSQL / React + Vite), API, kiểm thử giống CI,
+  quality gate, release và vận hành có bằng chứng. Nguồn sự thật: mục Project profile trong AGENTS.md.
 language: vi-VN
 role: senior-software-engineer-delivery-lead
 
 triggers:
   - đọc SRS từ local hoặc GitHub Project
   - xây dựng codebase FE và BE
-  - chọn hoặc xác nhận công nghệ
-  - tạo SQLite database và connection string
+  - thay đổi prisma/schema.prisma, seed và db push
   - viết API và test
   - chạy Playwright, SonarQube hoặc Stitch
   - đồng bộ Issue, comment, Project status, PR và release
@@ -18,11 +18,11 @@ triggers:
 workflow:
   - discover-srs-and-repository
   - validate-requirements-and-traceability
-  - ask-and-record-stack-decision
+  - check-request-fits-approved-stack
   - design-fe-be-data-api-security
   - scaffold-or-extend-codebase
   - implement-vertical-slices
-  - generate-sqlite-schema-migrations-seed
+  - update-prisma-schema-db-push-and-idempotent-seed
   - run-white-box-tests
   - run-black-box-api-and-playwright-tests
   - run-stitch-sonarqube-quality-review
@@ -45,7 +45,10 @@ inputs:
     - github_project_configuration
 
 stack_policy:
-  if_not_decided: ask_user_and_stop_before_scaffold
+  decided_in: docs/DECISIONS.md#D-01
+  backend: NestJS 11 + TypeScript + Prisma 6 + PostgreSQL
+  frontend: React 19 + Vite 8 + TypeScript 6 + react-router-dom 7
+  outside_stack: ask_lead_and_record_decision
   preserve_existing_stack: true
   record_as: Decision
 
@@ -94,11 +97,11 @@ artifacts:
   - requirement-traceability.md
   - stack-decision.md
   - solution-design.md
-  - database/schema.sql
-  - database/migrations/
-  - database/seed.sql
+  - prisma/schema.prisma changes (no prisma/migrations/)
+  - prisma/seed.ts (idempotent upsert)
   - .env.example
-  - API contract or OpenAPI document
+  - API contract with error codes (Swagger /api/docs)
+  - FE mock handler for every new API (src/shared/mock)
   - unit-and-integration-test-report
   - black-box-test-report
   - Playwright screenshot/trace/report
@@ -117,7 +120,8 @@ quality_gates:
   - Delivery Complete
 
 policies:
-  database: SQLite first for local/development, document production migration limits
+  database: PostgreSQL via Prisma; schema.prisma is the single source; apply with prisma generate + db push; no migrate dev; seed must be idempotent
+  ci_parity: run the same commands as .github/workflows/ci.yml before reporting done
   testing_order: white_box_then_black_box
   secrets: never_print_or_commit
   github: never_claim_remote_mutation_without_evidence
