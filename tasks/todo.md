@@ -43,7 +43,7 @@ Kế hoạch, lịch sprint và điểm nối giữa 2 cặp: [plan.md](plan.md)
 
 ### Sprint 1 (28/09 – 04/10/2026)
 
-- [ ] `P2-01` Hồ sơ y tế ngựa (6 tab), ghi chú quan sát, quyền xem Owner/Groom — [#46](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/46)
+- [x] `P2-01` Hồ sơ y tế ngựa (6 tab), ghi chú quan sát, quyền xem Owner/Groom — [#46](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/46)
 - [ ] `P2-02` Bệnh án, phác đồ điều trị & kê đơn thuốc — [#47](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/47)
 
 ### Sprint 2 (05/10 – 11/10/2026)
