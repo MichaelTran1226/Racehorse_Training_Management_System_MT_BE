@@ -35,10 +35,12 @@ Hai cặp chạy song song từ Sprint 1. Trong Sprint 1, Cặp 2 dùng dữ li�
 
 ## 5. Cách làm việc
 
-1. Nhận task trên [Project 2](https://github.com/users/MichaelTran1226/projects/2), chuyển Status sang **In Progress**.
+Cài đặt, tạo nhánh, chạy kiểm tra và mở PR để qua bot CI: xem [docs/HUONG_DAN_GITHUB.md](../docs/HUONG_DAN_GITHUB.md).
+
+1. Nhận task trên [Project 2](https://github.com/users/MichaelTran1226/projects/2), đọc **đặc tả trong issue** (luồng, việc FE/BE, API, tiêu chí nghiệm thu), chuyển Status sang **In Progress**.
 2. FE và BE trong cặp chốt API (endpoint, body, mã lỗi) trước khi code, dựa theo đặc tả trong `Tai_Lieu`.
 3. Mỗi người làm trên nhánh riêng trong repo của mình: `feat/<số issue>-<tên-ngắn>`.
-4. PR ghi `Refs MichaelTran1226/Racehorse_Training_Management_System_MT_BE#<số issue>`; cần review trước khi merge.
+4. PR ghi `Refs MichaelTran1226/Racehorse_Training_Management_System_MT_BE#<số issue>`; PR cuối cùng của task (khi cả FE và BE xong) ghi `Closes …#<số issue>`. Cần review trước khi merge.
 5. Task **Done** khi cả phần FE và BE đã merge, chạy thật được và đạt đặc tả.
 
 ## 6. Ưu tiên
