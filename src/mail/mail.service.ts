@@ -26,6 +26,11 @@ export class MailService {
             port: Number(config.get<string>('SMTP_PORT') || 587),
             auth: { user, pass: config.get<string>('SMTP_PASS') || '' },
           });
+    if (!this.transporter) {
+      this.logger.warn(
+        'Email is NOT sent (EMAIL_PROVIDER=mock or SMTP_USER empty): OTP codes are printed to this log. See .env.example.',
+      );
+    }
   }
 
   async send(to: string, subject: string, text: string): Promise<void> {
