@@ -7,7 +7,7 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 
 describe('MedicalService', () => {
   let service: MedicalService;
-  let prisma: PrismaService;
+  // let prisma: PrismaService;
 
   const mockHorse = {
     id: 'horse-1',
@@ -94,10 +94,7 @@ describe('MedicalService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        MedicalService,
-        { provide: PrismaService, useValue: mockPrismaService },
-      ],
+      providers: [MedicalService, { provide: PrismaService, useValue: mockPrismaService }],
     }).compile();
 
     service = module.get<MedicalService>(MedicalService);

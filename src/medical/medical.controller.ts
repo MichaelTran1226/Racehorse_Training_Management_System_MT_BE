@@ -14,11 +14,16 @@ export class MedicalController {
 
   @Get('horses/:id/health-board')
   @ApiOperation({
-    summary: 'API-004: Lấy chi tiết hồ sơ y tế tổng hợp (6 tab) của một chiến mã (FR-3.02, FR-3.18)',
-    description: 'Bao gồm Banner Khóa huấn luyện, 6 tab dữ liệu y tế và xử lý phân quyền xem theo vai trò (Owner/Groom/Vet/Trainer/Manager).',
+    summary:
+      'API-004: Lấy chi tiết hồ sơ y tế tổng hợp (6 tab) của một chiến mã (FR-3.02, FR-3.18)',
+    description:
+      'Bao gồm Banner Khóa huấn luyện, 6 tab dữ liệu y tế và xử lý phân quyền xem theo vai trò (Owner/Groom/Vet/Trainer/Manager).',
   })
   @ApiResponse({ status: 200, type: HealthBoardResponseDto })
-  @ApiResponse({ status: 403, description: 'Forbidden (Không có quyền xem hồ sơ y tế chiến mã này)' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden (Không có quyền xem hồ sơ y tế chiến mã này)',
+  })
   @ApiResponse({ status: 404, description: 'Not Found (Chiến mã không tồn tại)' })
   async getHealthBoard(
     @Param('id') id: string,
@@ -44,7 +49,8 @@ export class MedicalController {
   @Get('medical/horses/:id/observations')
   @ApiOperation({
     summary: 'FR-3.17: Lấy danh sách ghi chú quan sát sức khỏe của nhân viên chăm sóc',
-    description: 'Cho phép lọc theo khoảng thời gian (startDate, endDate) và mức độ lưu ý (urgency).',
+    description:
+      'Cho phép lọc theo khoảng thời gian (startDate, endDate) và mức độ lưu ý (urgency).',
   })
   @ApiResponse({ status: 200, description: 'Danh sách ghi chú quan sát sức khỏe' })
   async getObservationNotes(

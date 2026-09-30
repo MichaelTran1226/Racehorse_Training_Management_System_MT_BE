@@ -69,7 +69,10 @@ export class MedicalService {
   /**
    * Lấy chi tiết hồ sơ y tế tổng hợp (6 tab) cho một chiến mã (FR-3.02, FR-3.17, FR-3.18, API-004)
    */
-  async getHealthBoard(horseId: string, currentUser: CurrentUserPayload): Promise<HealthBoardResponseDto> {
+  async getHealthBoard(
+    horseId: string,
+    currentUser: CurrentUserPayload,
+  ): Promise<HealthBoardResponseDto> {
     const horse = await this.checkHorseAccess(horseId, currentUser);
     const role = currentUser.role as Role;
 
@@ -166,7 +169,9 @@ export class MedicalService {
           dosage: r.prescriptionDetails || 'Theo chỉ định',
           route: 'Đường uống/Tiêm',
           frequency: 'Hằng ngày',
-          untilDate: r.followUpDate ? r.followUpDate.toISOString().split('T')[0] : 'Khi hết triệu chứng',
+          untilDate: r.followUpDate
+            ? r.followUpDate.toISOString().split('T')[0]
+            : 'Khi hết triệu chứng',
           withdrawalDate: r.followUpDate ? r.followUpDate.toISOString().split('T')[0] : 'N/A',
         }));
     }
@@ -281,8 +286,14 @@ export class MedicalService {
     if (role !== Role.HORSE_OWNER) {
       scopedObservations = groomingLogs.map((log) => {
         const text = log.healthObservations || '';
-        const isUrgent = text.toLowerCase().includes('khẩn') || text.toLowerCase().includes('sốt') || text.toLowerCase().includes('đau');
-        const isAttention = text.toLowerCase().includes('chú ý') || text.toLowerCase().includes('ăn ít') || text.toLowerCase().includes('mệt');
+        const isUrgent =
+          text.toLowerCase().includes('khẩn') ||
+          text.toLowerCase().includes('sốt') ||
+          text.toLowerCase().includes('đau');
+        const isAttention =
+          text.toLowerCase().includes('chú ý') ||
+          text.toLowerCase().includes('ăn ít') ||
+          text.toLowerCase().includes('mệt');
 
         let urgency: 'NORMAL' | 'ATTENTION' | 'URGENT' = 'NORMAL';
         if (isUrgent) urgency = 'URGENT';
@@ -321,7 +332,11 @@ export class MedicalService {
         vetName: activeLock?.veterinarian?.fullName || null,
         lockReason: activeLock?.lockReason || null,
         recheckDate: activeLock
-          ? new Date(new Date(activeLock.lockedAt).setDate(new Date(activeLock.lockedAt).getDate() + activeLock.expectedRestDays))
+          ? new Date(
+              new Date(activeLock.lockedAt).setDate(
+                new Date(activeLock.lockedAt).getDate() + activeLock.expectedRestDays,
+              ),
+            )
           : null,
         overdueDays,
       },
@@ -382,8 +397,14 @@ export class MedicalService {
 
     const mapped = logs.map((log) => {
       const text = log.healthObservations || '';
-      const isUrgent = text.toLowerCase().includes('khẩn') || text.toLowerCase().includes('sốt') || text.toLowerCase().includes('đau');
-      const isAttention = text.toLowerCase().includes('chú ý') || text.toLowerCase().includes('ăn ít') || text.toLowerCase().includes('mệt');
+      const isUrgent =
+        text.toLowerCase().includes('khẩn') ||
+        text.toLowerCase().includes('sốt') ||
+        text.toLowerCase().includes('đau');
+      const isAttention =
+        text.toLowerCase().includes('chú ý') ||
+        text.toLowerCase().includes('ăn ít') ||
+        text.toLowerCase().includes('mệt');
 
       let urgency: 'NORMAL' | 'ATTENTION' | 'URGENT' = 'NORMAL';
       if (isUrgent) urgency = 'URGENT';
