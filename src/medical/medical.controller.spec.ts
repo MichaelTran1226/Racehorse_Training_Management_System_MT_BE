@@ -1,19 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MedicalController } from './medical.controller';
 import { MedicalService } from './medical.service';
-import { Role } from '@prisma/client';
-import { CurrentUserPayload } from '../common/decorators/current-user.decorator';
 
 describe('MedicalController', () => {
   let controller: MedicalController;
   let service: MedicalService;
-
-  const mockUser: CurrentUserPayload = {
-    userId: 'vet-1',
-    email: 'vet@test.com',
-    role: Role.VETERINARIAN,
-    fullName: 'Dr. Sarah',
-  };
 
   const mockHealthBoard = {
     horse: {
@@ -59,7 +50,6 @@ describe('MedicalController', () => {
 
   const mockMedicalService = {
     getHealthBoard: jest.fn().mockResolvedValue(mockHealthBoard),
-    getObservationNotes: jest.fn().mockResolvedValue([]),
   };
 
   beforeEach(async () => {
