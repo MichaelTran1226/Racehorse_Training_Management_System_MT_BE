@@ -8,6 +8,8 @@
 
 Hệ thống quản lý chuồng trại, y tế chuyên sâu, lập giáo án huấn luyện đỉnh cao và quản trị tài chính minh bạch cho các câu lạc bộ ngựa đua chuyên nghiệp.
 
+> **Thành viên mới:** đọc [docs/HUONG_DAN_GITHUB.md](docs/HUONG_DAN_GITHUB.md) (clone, chạy, tạo nhánh, mở PR qua bot CI). Task + đặc tả: [Project 2](https://github.com/users/MichaelTran1226/projects/2) · [tasks/](tasks/) · [docs/specs/](docs/specs/).
+
 ---
 
 ## 1. Công nghệ & Kiến trúc (Tech Stack - Decision D-01)
