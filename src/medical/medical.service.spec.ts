@@ -3,7 +3,7 @@ import { MedicalService } from './medical.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { Role } from '@prisma/client';
 import { CurrentUserPayload } from '../common/decorators/current-user.decorator';
-import { HttpException, HttpStatus } from '@nestjs/common';
+import { HttpException } from '@nestjs/common';
 
 describe('MedicalService', () => {
   let service: MedicalService;

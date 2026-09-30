@@ -52,4 +52,4 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }
