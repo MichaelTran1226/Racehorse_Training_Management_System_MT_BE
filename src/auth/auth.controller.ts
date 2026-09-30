@@ -1,4 +1,14 @@
-import { Controller, Post, Get, Body, Req, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Query,
+  Req,
+  HttpCode,
+  HttpStatus,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
@@ -8,11 +18,87 @@ import { AuthResponseDto, RefreshTokenResponseDto, UserProfileDto } from './dto/
 import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { normEmail } from '../common/utils/input';
+import { OtpService, purposeOf } from './otp.service';
+import {
+  ForgotPasswordDto,
+  OtpQueryDto,
+  RegisterDto,
+  ResendOtpDto,
+  ResetPasswordDto,
+  VerifyOtpDto,
+} from './dto/account-flow.dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly otpService: OtpService,
+  ) {}
+
+  @Post('register')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Horse Owner tự đăng ký; gửi mã OTP xác minh email' })
+  register(@Body() dto: RegisterDto) {
+    return this.authService.register(dto);
+  }
+
+  @Post('verify-email')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Nhập mã OTP đăng ký => chuyển sang chờ Club Manager duyệt' })
+  verifyEmail(@Body() dto: VerifyOtpDto) {
+    return this.authService.verifyEmail(dto);
+  }
+
+  @Get('otp')
+  @Public()
+  @ApiOperation({ summary: 'Mốc thời gian của mã OTP đang có (cho bộ đếm ngược)' })
+  getOtp(@Query() query: OtpQueryDto) {
+    return this.otpService.times(normEmail(query.email), purposeOf(query.purpose));
+  }
+
+  @Post('otp/resend')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Gửi lại mã OTP (chờ 60 giây giữa hai lần)' })
+  resendOtp(@Body() dto: ResendOtpDto) {
+    return this.otpService.resend(normEmail(dto.email), purposeOf(dto.purpose));
+  }
+
+  @Post('forgot-password')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Gửi mã OTP đặt lại mật khẩu (phản hồi trung tính)' })
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto);
+  }
+
+  @Post('reset-password/verify')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Nhập mã OTP quên mật khẩu => nhận vé đặt mật khẩu' })
+  verifyResetOtp(@Body() dto: VerifyOtpDto) {
+    return this.authService.verifyResetOtp(dto);
+  }
+
+  @Post('reset-password')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Đặt mật khẩu mới bằng vé; tài khoản được mời sẽ được kích hoạt' })
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto);
+  }
+
+  @Post('accept-invite/verify')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Nhân viên được mời nhập mã mời => nhận vé đặt mật khẩu' })
+  verifyInviteOtp(@Body() dto: VerifyOtpDto) {
+    return this.authService.verifyInviteOtp(dto);
+  }
 
   @Post('login')
   @Public()

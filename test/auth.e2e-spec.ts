@@ -65,7 +65,7 @@ describe('Authentication & Session Flow (e2e)', () => {
       fullName: 'Suspended User',
       phoneNumber: null,
       role: Role.HORSE_OWNER,
-      status: UserStatus.SUSPENDED,
+      status: UserStatus.LOCKED,
     },
   };
 
@@ -88,6 +88,18 @@ describe('Authentication & Session Flow (e2e)', () => {
           }
           return Promise.resolve(null);
         }),
+      findMany: jest.fn().mockImplementation(() => Promise.resolve(Object.values(mockUsers))),
+      update: jest
+        .fn()
+        .mockImplementation(({ where, data }: { where: { id: string }; data: any }) => {
+          const user = Object.values(mockUsers).find((u) => u.id === where.id);
+          return Promise.resolve({ ...user, ...data });
+        }),
+    },
+    loginAttempt: {
+      findUnique: jest.fn().mockResolvedValue(null),
+      upsert: jest.fn().mockResolvedValue({}),
+      deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
     },
     refreshToken: {
       create: jest.fn().mockImplementation(({ data }: { data: any }) => {
@@ -219,17 +231,28 @@ describe('Authentication & Session Flow (e2e)', () => {
       expect(res.body.success).toBe(false);
     });
 
-    it('should reject with 403 when account is SUSPENDED', async () => {
+    it('should reject with 423 ACCOUNT_LOCKED when account is LOCKED', async () => {
       const res = await request(app.getHttpServer())
         .post('/api/auth/login')
         .send({
           email: 'suspended@equiflow.com',
           password: rawPassword,
         })
-        .expect(403);
+        .expect(423);
 
       expect(res.body.success).toBe(false);
-      expect(res.body.error).toBe('Forbidden');
+      expect(res.body.code).toBe('ACCOUNT_LOCKED');
+      expect(res.body.data.fullName).toBe('Suspended User');
+    });
+
+    it('should return code INVALID_CREDENTIALS with attemptsLeft on a wrong password', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/api/auth/login')
+        .send({ email: 'manager@equiflow.com', password: 'IncorrectPassword' })
+        .expect(401);
+
+      expect(res.body.code).toBe('INVALID_CREDENTIALS');
+      expect(res.body.data.attemptsLeft).toBe(4);
     });
   });
 
@@ -283,6 +306,37 @@ describe('Authentication & Session Flow (e2e)', () => {
 
       expect(res.body.success).toBe(true);
       expect(res.body.data.message).toContain('Logged out successfully');
+    });
+  });
+
+  describe('GET /api/accounts (permission manageAccounts)', () => {
+    const tokenFor = async (email: string) => {
+      const res = await request(app.getHttpServer())
+        .post('/api/auth/login')
+        .send({ email, password: rawPassword });
+      return res.body.data.accessToken as string;
+    };
+
+    it('should list accounts for the Club Manager without password hashes', async () => {
+      const token = await tokenFor('manager@equiflow.com');
+      const res = await request(app.getHttpServer())
+        .get('/api/accounts')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.body.data.accounts.length).toBeGreaterThan(0);
+      expect(res.body.data.accounts[0].passwordHash).toBeUndefined();
+      expect(res.body.data.accounts[0].permissions.viewHorses).toBe(true);
+    });
+
+    it('should refuse a Head Trainer with 403 FORBIDDEN', async () => {
+      const token = await tokenFor('trainer@equiflow.com');
+      const res = await request(app.getHttpServer())
+        .get('/api/accounts')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(403);
+
+      expect(res.body.code).toBe('FORBIDDEN');
     });
   });
 });

@@ -3,6 +3,7 @@ import { Role, UserStatus } from '@prisma/client';
 import { Request } from 'express';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { OtpService } from './otp.service';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -43,6 +44,10 @@ describe('AuthController', () => {
         {
           provide: AuthService,
           useValue: mockAuthService,
+        },
+        {
+          provide: OtpService,
+          useValue: {},
         },
       ],
     }).compile();

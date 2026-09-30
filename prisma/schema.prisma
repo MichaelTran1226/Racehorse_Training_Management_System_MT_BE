@@ -23,10 +23,30 @@ enum Role {
   HORSE_OWNER
 }
 
+// Vòng đời tài khoản (khớp AccountStatus bên FE):
+// PENDING_EMAIL (chưa xác minh email) → PENDING_APPROVAL (chờ Club Manager duyệt) → ACTIVE;
+// INVITED: nhân viên được mời, chưa đặt mật khẩu; LOCKED / INACTIVE / REJECTED do Club Manager đặt.
 enum UserStatus {
+  PENDING_EMAIL
+  PENDING_APPROVAL
+  PENDING_INTAKE
+  INVITED
   ACTIVE
-  PENDING_VERIFICATION
-  SUSPENDED
+  INACTIVE
+  REJECTED
+  LOCKED
+}
+
+enum OtpPurpose {
+  SIGNUP
+  RESET
+  INVITE
+}
+
+enum PermissionRequestStatus {
+  OPEN
+  GRANTED
+  DISMISSED
 }
 
 enum InviteStatus {
@@ -154,16 +174,31 @@ enum InsightStatus {
 model User {
   id                   String     @id @default(uuid())
   email                String     @unique
-  passwordHash         String
+  passwordHash         String     @default("") // "" = tài khoản INVITED chưa đặt mật khẩu
   fullName             String
   phoneNumber          String?
   role                 Role
-  status               UserStatus @default(PENDING_VERIFICATION)
+  status               UserStatus @default(PENDING_EMAIL)
   verificationCode     String?
   verificationExpiry   DateTime?
   verificationAttempts Int        @default(0)
   createdAt            DateTime   @default(now())
   updatedAt            DateTime   @updatedAt
+  lastActive           DateTime?
+  requestedAt          DateTime? // lúc gửi yêu cầu đăng ký (sau khi xác minh email)
+  requestCode          String?    @unique // REQ-2609-014
+  lockedAt             DateTime?
+  invitedBy            String? // tên Club Manager đã mời (tài khoản nhân viên)
+  // Lần đổi trạng thái gần nhất do Club Manager làm (duyệt / từ chối / khóa…) kèm lý do nếu có
+  statusReason         String?
+  statusChangedAt      DateTime?
+  statusChangedBy      String?
+  // Record<PermissionKey, boolean> / Record<NotifyKey, boolean>; null = mặc định theo vai trò
+  // (xem src/users/permissions.ts)
+  permissions          Json?
+  permissionsChangedAt DateTime?
+  permissionsChangedBy String?
+  notify               Json?
 
   horsesOwned           Horse[]                 @relation("OwnerHorses")
   stallAllocations      StallAllocation[]       @relation("GroomStalls")
@@ -179,9 +214,62 @@ model User {
   auditLogs             AuditLog[]              @relation("UserAuditLogs")
   refreshTokens         RefreshToken[]
   invitationsSent       StaffInvitation[]       @relation("InvitedByUser")
+  permissionRequests    PermissionRequest[]
 
   @@index([email])
   @@index([role])
+  @@index([status])
+}
+
+// Mã OTP 6 số gửi qua email. Mỗi (email, mục đích) chỉ có 1 mã còn hiệu lực; chỉ lưu bản băm SHA-256.
+model OtpCode {
+  id        Int        @id @default(autoincrement())
+  email     String
+  purpose   OtpPurpose
+  codeHash  String
+  sentAt    DateTime
+  expiresAt DateTime
+  resendAt  DateTime
+  attempts  Int        @default(0)
+
+  @@unique([email, purpose])
+}
+
+// Đếm số lần sai mật khẩu theo email (kể cả email không tồn tại).
+model LoginAttempt {
+  email       String    @id
+  fails       Int       @default(0)
+  lockedUntil DateTime?
+}
+
+// Vé đặt mật khẩu, cấp sau khi nhập đúng OTP (quên mật khẩu / nhận lời mời). Chỉ lưu bản băm SHA-256.
+model ResetToken {
+  tokenHash String   @id
+  email     String
+  expiresAt DateTime
+
+  @@index([email])
+}
+
+// Người dùng bị chặn quyền (403) xin Club Manager mở quyền vào một màn hình.
+model PermissionRequest {
+  id         Int                     @id @default(autoincrement())
+  at         DateTime                @default(now())
+  userId     String
+  user       User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  screen     String
+  reference  String
+  status     PermissionRequestStatus @default(OPEN)
+  resolvedAt DateTime?
+  resolvedBy String? // tên Club Manager đã xử lý
+
+  @@index([status])
+}
+
+// Bộ đếm cho các mã hiển thị: REQ-YYMM-NNN (requestCode), 403-YYMM-NNNN (mã tham chiếu 403).
+model Counter {
+  name  String @id
+  value Int    @default(0)
 }
 
 model RefreshToken {
