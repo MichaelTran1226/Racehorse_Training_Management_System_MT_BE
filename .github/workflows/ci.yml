@@ -8,42 +8,74 @@ on:
       - 'fix/**'
     paths:
       - 'src/**'
-      - 'tests/**'
+      - 'test/**'
+      - 'prisma/**'
       - 'package.json'
-      - 'tsconfig.json'
-      - '.github/workflows/backend-ci.yml'
+      - 'package-lock.json'
+      - 'tsconfig*.json'
+      - 'eslint.config.mjs'
+      - '.github/workflows/ci.yml'
   pull_request:
     branches:
       - main
 
+# Bot chỉ cần đọc code; không cấp quyền ghi cho GITHUB_TOKEN.
+permissions:
+  contents: read
+
+# Push liên tiếp lên cùng một nhánh/PR: huỷ lần chạy cũ, chỉ giữ lần mới nhất.
+concurrency:
+  group: be-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '24'
+
 jobs:
   # ==========================================
-  # STAGE 0: REPOSITORY SCOPE BOUNDARY GATE
+  # STAGE 0: REPOSITORY GATE (BOUNDARY + SECRETS)
   # ==========================================
   verify-repo-boundary:
-    name: "0. Scope Boundary Gate (Backend Only)"
+    name: "0. Repository Gate (Boundary & Secrets)"
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@v7
 
       - name: Validate Backend Scope (No Frontend Files)
         run: |
-          echo "=== [GATE 0] VALIDATING BACKEND REPOSITORY BOUNDARY ==="
+          echo "=== [GATE 0a] VALIDATING BACKEND REPOSITORY BOUNDARY ==="
           DISALLOWED_PATTERNS="(\.tsx$|\.jsx$|\.vue$|\.svelte$|vite\.config|next\.config|playwright\.config|^client/|^frontend/|^ui/|index\.html$)"
           VIOLATIONS=$(git ls-files | grep -E "$DISALLOWED_PATTERNS" || true)
           if [ -n "$VIOLATIONS" ]; then
             echo "❌ [BOUNDARY VIOLATION] Phát hiện file Frontend trong Backend Repository:"
             echo "$VIOLATIONS"
             echo "------------------------------------------------------------------"
-            echo "Quy tắc: Backend repo chỉ chứa server, API, SQLite migration, model, test API."
+            echo "Quy tắc: Backend repo chỉ chứa server, API, Prisma schema/seed, model, test API."
             echo "Toàn bộ mã nguồn giao diện (UI) phải chuyển sang repo Frontend:"
             echo "MichaelTran1226/Racehorse_Training_Management_System_MT_FE"
             exit 1
           fi
           echo "✅ Boundary Check Passed: Không có code Frontend trong repo Backend."
+
+      - name: Block Committed Secrets
+        run: |
+          echo "=== [GATE 0b] SCANNING FOR COMMITTED SECRETS ==="
+          # File bí mật không bao giờ được commit (chỉ .env.example được phép).
+          SECRET_FILES=$(git ls-files | grep -E '(^|/)\.env$|(^|/)\.env\.(local|development|production|test)(\.local)?$|\.(pem|key|p12|pfx)$|(^|/)mcp_config\.json$' || true)
+          # Mẫu khoá có định dạng rõ ràng (ít báo nhầm). Chỉ in file:dòng, KHÔNG in giá trị ra log công khai.
+          PATTERN='-----BEGIN [A-Z ]*PRIVATE KEY-----|ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{50,}|AIza[0-9A-Za-z_-]{35}|sk-ant-[A-Za-z0-9_-]{20,}|AKIA[0-9A-Z]{16}|xox[baprs]-[A-Za-z0-9-]{10,}'
+          SECRET_LINES=$(git grep -nIE -e "$PATTERN" -- . ':!package-lock.json' | cut -d: -f1,2 || true)
+          if [ -n "$SECRET_FILES$SECRET_LINES" ]; then
+            echo "❌ [SECRET LEAK] Phát hiện bí mật trong repo:"
+            [ -n "$SECRET_FILES" ] && echo "File bí mật bị commit:" && echo "$SECRET_FILES"
+            [ -n "$SECRET_LINES" ] && echo "Dòng chứa khoá (file:dòng):" && echo "$SECRET_LINES"
+            echo "------------------------------------------------------------------"
+            echo "Xoá khỏi commit (git rm --cached <file>), ĐỔI khoá/mật khẩu ngay và báo Lead."
+            exit 1
+          fi
+          echo "✅ Secret Scan Passed: Không có file .env/khoá bí mật trong repo."
 
   # ==========================================
   # STAGE 1: LINT & TYPECHECK
@@ -52,24 +84,28 @@ jobs:
     name: "1. Lint & Typecheck"
     needs: verify-repo-boundary
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Install Dependencies
         run: npm ci
 
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
       - name: Run Linter
-        run: npm run lint --if-present
+        run: npm run lint
 
       - name: Run Typecheck
-        run: npm run typecheck --if-present
+        run: npm run typecheck
 
   # ==========================================
   # STAGE 2: WHITE-BOX TESTS (Unit, Integration, Concurrency, RBAC)
@@ -78,39 +114,103 @@ jobs:
     name: "2. White-box Tests (Unit & Integration)"
     needs: lint-and-typecheck
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Install Dependencies
         run: npm ci
 
-      - name: Setup Test SQLite Database & Migrations
-        run: |
-          mkdir -p database
-          npm run db:migrate --if-present || echo "No migrations configured yet"
+      - name: Generate Prisma Client
+        run: npx prisma generate
 
-      - name: Run White-box Tests (Unit & Concurrency & RBAC)
-        run: |
-          npm run test:unit --if-present || npm test --if-present
+      - name: Run White-box Tests with Coverage
+        run: npm run test:unit -- --coverage --coverageReporters=lcov --coverageReporters=json-summary --coverageReporters=text-summary
         env:
           NODE_ENV: test
-          DATABASE_URL: "file:./database/test.sqlite"
           JWT_SECRET: "ci-secret-key-racehorse-training-2026"
 
+      - name: Coverage Summary
+        if: always()
+        run: |
+          if [ -f coverage/coverage-summary.json ]; then
+            node -e '
+              const t = require("./coverage/coverage-summary.json").total;
+              const row = (k) => `| ${k} | ${t[k].pct}% | ${t[k].covered}/${t[k].total} |`;
+              console.log(["### Coverage (white-box)", "", "| Metric | % | Covered |", "|---|---|---|",
+                row("lines"), row("statements"), row("functions"), row("branches"), "",
+                "Mục tiêu trong docs/DECISIONS.md: >= 85% cho business rules, Medical Lock và RBAC."].join("\n"));
+            ' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Upload Test Coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: be-coverage-report
           path: coverage/
+          if-no-files-found: warn
           retention-days: 7
+
+  # ==========================================
+  # STAGE 2b: DATABASE SCHEMA & SEED ON REAL POSTGRESQL
+  # ==========================================
+  # Unit/API test giả lập Prisma nên không phát hiện được lỗi schema. Job này dựng PostgreSQL thật,
+  # áp schema.prisma bằng "db push" (nhóm chưa dùng migrations) và chạy seed 2 lần để chắc seed
+  # chạy lặp an toàn - đúng các lệnh mỗi thành viên chạy sau khi pull.
+  database-schema-check:
+    name: "2b. Database Schema & Seed (PostgreSQL)"
+    needs: lint-and-typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: racehorse_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/racehorse_ci?schema=public"
+      DIRECT_URL: "postgresql://postgres:postgres@localhost:5432/racehorse_ci?schema=public"
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Apply schema.prisma to PostgreSQL (db push)
+        run: npx prisma db push --skip-generate
+
+      - name: Run Seed
+        run: npm run db:seed
+
+      - name: Re-run Seed (must be idempotent)
+        run: npm run db:seed
 
   # ==========================================
   # STAGE 3: BLACK-BOX API CONTRACT TESTS
@@ -119,55 +219,92 @@ jobs:
     name: "3. Black-box API Contract Tests"
     needs: white-box-tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Install Dependencies
         run: npm ci
 
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      # Không nối "|| echo" phía sau: test đỏ thì bước này phải đỏ.
       - name: Run Black-box API Tests
-        run: npm run test:api --if-present || npm run test:e2e --if-present || echo "API tests ready"
+        run: npm run test:e2e
         env:
           NODE_ENV: test
-          DATABASE_URL: "file:./database/test.sqlite"
+          JWT_SECRET: "ci-secret-key-racehorse-training-2026"
 
   # ==========================================
-  # STAGE 4: SONARQUBE QUALITY & SECURITY GATE
+  # STAGE 4: SECURITY & QUALITY GATE (npm audit + SonarQube)
   # ==========================================
   sonarqube-quality-gate:
-    name: "4. SonarQube Quality & Security Gate"
-    needs: black-box-api-tests
+    name: "4. Security & Quality Gate (npm audit + SonarQube)"
+    needs: [white-box-tests, black-box-api-tests, database-schema-check]
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Đưa secret lên env của job để điều kiện "if" ở từng bước đọc được
+    # (env khai báo ngay trong một bước không dùng được cho "if" của chính bước đó).
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Dependency Audit (block on Critical)
+        run: |
+          npm audit --omit=dev --json > audit.json || true
+          node -e '
+            const v = require("./audit.json").metadata.vulnerabilities;
+            require("fs").appendFileSync(process.env.GITHUB_STEP_SUMMARY, ["### npm audit (production dependencies)", "",
+              "| Critical | High | Moderate | Low |", "|---|---|---|---|",
+              `| ${v.critical} | ${v.high} | ${v.moderate} | ${v.low} |`, "",
+              "Chặn merge khi có **Critical**. High/Moderate: cảnh báo, xử lý bằng PR nâng cấp thư viện (cần Lead duyệt).", ""].join("\n"));
+            if (v.high > 0) console.log(`::warning title=npm audit::${v.high} lỗ hổng High trong thư viện production. Chạy "npm audit" để xem chi tiết.`);
+          '
+          npm audit --omit=dev --audit-level=critical
+
       - name: Download Coverage Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: be-coverage-report
           path: coverage/
         continue-on-error: true
 
-      - name: SonarQube Scan
-        uses: sonarsource/sonarqube-scan-action@v2
-        if: env.SONAR_TOKEN != ''
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+      - name: SonarQube Scan (waits for Quality Gate)
+        if: env.SONAR_TOKEN != '' && env.SONAR_HOST_URL != ''
+        uses: SonarSource/sonarqube-scan-action@v8
         with:
           args: >
             -Dsonar.projectKey=Racehorse_Training_Management_System_MT_BE
             -Dsonar.projectName="Racehorse Training BE"
             -Dsonar.sources=src
-            -Dsonar.tests=tests
+            -Dsonar.tests=src,test
+            -Dsonar.exclusions=**/*.spec.ts
+            -Dsonar.test.inclusions=**/*.spec.ts,**/*.e2e-spec.ts
             -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+            -Dsonar.qualitygate.wait=true
+
+      - name: SonarQube Not Configured
+        if: env.SONAR_TOKEN == '' || env.SONAR_HOST_URL == ''
+        run: |
+          MSG="SonarQube chưa được cấu hình (thiếu secret SONAR_TOKEN / SONAR_HOST_URL) nên KHÔNG quét. Lead thêm ở Settings > Secrets and variables > Actions."
+          echo "::notice title=SonarQube skipped::$MSG"
+          echo "### SonarQube: bỏ qua" >> "$GITHUB_STEP_SUMMARY"
+          echo "$MSG" >> "$GITHUB_STEP_SUMMARY"

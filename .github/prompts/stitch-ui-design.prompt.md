@@ -5,7 +5,7 @@ description: "Thiết kế EquiFlow trên Stitch theo ảnh mẫu V2 và đúng 
 
 # EquiFlow — Stitch UI V2
 
-Đọc docs/stitch-ui-prompts-by-feature.md, srs.txt, blueprint.md và bộ GENERATE/ui-design/stitch-v2 trong workspace. Dùng DESIGN.md và SCREEN-MAP.md của V2; không dùng archive làm chuẩn thiết kế.
+Đọc `docs/stitch-ui-prompts-by-feature.md`, `docs/srs.txt`, `docs/blueprint.md`, đặc tả `docs/specs/Flow*.md` và `docs/ui-design/` (`SCREEN-MAP.md` + `screens/`). Dùng SCREEN-MAP.md (31 màn chính + 5 biến thể) làm chuẩn tên và mã màn; không dùng archive làm chuẩn thiết kế.
 
 1. Vai trò: Club Manager, Head Trainer, Veterinarian, Groom / Stable Hand, Horse Owner. Không dùng Member/Receptionist/Coach của dự án khác.
 2. Nền sáng, forest green, bảng gọn theo ảnh tham chiếu. Bỏ cây phả hệ/video; dùng đúng ảnh giải phẫu 2D được chỉ định.

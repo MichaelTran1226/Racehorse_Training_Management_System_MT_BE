@@ -60,11 +60,12 @@ Sau đó lên GitHub bấm **Compare & pull request** vào nhánh `main`:
 
 | Bước | Lệnh | Qua khi |
 |---|---|---|
-| 0. Ranh giới repo | tự chạy | Không có file giao diện trong repo |
+| 0. Repository Gate | tự chạy | Không có file giao diện; không có `.env`, khoá, token bị commit |
 | 1. Lint & Typecheck | `npm run lint`, `npm run typecheck` | **0 lỗi và 0 cảnh báo** (`--max-warnings=0`) |
-| 2. Unit test | `npm run test:unit` | Tất cả pass |
+| 2. Unit test | `npm run test:unit` | Tất cả pass (kèm báo cáo coverage) |
+| 2b. Database | `npx prisma db push`, `npm run db:seed` ×2 | Schema áp được lên PostgreSQL thật, seed chạy lặp an toàn |
 | 3. API test | `npm run test:e2e` | Tất cả pass |
-| 4. SonarQube | tự chạy | Không có lỗi bảo mật nghiêm trọng |
+| 4. Security & Quality | `npm audit --omit=dev --audit-level=critical` + SonarQube | Không có lỗ hổng **Critical**; SonarQube đạt Quality Gate (khi Lead đã cài secret) |
 
 Quy tắc của mẫu PR: chỉ code BE; làm đúng tiêu chí của issue, không tự thêm tính năng; không cài package mới khi Lead chưa duyệt; API phải tự kiểm tra quyền ở server (không chỉ dựa vào FE ẩn nút).
 
