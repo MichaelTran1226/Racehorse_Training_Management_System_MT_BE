@@ -579,29 +579,49 @@ erDiagram
 
 ## 12. Delivery Plan and Dependencies
 
-Hệ thống được phát triển theo mô hình **Vertical Slices** (triển khai trọn vẹn từng lát cắt từ DB -> API BE -> UI FE -> Test):
+Kế hoạch hiện hành: Flow 1–3, chia cho **2 cặp** (mỗi cặp 1 FE + 1 BE), 3 sprint. Đặc tả chức năng chi tiết (màn hình, nút, dialog, câu báo lỗi) theo tài liệu `Tai_Lieu` (Flow1_HoSoNgua, Flow2_GiaoAn, Flow3_YTe) — mã FR dạng `FR-1.xx`. Danh sách task: [tasks/todo.md](../tasks/todo.md) · Kế hoạch: [tasks/plan.md](../tasks/plan.md) · [Project 2](https://github.com/users/MichaelTran1226/projects/2).
 
-| Slice | Phạm vi chức năng (Scope) | Dependencies | Exit criteria | Rủi ro & Giải pháp |
+| Sprint | Thời gian | Cặp 1 (Auth + Flow 1) | Cặp 2 (Flow 3 + Flow 2) | Exit criteria |
 |---|---|---|---|---|
-| **Slice 1** | **Foundation, Auth & Horse Profile (FR-001, FR-002, FR-003, FR-021)** | Khởi tạo repo BE (`Racehorse_Training_Management_System_MT_BE`) và FE (`Racehorse_Training_Management_System_MT_FE`). Cấu hình SQLite, JWT, RBAC 5 vai trò, CRUD hồ sơ ngựa, phân bổ chuồng trại. | Đăng nhập đúng 5 vai trò; CRUD hồ sơ ngựa thành công kèm mã RFID; Audit Log hoạt động; 100% white-box test pass. | Rủi ro: Trùng lặp mã RFID. Giải pháp: Unique constraint ở DB level. |
-| **Slice 2** | **Veterinary, 2D Injury & Medical Lock (FR-008, FR-009, FR-010, FR-011, FR-012)** | Xây dựng sơ đồ sức khỏe đàn ngựa mã màu, công cụ đánh dấu chấn thương 2D cơ/xương, phác đồ điều trị và cơ chế Lệnh "Khóa huấn luyện" khẩn cấp. | Bác sĩ kích hoạt Medical Lock thành công; tọa độ 2D lưu đúng vị trí; cờ `medical_locked` bật tức thì; API test và UI test pass. | Rủi ro: Tọa độ 2D không tương thích kích thước màn hình. Giải pháp: Dùng tỷ lệ % tương đối (relative percentage coords). |
-| **Slice 3** | **Training Plans, Workouts & Lock Enforcement (FR-004, FR-005, FR-006, FR-007)** | HLV Trưởng lập giáo án theo giai đoạn, phân công lịch tập, chạy thử Time Trial; triển khai middleware chặn cứng nếu ngựa có Medical Lock; biểu đồ thể lực. | Chặn 100% việc xếp bài tập cho ngựa đang bị khóa y tế; ghi nhận chỉ số buổi tập và vẽ biểu đồ phong độ thành công. | Rủi ro: Bỏ sót điểm chặn ở API. Giải pháp: Ràng buộc kiểm tra Medical Lock ở Service layer và DB trigger. |
-| **Slice 4** | **Daily Stable Care, Nutrition & Inventory (FR-013, FR-014, FR-015)** | Định mức dinh dưỡng theo bữa, màn hình checklist ca trực cảm ứng cho Groom, ghi chú nhật ký sức khỏe, theo dõi tiêu hao và cảnh báo tồn kho vật tư. | Groom hoàn thành checklist trên thiết bị di động mượt mà; kho vật tư tự động trừ định mức; cảnh báo tồn kho tối thiểu hoạt động. | Rủi ro: Groom quên lưu ca trực. Giải pháp: Tự động lưu nháp (Local Storage Auto-save) và cảnh báo khi chuyển trang. |
-| **Slice 5** | **Tournaments, Owner Financials & AI Insights (FR-016, FR-017, FR-018, FR-019, FR-020, FR-022)** | Đăng ký giải đua (có chặn Medical Lock), ghi nhận kết quả/thành tích, báo cáo tài chính chi phí/thưởng cho Owner; tích hợp AI gợi ý bài tập & AI Assistant. | Owner xem đúng báo cáo tài chính của ngựa mình; HLV nhận gợi ý AI và cảnh báo quá tải; AI Assistant trả lời tra cứu chính xác. | Rủi ro: AI API phản hồi chậm hoặc timeout. Giải pháp: Thiết lập timeout 3s và fallback hiển thị dữ liệu thống kê truyền thống. |
+| Sprint 1 | 28/09 – 04/10/2026 | P1-01, P1-02, P1-03, P1-04, P1-05, P1-06 | P2-01, P2-02 | Đăng nhập đúng 5 vai trò; RBAC 403 và cách ly dữ liệu Owner; audit log ghi tự động; tạo/chốt bệnh án được. |
+| Sprint 2 | 05/10 – 11/10/2026 | P1-07, P1-08, P1-09 | P2-03, P2-04, P2-05 | CRUD hồ sơ ngựa, sơ đồ chuồng; VET đặt/gỡ Khóa huấn luyện, trạng thái ngựa đổi ngay; tọa độ chấn thương 2D lưu đúng. |
+| Sprint 3 | 12/10 – 18/10/2026 | P1-10, P1-11, P1-12, P1-13, P1-14 | P2-06, P2-07, P2-08, P2-09 | Chặn 100% bài tập nặng khi ngựa bị khóa; ghi kết quả buổi tập và biểu đồ thể lực; nghiệm thu MVP-QA toàn trình. |
+
+Việc chung: C-01 Nền tảng FE (Sprint 1), C-03 Nghiệm thu MVP-QA (Sprint 3). Flow 4 (FR-013 → FR-015), Flow 5 (FR-016 → FR-018) và Flow 6 (FR-019, FR-020) để sau.
 
 ---
 
 ## 13. Traceability Matrix
 
-| Business Goal | Requirement | Use Case / Story | API Contract | DB Entity | Test Evidence Target |
+| Task | Cặp | FR (Tai_Lieu) | FR (blueprint) | API Contract | DB Entity |
 |---|---|---|---|---|---|
-| **BG-1 (Hồ sơ & Định danh)** | BR-001, FR-001, FR-002, FR-003 | UC-001, US-001 | `API-001`, `API-002`, `API-003`, `API-010` | `User`, `Horse`, `Stall`, `StallAllocation` | Unit tests: Auth & RBAC; Integration: RFID uniqueness; Playwright: Login & Horse CRUD flow. |
-| **BG-2 (An toàn Y tế & Khóa)** | BR-003, FR-005, FR-008, FR-009, FR-010, FR-011, FR-012 | UC-002, US-002, US-003 | `API-004`, `API-005`, `API-006`, `API-007` | `MedicalRecord`, `InjuryLog`, `MedicalLock`, `PreventiveSchedule` | Unit tests: Lock toggle logic; Concurrency test: Medical lock priority; Playwright: 2D injury marker placement. |
-| **BG-3 (Huấn luyện Khoa học)** | BR-002, FR-004, FR-005, FR-006, FR-007 | UC-001, US-002 | `API-008`, `API-009` | `TrainingPlan`, `WorkoutSession` | Unit tests: Workout planning validation; Security test: Medical Lock blocking; Playwright: Workout log & chart. |
-| **BG-4 (Vận hành Chuồng trại)** | BR-004, FR-013, FR-014, FR-015 | UC-003, US-004 | `API-010`, `API-011` | `NutritionPlan`, `DailyGroomingLog`, `InventoryItem`, `SupplyRequest` | Unit tests: Meal quantity calculation; Integration test: Inventory deduction; Playwright: Groom mobile checklist. |
-| **BG-5 (Giải đua & Tài chính)** | BR-005, FR-016, FR-017, FR-018 | UC-004, UC-005 | `API-012`, `API-013`, `API-014` | `Tournament`, `TournamentRegistration`, `TournamentResult`, `FinancialInvoice` | Unit tests: Prize money split calculation; Security test: Owner data isolation; Playwright: Tournament & Invoice PDF export. |
-| **BG-6 (Trợ lý & Phân tích AI)** | BR-006, FR-019, FR-020 | UC-001 (Alt), US-005 | `API-015`, `API-016` | `AIInsight` | Unit tests: Training load threshold analysis; API test: Mock AI prompt responses; Playwright: AI chat dialog. |
-| **BG-7 (An ninh & Quản trị)** | BR-001, FR-021, FR-022 | US-001, All UCs | `API-017` | `AuditLog` | Integration test: Immutable audit log insertion; Security test: OWASP compliance scan; Stitch MCP UI verification. |
+| [C-01](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/31) Nền tảng FE: design tokens, Master layout & routing | Chung | Nền tảng FE | FR-022 | — | — |
+| [P1-01](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/32) Đăng nhập, JWT & điều hướng 5 vai trò | Cặp 1 | Auth (không có trong TaiLieu) | FR-001 | API-001 | User |
+| [P1-02](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/33) Đăng ký Chủ ngựa & xác thực OTP email | Cặp 1 | Auth (không có trong TaiLieu) | FR-001 | — (chưa có) | User |
+| [P1-03](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/34) Quên & đặt lại mật khẩu | Cặp 1 | Auth (không có trong TaiLieu) | FR-001 | — (chưa có) | User |
+| [P1-04](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/35) Mời nhân sự nội bộ & danh sách nhân sự | Cặp 1 | Auth (không có trong TaiLieu) | FR-001 | — (chưa có) | User |
+| [P1-05](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/36) RBAC 5 vai trò, route guard & cách ly dữ liệu Chủ ngựa | Cặp 1 | Auth (không có trong TaiLieu) | FR-001 | Mọi API | User |
+| [P1-06](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/37) Nhật ký kiểm toán (Audit trail) | Cặp 1 | Auth (không có trong TaiLieu) | FR-021 | API-017 | AuditLog |
+| [P1-07](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/38) Danh sách, tạo/sửa, chi tiết hồ sơ ngựa (6 tab) | Cặp 1 | FR-1.01, FR-1.02, FR-1.03, FR-1.04, FR-1.26 | FR-002 | API-002, API-003 | Horse |
+| [P1-08](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/39) Trạng thái ngựa, nhóm y tế, badge/banner Khóa huấn luyện, lịch sử trạng thái | Cặp 1 | FR-1.05, FR-1.06, FR-1.07, FR-1.17 | FR-002, FR-005 | API-002 | Horse, MedicalLock |
+| [P1-09](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/40) Sơ đồ chuồng trại, gán/chuyển/trả ô, danh mục khu & ô chuồng | Cặp 1 | FR-1.09, FR-1.10, FR-1.11, FR-1.12, FR-1.18, FR-1.24 | FR-003 | API-010 | Stall, StallAllocation |
+| [P1-10](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/41) Nhân viên chăm sóc, lịch sinh hoạt hằng ngày & lịch mẫu | Cặp 1 | FR-1.13, FR-1.14, FR-1.15, FR-1.25 | FR-003 | API-010 | StallAllocation |
+| [P1-11](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/42) Chủ sở hữu, ngừng quản lý/kích hoạt lại, xóa mềm & khôi phục | Cặp 1 | FR-1.08, FR-1.16, FR-1.20, FR-1.21 | FR-002 | API-002 | Horse |
+| [P1-12](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/43) Danh mục Giống & Màu lông | Cặp 1 | FR-1.22, FR-1.23 | FR-002 | — (chưa có) | Horse |
+| [P1-13](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/44) Dòng thời gian vòng đời ngựa | Cặp 1 | FR-1.19 | FR-002 | — (chưa có) | Horse |
+| [P1-14](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/45) Sơ đồ sức khỏe đàn ngựa 4 mã màu | Cặp 1 | FR-3.01 | FR-008 | API-004, API-010 | Horse, MedicalLock |
+| [P2-01](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/46) Hồ sơ y tế ngựa (6 tab), ghi chú quan sát, quyền xem Owner/Groom | Cặp 2 | FR-3.02, FR-3.17, FR-3.18 | FR-008, FR-009 | API-004 | MedicalRecord |
+| [P2-02](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/47) Bệnh án, phác đồ điều trị & kê đơn thuốc | Cặp 2 | FR-3.03, FR-3.04, FR-3.05, FR-3.06, FR-3.07, FR-3.20 | FR-009 | API-007 | MedicalRecord |
+| [P2-03](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/48) Mô hình chấn thương 2D & tiến trình hồi phục | Cặp 2 | FR-3.08, FR-3.09 | FR-010 | API-007 | InjuryLog |
+| [P2-04](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/49) Khóa huấn luyện: đặt/gỡ/gia hạn, danh sách & thông báo | Cặp 2 | FR-3.10, FR-3.11, FR-3.12, FR-3.19 | FR-011 | API-005, API-006 | MedicalLock |
+| [P2-05](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/50) Lịch chăm sóc định kỳ (tiêm phòng, tẩy giun, móng) & danh mục loại | Cặp 2 | FR-3.13, FR-3.14, FR-3.15, FR-3.16 | FR-012 | — (chưa có) | PreventiveSchedule |
+| [P2-06](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/51) Giáo án huấn luyện: lập, sửa, kích hoạt, kết thúc, nhân bản | Cặp 2 | FR-2.02, FR-2.03, FR-2.04, FR-2.05, FR-2.08, FR-2.18, FR-2.19, FR-2.21 | FR-004 | API-008 | TrainingPlan |
+| [P2-07](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/52) Chặn bài tập nặng khi có Khóa huấn luyện & khôi phục | Cặp 2 | FR-2.06, FR-2.07, FR-2.17 | FR-005 | API-008, API-009 | TrainingPlan, WorkoutSession, MedicalLock |
+| [P2-08](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/53) Lịch tập, phân công Groom/nài, điều phối chạy thử | Cặp 2 | FR-2.09, FR-2.10, FR-2.11, FR-2.12 | FR-006 | — (chưa có) | WorkoutSession |
+| [P2-09](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/54) Kết quả buổi tập, biểu đồ thể lực, tổng quan huấn luyện | Cặp 2 | FR-2.01, FR-2.13, FR-2.14, FR-2.15, FR-2.16, FR-2.20 | FR-007 | API-009 | WorkoutSession |
+| [C-03](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/55) Nghiệm thu toàn trình MVP-QA | Chung | Toàn bộ Flow 1–3 | Tất cả | Tất cả | Tất cả |
+
+"— (chưa có)": blueprint §9 chưa có API cho phần này; BE cặp phụ trách bổ sung vào §9 khi chốt API với FE.
 
 ---
 
