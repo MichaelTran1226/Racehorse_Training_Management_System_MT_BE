@@ -1,218 +1,184 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MedicalService } from './medical.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { Role } from '@prisma/client';
-import { CurrentUserPayload } from '../common/decorators/current-user.decorator';
-import { HttpException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 
 describe('MedicalService', () => {
   let service: MedicalService;
-  // let prisma: PrismaService;
-
-  const mockHorse = {
-    id: 'horse-1',
-    name: 'Thunderbolt',
-    microchipRfid: 'RFID-123456',
-    breed: 'Thoroughbred',
-    dob: new Date('2021-01-01'),
-    gender: 'Colt',
-    color: 'Bay',
-    avatarUrl: null,
-    status: 'ACTIVE',
-    isMedicalLocked: false,
-    ownerId: 'owner-1',
-    owner: { id: 'owner-1', fullName: 'John Owner' },
-    stallAllocations: [
-      {
-        id: 'alloc-1',
-        stallId: 'stall-1',
-        horseId: 'horse-1',
-        assignedGroomUserId: 'groom-1',
-        isActive: true,
-        stall: { id: 'stall-1', code: 'A-01', zone: 'Zone A' },
-        assignedGroom: { id: 'groom-1', fullName: 'Groom Hand' },
-      },
-    ],
-  };
-
-  const mockUserVet: CurrentUserPayload = {
-    userId: 'vet-1',
-    email: 'vet@test.com',
-    role: Role.VETERINARIAN,
-    fullName: 'Dr. Sarah',
-  };
-
-  const mockUserGroom: CurrentUserPayload = {
-    userId: 'groom-1',
-    email: 'groom@test.com',
-    role: Role.GROOM,
-    fullName: 'Groom Hand',
-  };
-
-  const mockUserOtherGroom: CurrentUserPayload = {
-    userId: 'groom-2',
-    email: 'groom2@test.com',
-    role: Role.GROOM,
-    fullName: 'Other Groom',
-  };
-
-  const mockUserOwner: CurrentUserPayload = {
-    userId: 'owner-1',
-    email: 'owner@test.com',
-    role: Role.HORSE_OWNER,
-    fullName: 'John Owner',
-  };
-
-  const mockUserOtherOwner: CurrentUserPayload = {
-    userId: 'owner-2',
-    email: 'owner2@test.com',
-    role: Role.HORSE_OWNER,
-    fullName: 'Other Owner',
-  };
 
   const mockPrismaService = {
     horse: {
       findUnique: jest.fn(),
-    },
-    medicalLock: {
-      findFirst: jest.fn(),
       findMany: jest.fn(),
+      update: jest.fn(),
     },
     medicalRecord: {
+      create: jest.fn(),
       findMany: jest.fn(),
+      findUnique: jest.fn(),
+      count: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
     },
-    injuryLog: {
+    medicalLock: {
+      create: jest.fn(),
+      findFirst: jest.fn(),
+      findUnique: jest.fn(),
       findMany: jest.fn(),
+      update: jest.fn(),
     },
-    preventiveSchedule: {
-      findMany: jest.fn(),
-    },
-    dailyGroomingLog: {
-      findMany: jest.fn(),
-    },
+  };
+
+  const mockAuditService = {
+    record: jest.fn(),
+  };
+
+  const mockVetUser = {
+    userId: 'vet-1',
+    email: 'vet@example.com',
+    fullName: 'Dr. John Vet',
+    role: Role.VETERINARIAN,
+  };
+
+  const mockOwnerUser = {
+    userId: 'owner-1',
+    email: 'owner@example.com',
+    fullName: 'Horse Owner',
+    role: Role.HORSE_OWNER,
   };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [MedicalService, { provide: PrismaService, useValue: mockPrismaService }],
+      providers: [
+        MedicalService,
+        { provide: PrismaService, useValue: mockPrismaService },
+        { provide: AuditService, useValue: mockAuditService },
+      ],
     }).compile();
 
     service = module.get<MedicalService>(MedicalService);
-    // prisma = module.get<PrismaService>(PrismaService);
     jest.clearAllMocks();
   });
 
-  describe('checkHorseAccess', () => {
-    it('should throw 404 if horse not found', async () => {
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
+  describe('createMedicalRecord', () => {
+    it('should throw ForbiddenException if user is not VETERINARIAN or CLUB_MANAGER', async () => {
+      await expect(
+        service.createMedicalRecord(mockOwnerUser, {
+          horseId: 'horse-1',
+          examinationType: 'Khám bệnh',
+          reason: 'Lý do khám bệnh chi tiết',
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw NotFoundException if horse does not exist', async () => {
       mockPrismaService.horse.findUnique.mockResolvedValue(null);
-      await expect(service.checkHorseAccess('invalid-id', mockUserVet)).rejects.toThrow(
-        HttpException,
-      );
+
+      await expect(
+        service.createMedicalRecord(mockVetUser, {
+          horseId: 'non-existent-horse',
+          examinationType: 'Khám bệnh',
+          reason: 'Lý do khám bệnh chi tiết',
+        }),
+      ).rejects.toThrow(NotFoundException);
     });
 
-    it('should allow Vet, Trainer, CM to access any horse', async () => {
-      mockPrismaService.horse.findUnique.mockResolvedValue(mockHorse);
-      const res = await service.checkHorseAccess('horse-1', mockUserVet);
-      expect(res).toBeDefined();
-    });
+    it('should create medical record successfully', async () => {
+      mockPrismaService.horse.findUnique.mockResolvedValue({ id: 'horse-1', name: 'Thunder' });
+      mockPrismaService.medicalRecord.create.mockResolvedValue({
+        id: 'rec-1',
+        horseId: 'horse-1',
+        veterinarianUserId: mockVetUser.userId,
+        symptoms: 'Triệu chứng sốt',
+        clinicalDiagnosis: 'Cảm cúm',
+      });
 
-    it('should allow assigned Groom to access horse', async () => {
-      mockPrismaService.horse.findUnique.mockResolvedValue(mockHorse);
-      const res = await service.checkHorseAccess('horse-1', mockUserGroom);
-      expect(res).toBeDefined();
-    });
+      const result = await service.createMedicalRecord(mockVetUser, {
+        horseId: 'horse-1',
+        examinationType: 'Khám bệnh',
+        reason: 'Triệu chứng sốt',
+        diagnosis: 'Cảm cúm',
+      });
 
-    it('should throw 403 if unassigned Groom attempts access', async () => {
-      mockPrismaService.horse.findUnique.mockResolvedValue(mockHorse);
-      await expect(service.checkHorseAccess('horse-1', mockUserOtherGroom)).rejects.toThrow(
-        HttpException,
-      );
-    });
-
-    it('should allow Horse Owner to access owned horse', async () => {
-      mockPrismaService.horse.findUnique.mockResolvedValue(mockHorse);
-      const res = await service.checkHorseAccess('horse-1', mockUserOwner);
-      expect(res).toBeDefined();
-    });
-
-    it('should throw 403 if Owner attempts access to unowned horse', async () => {
-      mockPrismaService.horse.findUnique.mockResolvedValue(mockHorse);
-      await expect(service.checkHorseAccess('horse-1', mockUserOtherOwner)).rejects.toThrow(
-        HttpException,
-      );
+      expect(result.id).toBe('rec-1');
+      expect(mockAuditService.record).toHaveBeenCalled();
     });
   });
 
-  describe('getHealthBoard', () => {
-    beforeEach(() => {
-      mockPrismaService.horse.findUnique.mockResolvedValue(mockHorse);
+  describe('getMedicalRecordDetail', () => {
+    it('should throw NotFoundException if record not found', async () => {
+      mockPrismaService.medicalRecord.findUnique.mockResolvedValue(null);
+
+      await expect(service.getMedicalRecordDetail('invalid-id', mockVetUser)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should return record detail for veterinarian', async () => {
+      const mockRecord = {
+        id: 'rec-1',
+        horseId: 'horse-1',
+        symptoms: 'Khớp sưng nhẹ',
+        clinicalDiagnosis: 'Viêm khớp nhẹ',
+        treatmentProtocol: 'Nghỉ ngơi 3 ngày',
+        prescriptionDetails: JSON.stringify([{ medicationName: 'Aspirin' }]),
+      };
+      mockPrismaService.medicalRecord.findUnique.mockResolvedValue(mockRecord);
+
+      const result = await service.getMedicalRecordDetail('rec-1', mockVetUser);
+      expect(result).toEqual(mockRecord);
+    });
+  });
+
+  describe('closeMedicalRecord', () => {
+    it('should close medical record with conclusion', async () => {
+      const mockRecord = {
+        id: 'rec-1',
+        treatmentProtocol: 'Phác đồ ban đầu',
+      };
+      mockPrismaService.medicalRecord.findUnique.mockResolvedValue(mockRecord);
+      mockPrismaService.medicalRecord.update.mockResolvedValue({
+        ...mockRecord,
+        treatmentProtocol: 'Phác đồ ban đầu\n[KẾT LUẬN]: Đã phục hồi hoàn toàn',
+      });
+
+      const result = await service.closeMedicalRecord('rec-1', mockVetUser, {
+        conclusion: 'Đã phục hồi hoàn toàn',
+      });
+
+      expect(result.treatmentProtocol).toContain('Đã phục hồi hoàn toàn');
+      expect(mockAuditService.record).toHaveBeenCalled();
+    });
+  });
+
+  describe('createMedicalLock', () => {
+    it('should create medical lock and update horse status', async () => {
+      mockPrismaService.horse.findUnique.mockResolvedValue({ id: 'horse-1', name: 'Thunder' });
       mockPrismaService.medicalLock.findFirst.mockResolvedValue(null);
-      mockPrismaService.medicalRecord.findMany.mockResolvedValue([
-        {
-          id: 'rec-1',
-          examinationDate: new Date('2026-09-01'),
-          clinicalDiagnosis: 'Viêm gân nhẹ',
-          symptoms: 'Đi khập khiễng',
-          treatmentProtocol: 'Chườm đá',
-          prescriptionDetails: 'Paracetamol 500mg',
-          requiresFollowUp: false,
-          veterinarian: { id: 'vet-1', fullName: 'Dr. Sarah' },
-        },
-      ]);
-      mockPrismaService.injuryLog.findMany.mockResolvedValue([
-        {
-          id: 'inj-1',
-          coordinateX: 0.5,
-          coordinateY: 0.5,
-          anatomicalZone: 'Leg',
-          bodySide: 'LEFT',
-          injuryType: 'Sprain',
-          severity: 'MILD',
-          status: 'ACTIVE',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      ]);
-      mockPrismaService.medicalLock.findMany.mockResolvedValue([]);
-      mockPrismaService.preventiveSchedule.findMany.mockResolvedValue([]);
-      mockPrismaService.dailyGroomingLog.findMany.mockResolvedValue([
-        {
-          id: 'log-1',
-          shiftDate: new Date(),
-          shiftType: 'MORNING',
-          healthObservations: 'Ngựa ăn ngoan, bình thường',
-          groom: { id: 'groom-1', fullName: 'Groom Hand' },
-        },
-      ]);
-    });
+      mockPrismaService.medicalLock.create.mockResolvedValue({
+        id: 'lock-1',
+        horseId: 'horse-1',
+        isLocked: true,
+      });
 
-    it('should return 6 tabs structure for Vet', async () => {
-      const result = await service.getHealthBoard('horse-1', mockUserVet);
+      const result = await service.createMedicalLock(mockVetUser, {
+        horseId: 'horse-1',
+        expectedRestDays: 7,
+        lockReason: 'Chấn thương cơ đùi',
+        unlockConditions: 'Hết sưng và chạy bình thường',
+      });
 
-      expect(result.horse.id).toBe('horse-1');
-      expect(result.tabs.overview.activeMedications).not.toBeNull();
-      expect(result.tabs.medicalRecords).not.toBeNull();
-      expect(result.tabs.medicalLocks).not.toBeNull();
-      expect(result.tabs.observationNotes).not.toBeNull();
-    });
-
-    it('should hide activeMedications and medicalRecords for Groom', async () => {
-      const result = await service.getHealthBoard('horse-1', mockUserGroom);
-
-      expect(result.tabs.overview.activeMedications).toBeNull();
-      expect(result.tabs.medicalRecords).toBeNull();
-      expect(result.tabs.medicalLocks).toBeNull();
-      expect(result.tabs.observationNotes).not.toBeNull();
-    });
-
-    it('should restrict fields in medicalRecords and hide observationNotes for Owner', async () => {
-      const result = await service.getHealthBoard('horse-1', mockUserOwner);
-
-      expect(result.tabs.overview.activeMedications).toBeNull();
-      expect(result.tabs.medicalRecords).not.toBeNull();
-      expect(result.tabs.medicalRecords![0].symptoms).toBeUndefined(); // scoped out
-      expect(result.tabs.medicalLocks).toBeNull();
-      expect(result.tabs.observationNotes).toBeNull();
+      expect(result.id).toBe('lock-1');
+      expect(mockPrismaService.horse.update).toHaveBeenCalledWith({
+        where: { id: 'horse-1' },
+        data: expect.objectContaining({ isMedicalLocked: true }),
+      });
     });
   });
 });
