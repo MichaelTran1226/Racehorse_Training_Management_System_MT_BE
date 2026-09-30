@@ -22,6 +22,7 @@ describe('AccountsService', () => {
   const actor = { id: 'viet', name: 'Đỗ Quốc Việt' };
 
   const mockPrisma = {
+    $queryRaw: jest.fn(),
     user: {
       findUnique: jest.fn(),
       create: jest.fn(),
@@ -46,6 +47,9 @@ describe('AccountsService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockPrisma.$transaction.mockImplementation((work: (tx: unknown) => unknown) =>
+      work(mockPrisma),
+    );
     service = new AccountsService(
       mockPrisma as unknown as PrismaService,
       mockMail as unknown as MailService,
@@ -146,5 +150,72 @@ describe('AccountsService', () => {
 
     expect(result.granted).toBe(1);
     expect(result.revoked).toBe(1);
+    expect(mockPrisma.$transaction).toHaveBeenCalledWith(expect.any(Function));
+    expect(mockAudit.record).toHaveBeenCalledWith(
+      actor,
+      'PERMISSIONS_CHANGED',
+      expect.any(String),
+      'nam',
+      expect.objectContaining({ oldValues: expect.any(Object), newValues: expect.any(Object) }),
+      mockPrisma,
+    );
+  });
+
+  it('keeps deleted target identity and audit inside its transaction', async () => {
+    withTarget({ ...manager, id: 'unused', status: UserStatus.INVITED });
+    await service.remove(actor, 'unused');
+    expect(mockPrisma.$transaction).toHaveBeenCalledWith(expect.any(Function));
+    expect(mockAudit.record).toHaveBeenCalledWith(
+      actor,
+      'ACCOUNT_DELETED',
+      expect.any(String),
+      'unused',
+      expect.objectContaining({ oldValues: expect.any(Object) }),
+      mockPrisma,
+    );
+  });
+
+  it('aborts a permission transaction when audit writing fails', async () => {
+    withTarget({ ...manager, id: 'nam', role: Role.HEAD_TRAINER });
+    mockAudit.record.mockRejectedValueOnce(new Error('audit unavailable'));
+    await expect(service.updatePermissions(actor, 'nam', { viewAudit: true })).rejects.toThrow(
+      'audit unavailable',
+    );
+    expect(mockPrisma.$transaction).toHaveBeenCalledWith(expect.any(Function));
+  });
+
+  it('records both sides of a profile edit using the transaction client', async () => {
+    withTarget({ ...manager, id: 'nam', phoneNumber: null });
+    await service.update(actor, 'nam', { fullName: 'New name', phone: '123' });
+    expect(mockAudit.record).toHaveBeenCalledWith(
+      actor,
+      'ACCOUNT_EDITED',
+      expect.any(String),
+      'nam',
+      {
+        oldValues: { fullName: manager.fullName, phoneNumber: null },
+        newValues: { fullName: 'New name', phoneNumber: '123' },
+      },
+      mockPrisma,
+    );
+  });
+
+  it('reads the before-value only after acquiring the account row lock', async () => {
+    withTarget({ ...manager, id: 'nam', phoneNumber: null });
+    mockPrisma.$queryRaw.mockImplementationOnce(() => {
+      // A writer that held the lock before us has just committed.
+      withTarget({ ...manager, id: 'nam', fullName: 'Concurrent name', phoneNumber: null });
+      return Promise.resolve([{ id: 'nam' }]);
+    });
+    await service.update(actor, 'nam', { fullName: 'Final name' });
+    expect(mockAudit.record).toHaveBeenCalledWith(
+      actor,
+      'ACCOUNT_EDITED',
+      expect.any(String),
+      'nam',
+      expect.objectContaining({ oldValues: { fullName: 'Concurrent name', phoneNumber: null } }),
+      mockPrisma,
+    );
+    expect(mockPrisma.$queryRaw).toHaveBeenCalled();
   });
 });

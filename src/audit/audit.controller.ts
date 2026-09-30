@@ -5,12 +5,20 @@ import { RequirePermission } from '../common/decorators/require-permission.decor
 import { str } from '../common/utils/input';
 import { AuditService } from './audit.service';
 import { ForbiddenDto, PermissionRequestDto, ResolvePermissionRequestDto } from './dto/audit.dto';
+import { ListAuditDto } from './dto/list-audit.dto';
 
 @ApiTags('Audit Logs')
 @ApiBearerAuth('JWT-auth')
 @Controller()
 export class AuditController {
   constructor(private readonly auditService: AuditService) {}
+
+  @Get('audit-logs')
+  @RequirePermission('viewAudit')
+  @ApiOperation({ summary: 'Tra cứu nhật ký bất biến, lọc và phân trang (API-017)' })
+  list(@Query() query: ListAuditDto) {
+    return this.auditService.list(query);
+  }
 
   @Post('audit/forbidden')
   @HttpCode(HttpStatus.OK)

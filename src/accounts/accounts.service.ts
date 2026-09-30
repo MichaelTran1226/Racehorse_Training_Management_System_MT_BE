@@ -92,7 +92,6 @@ export class AccountsService {
 
   /** Sửa họ tên + số điện thoại. Email (tên đăng nhập) và vai trò không đổi ở đây. */
   async update(actor: AuditActor, id: string, dto: UpdateAccountDto): Promise<User> {
-    const target = await this.find(id);
     const fullName = str(dto.fullName);
     const phone = str(dto.phone);
     if (!fullName) {
@@ -106,23 +105,31 @@ export class AccountsService {
       });
     }
 
-    const oldPhone = target.phoneNumber ?? '';
-    const changes: string[] = [];
-    if (fullName !== target.fullName) changes.push(`name ${target.fullName} → ${fullName}`);
-    if (phone !== oldPhone) changes.push(`phone ${oldPhone || '—'} → ${phone || '—'}`);
-    if (changes.length === 0) return target;
+    return this.prisma.$transaction(async (tx) => {
+      const target = await this.lockAccount(tx, id);
+      const oldPhone = target.phoneNumber ?? '';
+      const changes: string[] = [];
+      if (fullName !== target.fullName) changes.push(`name ${target.fullName} → ${fullName}`);
+      if (phone !== oldPhone) changes.push(`phone ${oldPhone || '—'} → ${phone || '—'}`);
+      if (changes.length === 0) return target;
 
-    const user = await this.prisma.user.update({
-      where: { id: target.id },
-      data: { fullName, phoneNumber: phone || null },
+      const user = await tx.user.update({
+        where: { id: target.id },
+        data: { fullName, phoneNumber: phone || null },
+      });
+      await this.audit.record(
+        actor,
+        'ACCOUNT_EDITED',
+        `${target.fullName}: ${changes.join(', ')}`,
+        target.id,
+        {
+          oldValues: { fullName: target.fullName, phoneNumber: target.phoneNumber },
+          newValues: { fullName, phoneNumber: phone || null },
+        },
+        tx,
+      );
+      return user;
     });
-    await this.audit.record(
-      actor,
-      'ACCOUNT_EDITED',
-      `${target.fullName}: ${changes.join(', ')}`,
-      target.id,
-    );
-    return user;
   }
 
   // ------------------------------------------------------------------ đổi trạng thái
@@ -147,7 +154,6 @@ export class AccountsService {
     action: AccountAction,
     dto: ReasonDto,
   ): Promise<User> {
-    const target = await this.find(id);
     const reason = str(dto.reason);
     if (reason.length > REASON_MAX) {
       throw apiError(
@@ -157,68 +163,76 @@ export class AccountsService {
         { field: 'reason' },
       );
     }
-    let data: Prisma.UserUpdateInput;
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const target = await this.lockAccount(tx, id);
+      let data: Prisma.UserUpdateInput;
 
-    switch (action) {
-      case 'approve':
-      case 'decline':
-        if (target.status !== UserStatus.PENDING_APPROVAL) {
-          throw apiError(HttpStatus.CONFLICT, 'INVALID_STATE', 'Not waiting for approval');
-        }
-        data =
-          action === 'approve'
-            ? { status: UserStatus.ACTIVE, statusReason: null }
-            : { status: UserStatus.REJECTED, statusReason: reason || null };
-        break;
-      case 'lock':
-        if (target.status !== UserStatus.ACTIVE) {
-          throw apiError(
-            HttpStatus.CONFLICT,
-            'INVALID_STATE',
-            'Only an active account can be locked',
-          );
-        }
-        await this.assertCanRemove(actor, target, 'CANNOT_LOCK_SELF');
-        data = { status: UserStatus.LOCKED, lockedAt: new Date(), statusReason: reason || null };
-        break;
-      case 'unlock':
-        if (target.status !== UserStatus.LOCKED) {
-          throw apiError(HttpStatus.CONFLICT, 'INVALID_STATE', 'Not locked');
-        }
-        data = { status: UserStatus.ACTIVE, lockedAt: null, statusReason: null };
-        break;
-      case 'deactivate':
-        if (target.status !== UserStatus.ACTIVE && target.status !== UserStatus.LOCKED) {
-          throw apiError(
-            HttpStatus.CONFLICT,
-            'INVALID_STATE',
-            'Only an active or locked account can be deactivated',
-          );
-        }
-        await this.assertCanRemove(actor, target, 'CANNOT_CHANGE_SELF');
-        data = { status: UserStatus.INACTIVE, lockedAt: null, statusReason: reason || null };
-        break;
-      case 'reactivate':
-        if (target.status !== UserStatus.INACTIVE) {
-          throw apiError(HttpStatus.CONFLICT, 'INVALID_STATE', 'Not inactive');
-        }
-        data = { status: UserStatus.ACTIVE, statusReason: null };
-        break;
-    }
+      switch (action) {
+        case 'approve':
+        case 'decline':
+          if (target.status !== UserStatus.PENDING_APPROVAL) {
+            throw apiError(HttpStatus.CONFLICT, 'INVALID_STATE', 'Not waiting for approval');
+          }
+          data =
+            action === 'approve'
+              ? { status: UserStatus.ACTIVE, statusReason: null }
+              : { status: UserStatus.REJECTED, statusReason: reason || null };
+          break;
+        case 'lock':
+          if (target.status !== UserStatus.ACTIVE) {
+            throw apiError(
+              HttpStatus.CONFLICT,
+              'INVALID_STATE',
+              'Only an active account can be locked',
+            );
+          }
+          await this.assertCanRemove(actor, target, 'CANNOT_LOCK_SELF');
+          data = { status: UserStatus.LOCKED, lockedAt: new Date(), statusReason: reason || null };
+          break;
+        case 'unlock':
+          if (target.status !== UserStatus.LOCKED) {
+            throw apiError(HttpStatus.CONFLICT, 'INVALID_STATE', 'Not locked');
+          }
+          data = { status: UserStatus.ACTIVE, lockedAt: null, statusReason: null };
+          break;
+        case 'deactivate':
+          if (target.status !== UserStatus.ACTIVE && target.status !== UserStatus.LOCKED) {
+            throw apiError(
+              HttpStatus.CONFLICT,
+              'INVALID_STATE',
+              'Only an active or locked account can be deactivated',
+            );
+          }
+          await this.assertCanRemove(actor, target, 'CANNOT_CHANGE_SELF');
+          data = { status: UserStatus.INACTIVE, lockedAt: null, statusReason: reason || null };
+          break;
+        case 'reactivate':
+          if (target.status !== UserStatus.INACTIVE) {
+            throw apiError(HttpStatus.CONFLICT, 'INVALID_STATE', 'Not inactive');
+          }
+          data = { status: UserStatus.ACTIVE, statusReason: null };
+          break;
+      }
 
-    const updated = await this.prisma.user.update({
-      where: { id: target.id },
-      data: { ...data, statusChangedAt: new Date(), statusChangedBy: actor.name },
+      const changed = await tx.user.update({
+        where: { id: target.id },
+        data: { ...data, statusChangedAt: new Date(), statusChangedBy: actor.name },
+      });
+      await this.audit.record(
+        actor,
+        `ACCOUNT_${action.toUpperCase()}`,
+        reason ? `${target.fullName} — ${reason}` : target.fullName,
+        target.id,
+        {
+          oldValues: { status: target.status, statusReason: target.statusReason },
+          newValues: { status: changed.status, statusReason: changed.statusReason },
+        },
+        tx,
+      );
+      return changed;
     });
-    // Không còn ACTIVE => đăng xuất mọi thiết bị (JwtStrategy cũng chặn ở request kế tiếp).
+    // Inactive accounts are rejected by JwtStrategy even if session cleanup fails.
     if (updated.status !== UserStatus.ACTIVE) await this.auth.revokeAllTokens(updated.id);
-
-    await this.audit.record(
-      actor,
-      `ACCOUNT_${action.toUpperCase()}`,
-      reason ? `${target.fullName} — ${reason}` : target.fullName,
-      target.id,
-    );
     if (action === 'approve') await this.mailApproved(updated);
     if (action === 'decline') await this.mailDeclined(updated);
     return updated;
@@ -252,60 +266,79 @@ export class AccountsService {
   // ------------------------------------------------------------------ xóa hẳn
 
   async remove(actor: AuditActor, id: string): Promise<{ ok: true }> {
-    const target = await this.find(id);
-    if (target.id === actor.id) {
-      throw apiError(HttpStatus.CONFLICT, 'CANNOT_CHANGE_SELF', 'Not allowed on your own account');
-    }
-    if (!DELETABLE.includes(target.status)) {
-      throw apiError(
-        HttpStatus.CONFLICT,
-        'CANNOT_DELETE_USED',
-        'This account has been used; deactivate it instead',
+    await this.prisma.$transaction(async (tx) => {
+      const target = await this.lockAccount(tx, id);
+      if (target.id === actor.id) {
+        throw apiError(
+          HttpStatus.CONFLICT,
+          'CANNOT_CHANGE_SELF',
+          'Not allowed on your own account',
+        );
+      }
+      if (!DELETABLE.includes(target.status)) {
+        throw apiError(
+          HttpStatus.CONFLICT,
+          'CANNOT_DELETE_USED',
+          'This account has been used; deactivate it instead',
+        );
+      }
+      // Dọn dữ liệu phụ theo email (không có khóa ngoại tới User).
+      await tx.otpCode.deleteMany({ where: { email: target.email } });
+      await tx.resetToken.deleteMany({ where: { email: target.email } });
+      await tx.loginAttempt.deleteMany({ where: { email: target.email } });
+      await tx.user.delete({ where: { id: target.id } });
+      await this.audit.record(
+        actor,
+        'ACCOUNT_DELETED',
+        `${target.fullName} (${target.email}, ${target.status})`,
+        target.id,
+        { oldValues: { fullName: target.fullName, email: target.email, status: target.status } },
+        tx,
       );
-    }
-    // Dọn dữ liệu phụ theo email (không có khóa ngoại tới User).
-    await this.prisma.$transaction([
-      this.prisma.otpCode.deleteMany({ where: { email: target.email } }),
-      this.prisma.resetToken.deleteMany({ where: { email: target.email } }),
-      this.prisma.loginAttempt.deleteMany({ where: { email: target.email } }),
-      this.prisma.user.delete({ where: { id: target.id } }),
-    ]);
-    await this.audit.record(
-      actor,
-      'ACCOUNT_DELETED',
-      `${target.fullName} (${target.email}, ${target.status})`,
-    );
+    });
     return { ok: true };
   }
 
   // ------------------------------------------------------------------ quyền
 
   async updatePermissions(actor: AuditActor, id: string, incoming: Record<string, unknown>) {
-    const target = await this.find(id);
-    const current = permissionsOf(target);
-    const next = normalizePermissions(target.role, { ...current, ...incoming });
+    return this.prisma.$transaction(async (tx) => {
+      const target = await this.lockAccount(tx, id);
+      const current = permissionsOf(target);
+      const next = normalizePermissions(target.role, { ...current, ...incoming });
 
-    let granted = 0;
-    let revoked = 0;
-    for (const { key } of PERMISSIONS) {
-      if (next[key] && !current[key]) granted += 1;
-      if (!next[key] && current[key]) revoked += 1;
-    }
+      let granted = 0;
+      let revoked = 0;
+      for (const { key } of PERMISSIONS) {
+        if (next[key] && !current[key]) granted += 1;
+        if (!next[key] && current[key]) revoked += 1;
+      }
 
-    const user = await this.prisma.user.update({
-      where: { id: target.id },
-      data: {
-        permissions: next,
-        permissionsChangedAt: new Date(),
-        permissionsChangedBy: actor.name,
-      },
+      const changed = await tx.user.update({
+        where: { id: target.id },
+        data: {
+          permissions: next,
+          permissionsChangedAt: new Date(),
+          permissionsChangedBy: actor.name,
+        },
+      });
+      await this.audit.record(
+        actor,
+        'PERMISSIONS_CHANGED',
+        `${target.fullName}: ${granted} granted, ${revoked} revoked`,
+        target.id,
+        { oldValues: current, newValues: next },
+        tx,
+      );
+      return { user: changed, granted, revoked };
     });
-    await this.audit.record(
-      actor,
-      'PERMISSIONS_CHANGED',
-      `${target.fullName}: ${granted} granted, ${revoked} revoked`,
-      target.id,
-    );
-    return { user, granted, revoked };
+  }
+
+  private async lockAccount(tx: Prisma.TransactionClient, id: string): Promise<User> {
+    // Read after acquiring the row lock: before-values must reflect the last committed writer.
+    await tx.$queryRaw`SELECT "id" FROM "User" WHERE "id" = ${id} FOR UPDATE`;
+    const user = await tx.user.findUnique({ where: { id } });
+    if (!user) throw apiError(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Account not found');
+    return user;
   }
 }

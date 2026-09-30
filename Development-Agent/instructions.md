@@ -99,6 +99,8 @@ Thay đổi database (PostgreSQL + Prisma) tối thiểu phải:
 
 Script dùng để kiểm tra (giống CI): BE `lint`, `typecheck`, `test:unit`, `test:e2e`, `db:seed`; FE `lint`, `typecheck`, `build`, `test:e2e`. Thay đổi DB dùng `npx prisma db push`, không dùng `db:migrate`.
 
+**Lưu ý quan trọng về CI Cache (Prisma):** Luôn đảm bảo chạy `npx prisma generate` trước khi chạy Typecheck trong quá trình CI/CD để tránh lỗi do GitHub CI sử dụng lại Prisma Client cũ từ Cache.
+
 Sau mỗi vertical slice, Agent phải xem diff và chạy formatter/linter/typecheck hẹp trước khi sang slice tiếp theo. Không tạo file hoặc abstraction chỉ để lấp chỗ trống; mọi code mới phải phục vụ requirement, test, observability hoặc vận hành đã xác định.
 
 ## Kiểm thử bắt buộc
