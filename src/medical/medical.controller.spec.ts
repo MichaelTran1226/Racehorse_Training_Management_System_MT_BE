@@ -78,25 +78,10 @@ describe('MedicalController', () => {
 
   describe('getHealthBoard', () => {
     it('should call service.getHealthBoard and return result', async () => {
-      const res = await controller.getHealthBoard('horse-1', {}, mockUser);
+      const query = { search: 'horse-1' };
+      const res = await controller.getHealthBoard(query);
       expect(res).toEqual(mockHealthBoard);
-      expect(service.getHealthBoard).toHaveBeenCalledWith('horse-1', mockUser);
-    });
-  });
-
-  describe('getMedicalHorseProfile', () => {
-    it('should call service.getHealthBoard for SC-3.02 alias', async () => {
-      const res = await controller.getMedicalHorseProfile('horse-1', {}, mockUser);
-      expect(res).toEqual(mockHealthBoard);
-      expect(service.getHealthBoard).toHaveBeenCalledWith('horse-1', mockUser);
-    });
-  });
-
-  describe('getObservationNotes', () => {
-    it('should call service.getObservationNotes', async () => {
-      const res = await controller.getObservationNotes('horse-1', {}, mockUser);
-      expect(res).toEqual([]);
-      expect(service.getObservationNotes).toHaveBeenCalledWith('horse-1', {}, mockUser);
+      expect(service.getHealthBoard).toHaveBeenCalledWith(query);
     });
   });
 });
