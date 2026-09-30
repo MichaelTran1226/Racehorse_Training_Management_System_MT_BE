@@ -1,4 +1,5 @@
-import { Global, Module } from '@nestjs/common';
+import { Global, MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { AuditContextMiddleware } from './audit-context.middleware';
 import { AuditController } from './audit.controller';
 import { AuditService } from './audit.service';
 import { CounterService } from './counter.service';
@@ -9,4 +10,8 @@ import { CounterService } from './counter.service';
   providers: [AuditService, CounterService],
   exports: [AuditService, CounterService],
 })
-export class AuditModule {}
+export class AuditModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(AuditContextMiddleware).forRoutes('*');
+  }
+}

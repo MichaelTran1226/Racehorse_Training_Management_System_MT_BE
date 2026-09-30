@@ -1,9 +1,11 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { PermissionRequestStatus, Role, UserStatus } from '@prisma/client';
+import { PermissionRequestStatus, Prisma, Role, UserStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { apiError } from '../common/exceptions/api-error';
 import { yymm } from '../common/utils/input';
 import { CounterService } from './counter.service';
+import { ListAuditDto } from './dto/list-audit.dto';
+import { auditRequestContext } from './audit-context.middleware';
 
 /** Người thực hiện thao tác: id (nếu đã đăng nhập) + tên hiển thị trong nhật ký. */
 export interface AuditActor {
@@ -24,19 +26,63 @@ export class AuditService {
     private readonly counter: CounterService,
   ) {}
 
-  /** Ghi nhật ký bất biến. Lỗi ghi log không làm hỏng thao tác chính. */
-  async record(actor: AuditActor, action: string, detail: string, entityId?: string | null) {
+  async list(query: ListAuditDto) {
+    const { page = 1, pageSize = 20, userId, actor, action, entityName, from, to } = query;
+    if (from && to && new Date(from) > new Date(to)) {
+      throw apiError(HttpStatus.BAD_REQUEST, 'VALIDATION', 'From must not be later than to');
+    }
+    const where: Prisma.AuditLogWhereInput = {
+      ...(userId && { userId }),
+      ...(action && { action }),
+      ...(entityName && { entityName }),
+      ...(actor && { user: { fullName: { contains: actor, mode: 'insensitive' as const } } }),
+      ...((from || to) && {
+        timestamp: {
+          ...(from && { gte: new Date(from) }),
+          ...(to && { lte: new Date(to) }),
+        },
+      }),
+    };
+    const [logs, total] = await this.prisma.$transaction(
+      [
+        this.prisma.auditLog.findMany({
+          where,
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+          orderBy: [{ timestamp: 'desc' }, { id: 'desc' }],
+          include: { user: { select: { id: true, fullName: true } } },
+        }),
+        this.prisma.auditLog.count({ where }),
+      ],
+      { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
+    );
+    return { logs, total, page, pageSize };
+  }
+
+  /** Critical writes pass their transaction so an audit failure rolls back the business write. */
+  async record(
+    actor: AuditActor,
+    action: string,
+    detail: string,
+    entityId?: string | null,
+    snapshots: { oldValues?: Prisma.InputJsonValue; newValues?: Prisma.InputJsonValue } = {},
+    tx?: Prisma.TransactionClient,
+  ) {
     try {
-      await this.prisma.auditLog.create({
+      await (tx ?? this.prisma).auditLog.create({
         data: {
           userId: actor.id ?? null,
           action,
           entityName: 'User',
           entityId: entityId ?? actor.id ?? null,
-          newValuesJson: JSON.stringify({ actor: actor.name, detail }),
+          oldValuesJson:
+            snapshots.oldValues === undefined ? null : JSON.stringify(snapshots.oldValues),
+          newValuesJson: JSON.stringify({ actor: actor.name, detail, values: snapshots.newValues }),
+          ...auditRequestContext.getStore(),
         },
       });
     } catch (err) {
+      if (tx) throw err;
       this.logger.warn(`Failed to write audit log ${action}: ${String(err)}`);
     }
   }
