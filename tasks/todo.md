@@ -1,81 +1,62 @@
-# Phân chia task — 2 cặp (mỗi cặp 1 FE + 1 BE) · Flow 1–3
+# Danh sách task — Flow 1–3 · 2 cặp (mỗi cặp 1 FE + 1 BE)
 
-Nguồn: `Tai_Lieu` — `Flow1_HoSoNgua.md`, `Flow2_GiaoAn.md`, `Flow3_YTe.md` (mã `SC-x.xx` = màn hình, `FR-x.xx` = chức năng).
-Auth không có trong Tai_Lieu, giữ theo các issue Auth đã có trên GitHub. Flow 4 (Chuồng trại), Flow 5 (Thi đấu), Flow 6 (AI) để sau.
+Mỗi task là 1 issue ở repo BE và nằm trên [Project 2](https://github.com/users/MichaelTran1226/projects/2). Một task gồm cả phần FE (repo `MT_FE`) và phần BE (repo `MT_BE`) của cùng cặp. Tick khi cả FE và BE đã merge.
 
-| Cặp | Frontend (`MT_FE`) | Backend (`MT_BE`) | Phạm vi |
-|---|---|---|---|
-| **Cặp 1** | _FE Cặp 1_ | _BE Cặp 1_ | Auth + Flow 1 Hồ sơ & định danh ngựa (gồm sơ đồ chuồng) + Sơ đồ sức khỏe SC-3.01 |
-| **Cặp 2** | _FE Cặp 2_ | _BE Cặp 2_ | Flow 3 Y tế & chấn thương + Flow 2 Giáo án huấn luyện |
+Kế hoạch, lịch sprint và điểm nối giữa 2 cặp: [plan.md](plan.md) · Bảng phân công: [Phan_Cong_Task.xlsx](Phan_Cong_Task.xlsx)
 
-Quy ước: mỗi task có 2 phần — **FE** làm màn hình trong repo `MT_FE`, **BE** làm API trong repo `MT_BE`. Hai người trong cùng cặp chốt API (endpoint, body, mã lỗi) trước khi code. Mã `GH-FE-xx` / `GH-BE-xx` là issue cũ trên GitHub mà task đó thay thế hoặc bao gồm.
+## Việc chung
 
----
+### Sprint 1 (28/09 – 04/10/2026)
 
-## Việc chung (cả nhóm)
+- [ ] `C-01` Nền tảng FE: design tokens, Master layout & routing — [#31](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/31)
 
-- [ ] `C-01` Nền tảng FE: design tokens, Master layout, routing — `GH-FE-01` (issue #1 còn mở; PR #2 foundation đã merge) — **FE Cặp 1** dựng, FE Cặp 2 review
-- [x] `C-02` Nền tảng BE: NestJS + Prisma, CI, health check — `GH-BE-01` (PR #20)
-- [ ] `C-03` Nghiệm thu toàn trình MVP-QA — `GH-FE-19` / `GH-BE-19` — Sprint 3, cả 2 cặp
+### Sprint 3 (12/10 – 18/10/2026)
 
----
+- [ ] `C-03` Nghiệm thu toàn trình MVP-QA — [#55](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/55)
 
-## CẶP 1 — Auth + Flow 1: Hồ sơ & định danh ngựa (+ SC-3.01)
+## CẶP 1 — Auth + Flow 1 Hồ sơ ngựa + Sơ đồ sức khỏe
 
-### Sprint 1 (28/09 – 04/10/2026) — Auth & phân quyền
+### Sprint 1 (28/09 – 04/10/2026)
 
-- [ ] `P1-01` Đăng nhập, JWT, điều hướng 5 vai trò — AUTH01 — `GH-FE-02` / `GH-BE-02` (BE đã merge PR #21)
-- [ ] `P1-02` Đăng ký Chủ ngựa + xác thực OTP email — AUTH02 — `GH-FE-03` / `GH-BE-03`
-- [ ] `P1-03` Quên & đặt lại mật khẩu — AUTH03, AUTH04 — `GH-FE-04` / `GH-BE-04`
-- [ ] `P1-04` Mời nhân sự nội bộ & danh sách nhân sự — SYS01, SYS02 — `GH-FE-05` / `GH-BE-05`
-- [ ] `P1-05` RBAC 5 vai trò, route guard, cách ly dữ liệu Chủ ngựa — `GH-FE-06` / `GH-BE-06`
-- [ ] `P1-06` Nhật ký kiểm toán (Audit trail) — `GH-FE-07` / `GH-BE-07`
+- [ ] `P1-01` Đăng nhập, JWT & điều hướng 5 vai trò — [#32](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/32)
+- [ ] `P1-02` Đăng ký Chủ ngựa & xác thực OTP email — [#33](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/33)
+- [ ] `P1-03` Quên & đặt lại mật khẩu — [#34](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/34)
+- [ ] `P1-04` Mời nhân sự nội bộ & danh sách nhân sự — [#35](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/35)
+- [ ] `P1-05` RBAC 5 vai trò, route guard & cách ly dữ liệu Chủ ngựa — [#36](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/36)
+- [ ] `P1-06` Nhật ký kiểm toán (Audit trail) — [#37](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/37)
 
-### Sprint 2 (05/10 – 11/10/2026) — Hồ sơ ngựa & chuồng
+### Sprint 2 (05/10 – 11/10/2026)
 
-- [ ] `P1-07` Danh sách, tạo/sửa, chi tiết hồ sơ ngựa (6 tab) — SC-1.01, SC-1.02, SC-1.03 — FR-1.01…1.04, FR-1.26 — `GH-FE-08` / `GH-BE-08`
-- [ ] `P1-08` Trạng thái ngựa, nhóm y tế, badge/banner Khóa huấn luyện, lịch sử trạng thái — FR-1.05, 1.06, 1.07, 1.17
-- [ ] `P1-09` Sơ đồ chuồng trại, gán/chuyển/trả ô, danh mục khu & ô chuồng, lịch sử ô chuồng — SC-1.04, SC-1.07 — FR-1.09…1.12, 1.18, 1.24 — `GH-FE-09` / `GH-BE-09`
+- [ ] `P1-07` Danh sách, tạo/sửa, chi tiết hồ sơ ngựa (6 tab) — [#38](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/38)
+- [ ] `P1-08` Trạng thái ngựa, nhóm y tế, badge/banner Khóa huấn luyện, lịch sử trạng thái — [#39](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/39)
+- [ ] `P1-09` Sơ đồ chuồng trại, gán/chuyển/trả ô, danh mục khu & ô chuồng — [#40](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/40)
 
-### Sprint 3 (12/10 – 18/10/2026) — Phần còn lại Flow 1 & sơ đồ sức khỏe
+### Sprint 3 (12/10 – 18/10/2026)
 
-- [ ] `P1-10` Nhân viên chăm sóc chính/phụ, lịch sinh hoạt hằng ngày & lịch mẫu — SC-1.08 — FR-1.13, 1.14, 1.15, 1.25
-- [ ] `P1-11` Chủ sở hữu & tỷ lệ, ngừng quản lý/kích hoạt lại, xóa mềm & khôi phục — SC-1.05 — FR-1.08, 1.16, 1.20, 1.21
-- [ ] `P1-12` Danh mục Giống & Màu lông — SC-1.06 — FR-1.22, 1.23
-- [ ] `P1-13` Dòng thời gian vòng đời ngựa (tổng hợp từ Flow 2, 3) — FR-1.19
-- [ ] `P1-14` Sơ đồ sức khỏe đàn ngựa 4 mã màu (thuộc Flow 3, dựa trên sơ đồ chuồng `P1-09`) — SC-3.01 — FR-3.01 — `GH-FE-10` / `GH-BE-10`
+- [ ] `P1-10` Nhân viên chăm sóc, lịch sinh hoạt hằng ngày & lịch mẫu — [#41](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/41)
+- [ ] `P1-11` Chủ sở hữu, ngừng quản lý/kích hoạt lại, xóa mềm & khôi phục — [#42](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/42)
+- [ ] `P1-12` Danh mục Giống & Màu lông — [#43](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/43)
+- [ ] `P1-13` Dòng thời gian vòng đời ngựa — [#44](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/44)
+- [ ] `P1-14` Sơ đồ sức khỏe đàn ngựa 4 mã màu — [#45](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/45)
 
----
+## CẶP 2 — Flow 3 Y tế + Flow 2 Giáo án
 
-## CẶP 2 — Flow 3: Y tế & chấn thương + Flow 2: Giáo án huấn luyện
+### Sprint 1 (28/09 – 04/10/2026)
 
-### Sprint 1 (28/09 – 04/10/2026) — Hồ sơ y tế & bệnh án
+- [ ] `P2-01` Hồ sơ y tế ngựa (6 tab), ghi chú quan sát, quyền xem Owner/Groom — [#46](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/46)
+- [ ] `P2-02` Bệnh án, phác đồ điều trị & kê đơn thuốc — [#47](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/47)
 
-- [ ] `P2-01` Hồ sơ y tế ngựa (6 tab), ghi chú quan sát, quyền xem Owner/Groom — SC-3.02 — FR-3.02, 3.17, 3.18
-- [ ] `P2-02` Bệnh án: danh sách, tạo/sửa, chi tiết, chốt/kết thúc/mở lại, phác đồ, kê đơn — SC-3.03, SC-3.04, SC-3.09 — FR-3.03…3.07, 3.20 — `GH-FE-11` / `GH-BE-11`
+### Sprint 2 (05/10 – 11/10/2026)
 
-### Sprint 2 (05/10 – 11/10/2026) — Chấn thương, Khóa huấn luyện, lịch định kỳ
+- [ ] `P2-03` Mô hình chấn thương 2D & tiến trình hồi phục — [#48](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/48)
+- [ ] `P2-04` Khóa huấn luyện: đặt/gỡ/gia hạn, danh sách & thông báo — [#49](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/49)
+- [ ] `P2-05` Lịch chăm sóc định kỳ (tiêm phòng, tẩy giun, móng) & danh mục loại — [#50](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/50)
 
-- [ ] `P2-03` Mô hình chấn thương 2D & tiến trình hồi phục — SC-3.05 — FR-3.08, 3.09 — `GH-FE-12` / `GH-BE-12`
-- [ ] `P2-04` Khóa huấn luyện: đặt/gỡ/gia hạn, danh sách & lịch sử, thông báo — SC-3.06 — FR-3.10, 3.11, 3.12, 3.19 — `GH-FE-13` / `GH-BE-13`
-- [ ] `P2-05` Lịch chăm sóc định kỳ (tiêm phòng, tẩy giun, móng) & danh mục loại — SC-3.07, SC-3.08 — FR-3.13…3.16 — `GH-FE-18` / `GH-BE-18`
+### Sprint 3 (12/10 – 18/10/2026)
 
-### Sprint 3 (12/10 – 18/10/2026) — Giáo án huấn luyện
+- [ ] `P2-06` Giáo án huấn luyện: lập, sửa, kích hoạt, kết thúc, nhân bản — [#51](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/51)
+- [ ] `P2-07` Chặn bài tập nặng khi có Khóa huấn luyện & khôi phục — [#52](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/52)
+- [ ] `P2-08` Lịch tập, phân công Groom/nài, điều phối chạy thử — [#53](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/53)
+- [ ] `P2-09` Kết quả buổi tập, biểu đồ thể lực, tổng quan huấn luyện — [#54](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/54)
 
-- [ ] `P2-06` Giáo án: danh sách, tạo/sửa theo giai đoạn, chi tiết, kích hoạt, hoàn thành/hủy, nhân bản — SC-2.02, SC-2.03, SC-2.04 — FR-2.02…2.05, 2.08, 2.18, 2.19, 2.21 — `GH-FE-14` / `GH-BE-14`
-- [ ] `P2-07` Chặn bài tập nặng khi có Khóa huấn luyện, khôi phục sau khi gỡ — FR-2.06, 2.07, 2.17 — `GH-FE-15` / `GH-BE-15`
-- [ ] `P2-08` Lịch tập, phân công Groom/nài, điều phối chạy thử, Lịch tập của tôi — SC-2.05, SC-2.08 — FR-2.09…2.12 — `GH-FE-16` / `GH-BE-16`
-- [ ] `P2-09` Kết quả buổi tập, biểu đồ thể lực, tổng quan huấn luyện, Owner xem — SC-2.01, SC-2.06, SC-2.07 — FR-2.01, 2.13…2.16, 2.20 — `GH-FE-17` / `GH-BE-17`
-
----
-
-## Điểm nối giữa 2 cặp (cần thống nhất API)
-
-| Cặp cung cấp | Cặp dùng | Nội dung |
-|---|---|---|
-| Cặp 1 (`P1-05`) | Cặp 2 | Đăng nhập, vai trò, cách ly dữ liệu Owner — mọi API của Cặp 2 dùng chung guard |
-| Cặp 1 (`P1-07`, `P1-09`, `P1-10`) | Cặp 2 | Danh sách ngựa, trạng thái, ô chuồng, nhân viên chăm sóc phụ trách |
-| Cặp 2 (`P2-04`) | Cặp 1 (`P1-08`, `P1-14`) | Sự kiện đặt/gỡ Khóa huấn luyện → đổi trạng thái ngựa, bật/tắt banner, màu trên sơ đồ sức khỏe |
-| Cặp 2 (`P2-02`, `P2-06`…`P2-09`) | Cặp 1 (`P1-13`) | Sự kiện y tế & huấn luyện cho dòng thời gian ngựa |
-
-Trong Sprint 1, Cặp 2 dùng dữ liệu ngựa giả (mock) cho tới khi `P1-07` có API.
+Đã xong trước khi chia lại: nền tảng BE (NestJS + Prisma, CI) — PR #20; API đăng nhập — PR #21.
