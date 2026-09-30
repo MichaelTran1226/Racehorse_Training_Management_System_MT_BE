@@ -22,6 +22,52 @@ export class UserProfileDto {
 
   @ApiProperty({ example: '/manager/dashboard' })
   dashboardUrl: string;
+
+  // Các trường dưới đây khớp PublicAccount bên FE (src/shared/types/auth.ts)
+  @ApiPropertyOptional({ example: '0989 100 200' })
+  phone?: string;
+
+  @ApiPropertyOptional()
+  createdAt?: Date;
+
+  @ApiPropertyOptional()
+  updatedAt?: Date;
+
+  @ApiPropertyOptional({ nullable: true })
+  lastActive?: Date | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  requestedAt?: Date | null;
+
+  @ApiPropertyOptional({ example: 'REQ-2609-014', nullable: true })
+  requestCode?: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  lockedAt?: Date | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  invitedBy?: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  statusReason?: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  statusChangedAt?: Date | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  statusChangedBy?: string | null;
+
+  @ApiPropertyOptional({ example: { viewHorses: true, manageAccounts: true } })
+  permissions?: Record<string, boolean>;
+
+  @ApiPropertyOptional({ nullable: true })
+  permissionsChangedAt?: Date | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  permissionsChangedBy?: string | null;
+
+  @ApiPropertyOptional({ example: { lockLifted: true, dailyDigest: false } })
+  notify?: Record<string, boolean>;
 }
 
 export class AuthResponseDto {

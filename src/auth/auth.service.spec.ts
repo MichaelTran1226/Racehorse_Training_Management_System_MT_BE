@@ -1,10 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { UnauthorizedException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  UnauthorizedException,
+  ForbiddenException,
+  NotFoundException,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Role, UserStatus } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { OtpService } from './otp.service';
+import { AuditService } from '../audit/audit.service';
+import { CounterService } from '../audit/counter.service';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -24,6 +33,22 @@ describe('AuthService', () => {
   const mockPrismaService = {
     user: {
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn().mockImplementation(({ data }) => Promise.resolve({ ...mockUser, ...data })),
+    },
+    loginAttempt: {
+      findUnique: jest.fn(),
+      upsert: jest.fn(),
+      deleteMany: jest.fn(),
+    },
+    resetToken: {
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      deleteMany: jest.fn(),
+    },
+    otpCode: {
+      deleteMany: jest.fn(),
     },
     refreshToken: {
       create: jest.fn(),
@@ -40,6 +65,22 @@ describe('AuthService', () => {
     signAsync: jest.fn().mockResolvedValue('mock-access-token-jwt'),
   };
 
+  const otpRecord = {
+    sentAt: new Date(),
+    expiresAt: new Date(Date.now() + 600000),
+    resendAt: new Date(Date.now() + 60000),
+  };
+  const mockOtpService = {
+    issue: jest.fn().mockResolvedValue(otpRecord),
+    check: jest.fn().mockResolvedValue(undefined),
+    find: jest.fn(),
+  };
+  const mockAuditService = {
+    record: jest.fn().mockResolvedValue(undefined),
+    activeManagerName: jest.fn().mockResolvedValue('Đỗ Quốc Việt'),
+  };
+  const mockCounterService = { next: jest.fn().mockResolvedValue(15) };
+
   beforeEach(async () => {
     jest.clearAllMocks();
 
@@ -48,6 +89,9 @@ describe('AuthService', () => {
         AuthService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: JwtService, useValue: mockJwtService },
+        { provide: OtpService, useValue: mockOtpService },
+        { provide: AuditService, useValue: mockAuditService },
+        { provide: CounterService, useValue: mockCounterService },
       ],
     }).compile();
 
@@ -118,22 +162,31 @@ describe('AuthService', () => {
       ).rejects.toThrow(UnauthorizedException);
     });
 
-    it('should throw ForbiddenException when user account is SUSPENDED', async () => {
+    it('should reject with 423 ACCOUNT_LOCKED when user account is LOCKED', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue({
         ...mockUser,
-        status: UserStatus.SUSPENDED,
+        status: UserStatus.LOCKED,
+        statusReason: 'Shared password',
       });
       jest.spyOn(bcrypt, 'compare').mockImplementation(() => Promise.resolve(true));
 
-      await expect(
-        service.login({ email: 'manager@equiflow.com', password: 'ValidPassword' }),
-      ).rejects.toThrow(ForbiddenException);
+      const error = await service
+        .login({ email: 'manager@equiflow.com', password: 'ValidPassword' })
+        .catch((e: HttpException) => e);
+      expect(error).toBeInstanceOf(HttpException);
+      expect((error as HttpException).getStatus()).toBe(HttpStatus.LOCKED);
+      expect((error as HttpException).getResponse()).toEqual(
+        expect.objectContaining({
+          code: 'ACCOUNT_LOCKED',
+          data: expect.objectContaining({ reason: 'Shared password' }),
+        }),
+      );
     });
 
-    it('should throw ForbiddenException when user account is PENDING_VERIFICATION', async () => {
+    it('should throw ForbiddenException when user account is PENDING_EMAIL', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue({
         ...mockUser,
-        status: UserStatus.PENDING_VERIFICATION,
+        status: UserStatus.PENDING_EMAIL,
       });
       jest.spyOn(bcrypt, 'compare').mockImplementation(() => Promise.resolve(true));
 
@@ -196,7 +249,7 @@ describe('AuthService', () => {
     it('should throw ForbiddenException if user is not active', async () => {
       mockPrismaService.refreshToken.findUnique.mockResolvedValue({
         ...validStoredToken,
-        user: { ...mockUser, status: UserStatus.SUSPENDED },
+        user: { ...mockUser, status: UserStatus.LOCKED },
       });
 
       await expect(service.refreshToken({ refreshToken: 'raw-token' })).rejects.toThrow(
@@ -237,6 +290,138 @@ describe('AuthService', () => {
       mockPrismaService.user.findUnique.mockResolvedValue(null);
 
       await expect(service.getMe('non-existent-user')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('login lockout', () => {
+    it('should return 401 INVALID_CREDENTIALS with attemptsLeft on a wrong password', async () => {
+      mockPrismaService.loginAttempt.findUnique.mockResolvedValue({ fails: 2, lockedUntil: null });
+      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+      jest.spyOn(bcrypt, 'compare').mockImplementation(() => Promise.resolve(false));
+
+      const error = (await service
+        .login({ email: 'manager@equiflow.com', password: 'WrongPassword' })
+        .catch((e: HttpException) => e)) as HttpException;
+
+      expect(error).toBeInstanceOf(UnauthorizedException);
+      expect(error.getResponse()).toEqual(
+        expect.objectContaining({ code: 'INVALID_CREDENTIALS', data: { attemptsLeft: 2 } }),
+      );
+      expect(mockPrismaService.loginAttempt.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({ update: { fails: 3, lockedUntil: null } }),
+      );
+    });
+
+    it('should lock sign-in for 15 minutes on the 5th wrong password', async () => {
+      mockPrismaService.loginAttempt.findUnique.mockResolvedValue({ fails: 4, lockedUntil: null });
+      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+      jest.spyOn(bcrypt, 'compare').mockImplementation(() => Promise.resolve(false));
+
+      const error = (await service
+        .login({ email: 'manager@equiflow.com', password: 'WrongPassword' })
+        .catch((e: HttpException) => e)) as HttpException;
+
+      expect(error.getStatus()).toBe(HttpStatus.TOO_MANY_REQUESTS);
+      expect(error.getResponse()).toEqual(expect.objectContaining({ code: 'ATTEMPTS_EXCEEDED' }));
+    });
+
+    it('should refuse sign-in while the email is locked out, without checking the password', async () => {
+      mockPrismaService.loginAttempt.findUnique.mockResolvedValue({
+        fails: 0,
+        lockedUntil: new Date(Date.now() + 60000),
+      });
+
+      await expect(
+        service.login({ email: 'manager@equiflow.com', password: 'ValidPassword123' }),
+      ).rejects.toThrow(HttpException);
+      expect(mockPrismaService.user.findUnique).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('register', () => {
+    const dto = {
+      fullName: 'Nguyễn Hoàng Anh',
+      email: 'Anh.Nguyen@gmail.com',
+      password: 'Horse@2026',
+      role: 'HORSE_OWNER',
+    };
+
+    it('should create a PENDING_EMAIL Horse Owner and send a sign-up OTP', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue(null);
+      mockPrismaService.user.create.mockImplementation(({ data }) =>
+        Promise.resolve({ id: 'u-new', ...data }),
+      );
+
+      const result = await service.register(dto);
+
+      expect(result.email).toBe('anh.nguyen@gmail.com');
+      expect(mockPrismaService.user.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          role: Role.HORSE_OWNER,
+          status: UserStatus.PENDING_EMAIL,
+          requestCode: expect.stringMatching(/^REQ-\d{4}-015$/),
+        }),
+      });
+      expect(mockOtpService.issue).toHaveBeenCalledWith('anh.nguyen@gmail.com', 'SIGNUP', true);
+    });
+
+    it('should reject other roles with ROLE_NOT_ALLOWED', async () => {
+      const error = (await service
+        .register({ ...dto, role: 'CLUB_MANAGER' })
+        .catch((e: HttpException) => e)) as HttpException;
+      expect(error).toBeInstanceOf(ForbiddenException);
+      expect(error.getResponse()).toEqual(expect.objectContaining({ code: 'ROLE_NOT_ALLOWED' }));
+    });
+
+    it('should reject an email that already has an account with EMAIL_TAKEN', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+      const error = (await service.register(dto).catch((e: HttpException) => e)) as HttpException;
+      expect(error.getStatus()).toBe(HttpStatus.CONFLICT);
+      expect(error.getResponse()).toEqual(expect.objectContaining({ code: 'EMAIL_TAKEN' }));
+    });
+  });
+
+  describe('resetPassword', () => {
+    const entry = { email: 'tung.ngo@gmail.com', expiresAt: new Date(Date.now() + 60000) };
+
+    it('should activate an INVITED account when it sets its first password', async () => {
+      mockPrismaService.resetToken.findUnique.mockResolvedValue(entry);
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        ...mockUser,
+        id: 'u-tung',
+        status: UserStatus.INVITED,
+      });
+
+      const result = await service.resetPassword({ resetToken: 'tok', password: 'Stable@2026' });
+
+      expect(result).toEqual({ ok: true, activated: true });
+      expect(mockPrismaService.user.update).toHaveBeenCalledWith({
+        where: { id: 'u-tung' },
+        data: expect.objectContaining({ status: UserStatus.ACTIVE }),
+      });
+      expect(mockPrismaService.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: { userId: 'u-tung', revoked: false },
+        data: { revoked: true },
+      });
+    });
+
+    it('should reject a weak password with WEAK_PASSWORD', async () => {
+      mockPrismaService.resetToken.findUnique.mockResolvedValue(entry);
+      const error = (await service
+        .resetPassword({ resetToken: 'tok', password: 'short' })
+        .catch((e: HttpException) => e)) as HttpException;
+      expect(error.getResponse()).toEqual(expect.objectContaining({ code: 'WEAK_PASSWORD' }));
+    });
+
+    it('should reject an expired ticket with RESET_EXPIRED', async () => {
+      mockPrismaService.resetToken.findUnique.mockResolvedValue({
+        ...entry,
+        expiresAt: new Date(Date.now() - 1000),
+      });
+      const error = (await service
+        .resetPassword({ resetToken: 'tok', password: 'Stable@2026' })
+        .catch((e: HttpException) => e)) as HttpException;
+      expect(error.getResponse()).toEqual(expect.objectContaining({ code: 'RESET_EXPIRED' }));
     });
   });
 });

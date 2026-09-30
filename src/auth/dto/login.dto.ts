@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsBoolean, IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class LoginDto {
@@ -20,4 +20,12 @@ export class LoginDto {
   @IsString({ message: 'Password must be a string' })
   @MinLength(6, { message: 'Password must be at least 6 characters' })
   password: string;
+
+  @ApiPropertyOptional({
+    example: true,
+    description: '"Remember me": refresh token sống 30 ngày thay vì 7 ngày',
+  })
+  @IsOptional()
+  @IsBoolean()
+  remember?: boolean;
 }
