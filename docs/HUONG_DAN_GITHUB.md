@@ -31,7 +31,7 @@ npm run start:dev
 ```
 
 - API: http://localhost:3000/api · Tài liệu Swagger: http://localhost:3000/api/docs
-- `EMAIL_PROVIDER="mock"`: email (mã OTP) chỉ in ra cửa sổ chạy server. `DEV_FIXED_OTP=true`: mã OTP luôn là `123456`.
+- Email (mã OTP): muốn nhận mail thật thì điền `SMTP_USER` (địa chỉ Gmail) và `SMTP_PASS` (App Password của Gmail, không phải mật khẩu thường) trong `.env`. Để trống `SMTP_USER` hoặc đặt `EMAIL_PROVIDER="mock"` thì mã chỉ in ra cửa sổ chạy server. **Không** commit App Password: gửi riêng cho nhau hoặc mỗi người tự tạo. `DEV_FIXED_OTP=true`: mã OTP luôn là `123456`.
 - Mỗi lần kéo code mới mà `prisma/schema.prisma` thay đổi: chạy lại `npx prisma generate` và `npx prisma db push`.
 - Nhóm **chưa dùng thư mục migrations**: đừng chạy `prisma migrate dev` và đừng commit thư mục `prisma/migrations` khi Lead chưa chốt.
 
