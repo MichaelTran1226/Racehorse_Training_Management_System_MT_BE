@@ -247,4 +247,3 @@ export class MedicalController {
     return this.medicalService.addFollowUp(id, user, dto);
   }
 }
-
