@@ -2,8 +2,10 @@
 
 Status: implementation validated locally; not merged or marked Done.
 
-Target repository: `MichaelTran1226/Racehorse_Training_Management_System_MT_BE`  
-Branch: `feat/37-audit-trail`  
+Target repository: `MichaelTran1226/Racehorse_Training_Management_System_MT_BE`
+
+Branch: `feat/37-audit-trail`
+
 Remote: `https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE.git`
 
 ## Delivered
