@@ -10,10 +10,10 @@ async function main() {
 
   // 1. Create Users for all 5 roles
   const manager = await prisma.user.upsert({
-    where: { email: 'manager@equiflow.com' },
+    where: { email: 'manager@gmail.com' },
     update: {},
     create: {
-      email: 'manager@equiflow.com',
+      email: 'manager@gmail.com',
       passwordHash: defaultPassword,
       fullName: 'Michael Tran (Club Manager)',
       phoneNumber: '+84901234567',
@@ -23,10 +23,10 @@ async function main() {
   });
 
   const trainer = await prisma.user.upsert({
-    where: { email: 'trainer@equiflow.com' },
+    where: { email: 'trainer@gmail.com' },
     update: {},
     create: {
-      email: 'trainer@equiflow.com',
+      email: 'trainer@gmail.com',
       passwordHash: defaultPassword,
       fullName: 'David Nguyen (Head Trainer)',
       phoneNumber: '+84901234568',
@@ -36,10 +36,10 @@ async function main() {
   });
 
   const vet = await prisma.user.upsert({
-    where: { email: 'vet@equiflow.com' },
+    where: { email: 'vet@gmail.com' },
     update: {},
     create: {
-      email: 'vet@equiflow.com',
+      email: 'vet@gmail.com',
       passwordHash: defaultPassword,
       fullName: 'Dr. Sarah Connor (Veterinarian)',
       phoneNumber: '+84901234569',
@@ -49,10 +49,10 @@ async function main() {
   });
 
   const groom = await prisma.user.upsert({
-    where: { email: 'groom@equiflow.com' },
+    where: { email: 'groom@gmail.com' },
     update: {},
     create: {
-      email: 'groom@equiflow.com',
+      email: 'groom@gmail.com',
       passwordHash: defaultPassword,
       fullName: 'John Smith (Groom Hand)',
       phoneNumber: '+84901234570',
@@ -62,10 +62,10 @@ async function main() {
   });
 
   const owner = await prisma.user.upsert({
-    where: { email: 'owner@equiflow.com' },
+    where: { email: 'owner@gmail.com' },
     update: {},
     create: {
-      email: 'owner@equiflow.com',
+      email: 'owner@gmail.com',
       passwordHash: defaultPassword,
       fullName: 'Robert Sterling (Horse Owner)',
       phoneNumber: '+84901234571',

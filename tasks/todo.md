@@ -8,7 +8,7 @@ Kế hoạch, lịch sprint và điểm nối giữa 2 cặp: [plan.md](plan.md)
 
 ### Sprint 1 (28/09 – 04/10/2026)
 
-- [ ] `C-01` Nền tảng FE: design tokens, Master layout & routing — [#31](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/31)
+- [x] `C-01` Nền tảng FE: design tokens, Master layout & routing — [#31](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/31)
 
 ### Sprint 3 (12/10 – 18/10/2026)
 
@@ -18,12 +18,12 @@ Kế hoạch, lịch sprint và điểm nối giữa 2 cặp: [plan.md](plan.md)
 
 ### Sprint 1 (28/09 – 04/10/2026)
 
-- [ ] `P1-01` Đăng nhập, JWT & điều hướng 5 vai trò — [#32](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/32)
-- [ ] `P1-02` Đăng ký Chủ ngựa & xác thực OTP email — [#33](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/33)
-- [ ] `P1-03` Quên & đặt lại mật khẩu — [#34](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/34)
-- [ ] `P1-04` Mời nhân sự nội bộ & danh sách nhân sự — [#35](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/35)
-- [ ] `P1-05` RBAC 5 vai trò, route guard & cách ly dữ liệu Chủ ngựa — [#36](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/36)
-- [ ] `P1-06` Nhật ký kiểm toán (Audit trail) — [#37](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/37)
+- [x] `P1-01` Đăng nhập, JWT & điều hướng 5 vai trò — [#32](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/32)
+- [x] `P1-02` Đăng ký Chủ ngựa & xác thực OTP email — [#33](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/33)
+- [x] `P1-03` Quên & đặt lại mật khẩu — [#34](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/34)
+- [x] `P1-04` Mời nhân sự nội bộ & danh sách nhân sự — [#35](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/35)
+- [x] `P1-05` RBAC 5 vai trò, route guard & cách ly dữ liệu Chủ ngựa — [#36](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/36)
+- [x] `P1-06` Nhật ký kiểm toán (Audit trail) — [#37](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/37)
 
 ### Sprint 2 (05/10 – 11/10/2026)
 
@@ -44,7 +44,7 @@ Kế hoạch, lịch sprint và điểm nối giữa 2 cặp: [plan.md](plan.md)
 ### Sprint 1 (28/09 – 04/10/2026)
 
 - [x] `P2-01` Hồ sơ y tế ngựa (6 tab), ghi chú quan sát, quyền xem Owner/Groom — [#46](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/46)
-- [ ] `P2-02` Bệnh án, phác đồ điều trị & kê đơn thuốc — [#47](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/47)
+- [x] `P2-02` Bệnh án, phác đồ điều trị & kê đơn thuốc — [#47](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/47)
 
 ### Sprint 2 (05/10 – 11/10/2026)
 
