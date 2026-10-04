@@ -29,6 +29,13 @@ describe('MedicalService', () => {
       findMany: jest.fn(),
       update: jest.fn(),
     },
+    injuryLog: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    },
   };
 
   const mockAuditService = {
@@ -179,6 +186,101 @@ describe('MedicalService', () => {
         where: { id: 'horse-1' },
         data: expect.objectContaining({ isMedicalLocked: true }),
       });
+    });
+  });
+
+  describe('2D Injury Model & Recovery Progress', () => {
+    it('should create 2D injury point with initial recovery history', async () => {
+      mockPrismaService.horse.findUnique.mockResolvedValue({
+        id: 'horse-1',
+        name: 'Thunder',
+        medicalLocks: [],
+        isMedicalLocked: false,
+      });
+      const mockCreatedInjury = {
+        id: 'inj-1',
+        horseId: 'horse-1',
+        coordinateX: 0.45,
+        coordinateY: 0.6,
+        anatomicalZone: 'Chân trước trái - Gân gấp',
+        injuryType: 'Viêm gân',
+        severity: 'SEVERE',
+        stage: 'ACUTE',
+        status: 'ACTIVE',
+      };
+      mockPrismaService.injuryLog.create.mockResolvedValue(mockCreatedInjury);
+
+      const result = await service.createInjury(mockVetUser, {
+        horseId: 'horse-1',
+        coordinateX: 0.45,
+        coordinateY: 0.6,
+        anatomicalZone: 'Chân trước trái - Gân gấp',
+        injuryType: 'Viêm gân',
+        severity: 'SEVERE' as any,
+      });
+
+      expect(result.id).toBe('inj-1');
+      expect(result.recommendMedicalLock).toBe(true);
+      expect(mockAuditService.record).toHaveBeenCalledWith(
+        expect.anything(),
+        'CREATE_INJURY_LOG',
+        expect.any(String),
+        'inj-1',
+      );
+    });
+
+    it('should get 2D injuries of a horse and filter healed ones by default', async () => {
+      mockPrismaService.injuryLog.findMany.mockResolvedValue([
+        { id: 'inj-1', horseId: 'horse-1', stage: 'ACUTE', status: 'ACTIVE' },
+        { id: 'inj-2', horseId: 'horse-1', stage: 'HEALED', status: 'RESOLVED' },
+      ]);
+
+      const result = await service.getHorseInjuries('horse-1', mockVetUser, {});
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('inj-1');
+    });
+
+    it('should delete injury if created within 24 hours and no recovery updates', async () => {
+      mockPrismaService.injuryLog.findUnique.mockResolvedValue({
+        id: 'inj-1',
+        createdAt: new Date(),
+        recoveryHistory: [{ id: 'hist-1', stage: 'ACUTE' }],
+      });
+      mockPrismaService.injuryLog.delete.mockResolvedValue({ id: 'inj-1' });
+
+      const res = await service.deleteInjury('inj-1', mockVetUser);
+      expect(res.message).toBe('Đã xóa điểm chấn thương thành công');
+      expect(mockPrismaService.injuryLog.delete).toHaveBeenCalledWith({ where: { id: 'inj-1' } });
+    });
+
+    it('should update recovery progress to HEALED and set status to RESOLVED', async () => {
+      mockPrismaService.injuryLog.findUnique.mockResolvedValue({
+        id: 'inj-1',
+        stage: 'RECOVERING',
+        severity: 'MILD',
+        recoveryHistory: [{ id: 'hist-1', stage: 'RECOVERING' }],
+      });
+      mockPrismaService.injuryLog.update.mockResolvedValue({
+        id: 'inj-1',
+        stage: 'HEALED',
+        status: 'RESOLVED',
+      });
+
+      const res = await service.updateRecoveryProgress('inj-1', mockVetUser, {
+        stage: 'HEALED',
+        notes: 'Chấn thương đã bình phục hoàn toàn',
+      });
+
+      expect(res.stage).toBe('HEALED');
+      expect(mockPrismaService.injuryLog.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'inj-1' },
+          data: expect.objectContaining({
+            stage: 'HEALED',
+            status: 'RESOLVED',
+          }),
+        }),
+      );
     });
   });
 });

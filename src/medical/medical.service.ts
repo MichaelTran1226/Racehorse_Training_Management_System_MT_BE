@@ -7,7 +7,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CurrentUserPayload } from '../common/decorators/current-user.decorator';
-import { Role, HorseStatus } from '@prisma/client';
+import { Role, HorseStatus, BodySide, SeverityLevel, InjuryStatus } from '@prisma/client';
 import { CreateMedicalRecordDto } from './dto/create-medical-record.dto';
 import { UpdateMedicalRecordDto } from './dto/update-medical-record.dto';
 import { MedicalRecordQueryDto } from './dto/medical-record-query.dto';
@@ -20,6 +20,9 @@ import {
 import { CreateFollowUpDto } from './dto/follow-up.dto';
 import { CloseMedicalRecordDto, ReopenMedicalRecordDto } from './dto/close-record.dto';
 import { CreateInjuryDto } from './dto/create-injury.dto';
+import { UpdateInjuryDto } from './dto/update-injury.dto';
+import { UpdateRecoveryProgressDto } from './dto/update-recovery-progress.dto';
+import { InjuryQueryDto } from './dto/injury-query.dto';
 import {
   CreateMedicalLockDto,
   ExtendMedicalLockDto,
@@ -77,12 +80,364 @@ export class MedicalService {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // 2D INJURY MODEL & RECOVERY PROGRESS (TASK P2-03)
+  // ---------------------------------------------------------------------------
+
+  async getHorseInjuries(horseId: string, currentUser: CurrentUserPayload, query: InjuryQueryDto) {
+    await this.checkHorseAccess(horseId, currentUser);
+
+    const horse = await this.prisma.horse.findUnique({
+      where: { id: horseId },
+    });
+    if (!horse) {
+      throw new NotFoundException('Không tìm thấy chiến mã');
+    }
+
+    const where: any = { horseId };
+
+    if (query.viewSide) {
+      where.viewSide = query.viewSide;
+    }
+
+    if (query.layer) {
+      where.layer = query.layer;
+    }
+
+    const injuries = await this.prisma.injuryLog.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        medicalRecord: {
+          select: { id: true, examinationDate: true, clinicalDiagnosis: true },
+        },
+      },
+    });
+
+    const includeHealed = query.includeHealed === 'true';
+    const asOfDate = query.asOfDate ? new Date(query.asOfDate) : null;
+
+    let result = injuries;
+
+    if (asOfDate) {
+      result = result
+        .filter((inj) => new Date(inj.discoveryDate || inj.createdAt) <= asOfDate)
+        .map((inj) => {
+          let history: any[] = [];
+          if (inj.recoveryHistory) {
+            try {
+              history =
+                typeof inj.recoveryHistory === 'string'
+                  ? JSON.parse(inj.recoveryHistory)
+                  : (inj.recoveryHistory as any[]);
+            } catch {
+              history = [];
+            }
+          }
+          const activeAsOf = history
+            .filter((h) => new Date(h.evaluationDate || h.createdAt) <= asOfDate)
+            .sort(
+              (a, b) =>
+                new Date(b.evaluationDate || b.createdAt).getTime() -
+                new Date(a.evaluationDate || a.createdAt).getTime(),
+            );
+
+          const currentSnapshot = activeAsOf[0];
+          const stageAtDate = currentSnapshot ? currentSnapshot.stage : inj.stage;
+          const severityAtDate = currentSnapshot ? currentSnapshot.severity : inj.severity;
+
+          return {
+            ...inj,
+            stage: stageAtDate,
+            severity: severityAtDate,
+          };
+        });
+    }
+
+    if (!includeHealed) {
+      result = result.filter(
+        (inj) => inj.stage !== 'HEALED' && inj.status !== InjuryStatus.RESOLVED,
+      );
+    }
+
+    return result;
+  }
+
   async createInjury(actor: CurrentUserPayload, dto: CreateInjuryDto) {
     if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
       throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền thực hiện');
     }
-    // TODO: Implement injury creation logic
-    return { message: 'Đã tạo/liên kết chấn thương thành công', dto };
+
+    const horse = await this.prisma.horse.findUnique({
+      where: { id: dto.horseId },
+      include: {
+        medicalLocks: { where: { isLocked: true } },
+      },
+    });
+    if (!horse) {
+      throw new NotFoundException('Không tìm thấy chiến mã');
+    }
+
+    if (dto.medicalRecordId) {
+      const record = await this.prisma.medicalRecord.findUnique({
+        where: { id: dto.medicalRecordId },
+      });
+      if (!record || record.horseId !== dto.horseId) {
+        throw new BadRequestException('Bệnh án không tồn tại hoặc không thuộc chiến mã này');
+      }
+    }
+
+    const initialStage = dto.stage || 'ACUTE';
+    const isHealed = initialStage === 'HEALED';
+    const status = isHealed ? InjuryStatus.RESOLVED : InjuryStatus.ACTIVE;
+
+    const initialHistoryEntry = {
+      id: `hist-${Date.now()}`,
+      stage: initialStage,
+      evaluationDate: dto.discoveryDate || new Date().toISOString(),
+      severity: dto.severity || SeverityLevel.MODERATE,
+      notes: dto.description || 'Ghi nhận vị trí chấn thương ban đầu',
+      updatedByUserId: actor.userId,
+      updatedByName: actor.fullName,
+      createdAt: new Date().toISOString(),
+    };
+
+    const injury = await this.prisma.injuryLog.create({
+      data: {
+        horseId: dto.horseId,
+        medicalRecordId: dto.medicalRecordId || null,
+        coordinateX: dto.coordinateX,
+        coordinateY: dto.coordinateY,
+        viewSide: dto.viewSide || 'LEFT',
+        layer: dto.layer || 'MUSCLE',
+        anatomicalZone: dto.anatomicalZone,
+        bodySide: dto.bodySide || BodySide.LEFT,
+        injuryType: dto.injuryType,
+        severity: dto.severity || SeverityLevel.MODERATE,
+        stage: initialStage,
+        status,
+        description: dto.description || null,
+        discoveryDate: dto.discoveryDate ? new Date(dto.discoveryDate) : new Date(),
+        recoveryHistory: [initialHistoryEntry],
+      },
+      include: {
+        horse: { select: { id: true, name: true, microchipRfid: true } },
+        medicalRecord: { select: { id: true, examinationDate: true, clinicalDiagnosis: true } },
+      },
+    });
+
+    await this.audit.record(
+      { id: actor.userId, name: actor.fullName },
+      'CREATE_INJURY_LOG',
+      `Injury logged for horse ${dto.horseId} at zone ${dto.anatomicalZone}`,
+      injury.id,
+    );
+
+    const isLocked = horse.medicalLocks.length > 0 || horse.isMedicalLocked;
+    const isSevereOrCritical =
+      injury.severity === SeverityLevel.SEVERE || injury.severity === SeverityLevel.CRITICAL;
+
+    const recommendMedicalLock = isSevereOrCritical && !isLocked;
+
+    return {
+      ...injury,
+      recommendMedicalLock,
+      recommendationMessage: recommendMedicalLock
+        ? 'Chấn thương nặng. Cân nhắc đặt Khóa huấn luyện.'
+        : null,
+    };
+  }
+
+  async getInjuryDetail(id: string, currentUser: CurrentUserPayload) {
+    const injury = await this.prisma.injuryLog.findUnique({
+      where: { id },
+      include: {
+        horse: {
+          select: { id: true, name: true, microchipRfid: true, status: true, ownerId: true },
+        },
+        medicalRecord: { select: { id: true, examinationDate: true, clinicalDiagnosis: true } },
+      },
+    });
+
+    if (!injury) {
+      throw new NotFoundException('Không tìm thấy thông tin điểm chấn thương');
+    }
+
+    await this.checkHorseAccess(injury.horseId, currentUser);
+
+    return injury;
+  }
+
+  async updateInjury(id: string, actor: CurrentUserPayload, dto: UpdateInjuryDto) {
+    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
+      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền chỉnh sửa điểm chấn thương');
+    }
+
+    const injury = await this.prisma.injuryLog.findUnique({ where: { id } });
+    if (!injury) {
+      throw new NotFoundException('Không tìm thấy điểm chấn thương');
+    }
+
+    if (dto.medicalRecordId) {
+      const record = await this.prisma.medicalRecord.findUnique({
+        where: { id: dto.medicalRecordId },
+      });
+      if (!record || record.horseId !== injury.horseId) {
+        throw new BadRequestException('Bệnh án không tồn tại hoặc không thuộc chiến mã này');
+      }
+    }
+
+    const dataToUpdate: any = {};
+    if (dto.coordinateX !== undefined) dataToUpdate.coordinateX = dto.coordinateX;
+    if (dto.coordinateY !== undefined) dataToUpdate.coordinateY = dto.coordinateY;
+    if (dto.viewSide) dataToUpdate.viewSide = dto.viewSide;
+    if (dto.layer) dataToUpdate.layer = dto.layer;
+    if (dto.anatomicalZone) dataToUpdate.anatomicalZone = dto.anatomicalZone;
+    if (dto.bodySide) dataToUpdate.bodySide = dto.bodySide;
+    if (dto.injuryType) dataToUpdate.injuryType = dto.injuryType;
+    if (dto.severity) dataToUpdate.severity = dto.severity;
+    if (dto.stage) {
+      dataToUpdate.stage = dto.stage;
+      if (dto.stage === 'HEALED') {
+        dataToUpdate.status = InjuryStatus.RESOLVED;
+      }
+    }
+    if (dto.discoveryDate) dataToUpdate.discoveryDate = new Date(dto.discoveryDate);
+    if (dto.description !== undefined) dataToUpdate.description = dto.description;
+    if (dto.medicalRecordId !== undefined) dataToUpdate.medicalRecordId = dto.medicalRecordId;
+
+    const updated = await this.prisma.injuryLog.update({
+      where: { id },
+      data: dataToUpdate,
+      include: {
+        horse: { select: { id: true, name: true, microchipRfid: true } },
+        medicalRecord: { select: { id: true, examinationDate: true, clinicalDiagnosis: true } },
+      },
+    });
+
+    await this.audit.record(
+      { id: actor.userId, name: actor.fullName },
+      'UPDATE_INJURY_LOG',
+      `Injury point ${id} updated`,
+      id,
+    );
+
+    return updated;
+  }
+
+  async deleteInjury(id: string, actor: CurrentUserPayload) {
+    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
+      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền xóa điểm chấn thương');
+    }
+
+    const injury = await this.prisma.injuryLog.findUnique({ where: { id } });
+    if (!injury) {
+      throw new NotFoundException('Không tìm thấy điểm chấn thương');
+    }
+
+    const now = new Date().getTime();
+    const createdTime = new Date(injury.createdAt).getTime();
+    const hoursDifference = (now - createdTime) / (1000 * 60 * 60);
+
+    let historyLength = 0;
+    if (injury.recoveryHistory) {
+      try {
+        const historyArray =
+          typeof injury.recoveryHistory === 'string'
+            ? JSON.parse(injury.recoveryHistory)
+            : (injury.recoveryHistory as any[]);
+        historyLength = Array.isArray(historyArray) ? historyArray.length : 0;
+      } catch {
+        historyLength = 0;
+      }
+    }
+
+    if (hoursDifference > 24 || historyLength > 1) {
+      throw new BadRequestException(
+        'Chỉ có thể xóa điểm chấn thương được tạo trong vòng 24 giờ và chưa có lịch sử cập nhật hồi phục',
+      );
+    }
+
+    await this.prisma.injuryLog.delete({ where: { id } });
+
+    await this.audit.record(
+      { id: actor.userId, name: actor.fullName },
+      'DELETE_INJURY_LOG',
+      `Injury point ${id} deleted`,
+      id,
+    );
+
+    return { message: 'Đã xóa điểm chấn thương thành công' };
+  }
+
+  async updateRecoveryProgress(
+    id: string,
+    actor: CurrentUserPayload,
+    dto: UpdateRecoveryProgressDto,
+  ) {
+    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
+      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền cập nhật tiến trình hồi phục');
+    }
+
+    const injury = await this.prisma.injuryLog.findUnique({ where: { id } });
+    if (!injury) {
+      throw new NotFoundException('Không tìm thấy điểm chấn thương');
+    }
+
+    if (injury.stage === 'HEALED' && dto.stage === 'HEALED') {
+      throw new BadRequestException('Chấn thương này đã được đánh dấu Đã lành');
+    }
+
+    let history: any[] = [];
+    if (injury.recoveryHistory) {
+      try {
+        history =
+          typeof injury.recoveryHistory === 'string'
+            ? JSON.parse(injury.recoveryHistory)
+            : (injury.recoveryHistory as any[]);
+      } catch {
+        history = [];
+      }
+    }
+
+    const newEntry = {
+      id: `hist-${Date.now()}`,
+      stage: dto.stage,
+      evaluationDate: dto.evaluationDate || new Date().toISOString(),
+      severity: dto.currentSeverity || injury.severity,
+      notes: dto.notes,
+      updatedByUserId: actor.userId,
+      updatedByName: actor.fullName,
+      createdAt: new Date().toISOString(),
+    };
+
+    history.push(newEntry);
+
+    const isHealed = dto.stage === 'HEALED';
+    const status = isHealed ? InjuryStatus.RESOLVED : InjuryStatus.HEALING;
+
+    const updated = await this.prisma.injuryLog.update({
+      where: { id },
+      data: {
+        stage: dto.stage,
+        severity: dto.currentSeverity || injury.severity,
+        status,
+        recoveryHistory: history,
+      },
+      include: {
+        horse: { select: { id: true, name: true, microchipRfid: true } },
+        medicalRecord: { select: { id: true, examinationDate: true, clinicalDiagnosis: true } },
+      },
+    });
+
+    await this.audit.record(
+      { id: actor.userId, name: actor.fullName },
+      'UPDATE_INJURY_RECOVERY_PROGRESS',
+      `Injury ${id} recovery updated to ${dto.stage}`,
+      id,
+    );
+
+    return updated;
   }
 
   // ---------------------------------------------------------------------------

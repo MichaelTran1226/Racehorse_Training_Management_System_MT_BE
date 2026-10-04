@@ -438,20 +438,26 @@ model MedicalRecord {
 }
 
 model InjuryLog {
-  id              String        @id @default(uuid())
-  medicalRecordId String
-  medicalRecord   MedicalRecord @relation(fields: [medicalRecordId], references: [id], onDelete: Cascade)
+  id              String         @id @default(uuid())
+  medicalRecordId String?
+  medicalRecord   MedicalRecord? @relation(fields: [medicalRecordId], references: [id], onDelete: Cascade)
   horseId         String
-  horse           Horse         @relation(fields: [horseId], references: [id], onDelete: Restrict)
-  coordinateX     Float         // Normalized 0.0 - 1.0 (Lateral Skeleton Map)
-  coordinateY     Float         // Normalized 0.0 - 1.0 (Lateral Skeleton Map)
+  horse           Horse          @relation(fields: [horseId], references: [id], onDelete: Restrict)
+  coordinateX     Float          // Normalized 0.0 - 1.0 (Lateral Skeleton Map)
+  coordinateY     Float          // Normalized 0.0 - 1.0 (Lateral Skeleton Map)
+  viewSide        String         @default("LEFT") // LEFT | RIGHT
+  layer           String         @default("MUSCLE") // MUSCLE | BONE
   anatomicalZone  String
-  bodySide        BodySide      @default(LEFT)
+  bodySide        BodySide       @default(LEFT)
   injuryType      String
-  severity        SeverityLevel @default(MODERATE)
-  status          InjuryStatus  @default(ACTIVE)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  severity        SeverityLevel  @default(MODERATE)
+  stage           String         @default("ACUTE") // ACUTE | SUBACUTE | RECOVERING | HEALED
+  status          InjuryStatus   @default(ACTIVE)
+  description     String?
+  discoveryDate   DateTime       @default(now())
+  recoveryHistory Json?          // Array of { id, stage, evaluationDate, severity, notes, updatedByUserId, updatedByName, createdAt }
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
   @@index([horseId])
   @@index([medicalRecordId])
