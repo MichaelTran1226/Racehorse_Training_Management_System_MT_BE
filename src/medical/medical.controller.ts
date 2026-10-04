@@ -29,6 +29,7 @@ import {
   CreateMedicalLockDto,
   ExtendMedicalLockDto,
   ReleaseMedicalLockDto,
+  MedicalLockQueryDto,
 } from './dto/medical-lock.dto';
 import { HealthBoardQueryDto } from './dto/health-board-query.dto';
 import { CreateInjuryDto } from './dto/create-injury.dto';
@@ -114,22 +115,26 @@ export class MedicalController {
   }
 
   // ---------------------------------------------------------------------------
-  // MEDICAL LOCKS (KHÓA HUẤN LUYỆN)
+  // MEDICAL LOCKS (KHÓA HUẤN LUYỆN - TASK P2-04)
   // ---------------------------------------------------------------------------
 
   @Get('locks')
   @RequirePermission('viewMedical')
-  @ApiOperation({ summary: 'Danh sách Khóa huấn luyện' })
-  getLocks(@Query('horseId') horseId?: string, @Query('isLocked') isLocked?: string) {
-    return this.medicalService.getMedicalLocks({
-      horseId,
-      isLocked: isLocked !== undefined ? isLocked === 'true' : undefined,
-    });
+  @ApiOperation({ summary: 'Danh sách Khóa huấn luyện (SC-3.06)' })
+  getLocks(@CurrentUser() user: CurrentUserPayload, @Query() query: MedicalLockQueryDto) {
+    return this.medicalService.getMedicalLocks(user, query);
+  }
+
+  @Get('locks/:id')
+  @RequirePermission('viewMedical')
+  @ApiOperation({ summary: 'Chi tiết Khóa huấn luyện' })
+  getLockDetail(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
+    return this.medicalService.getMedicalLockDetail(id, user);
   }
 
   @Post('locks')
   @RequirePermission('placeLock')
-  @ApiOperation({ summary: 'Đặt Khóa huấn luyện khẩn cấp' })
+  @ApiOperation({ summary: 'Đặt Khóa huấn luyện khẩn cấp (DL-3.01 / BTN-3.03)' })
   createLock(@CurrentUser() user: CurrentUserPayload, @Body() dto: CreateMedicalLockDto) {
     return this.medicalService.createMedicalLock(user, dto);
   }
@@ -137,7 +142,7 @@ export class MedicalController {
   @Post('locks/:id/release')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('liftLock')
-  @ApiOperation({ summary: 'Gỡ Khóa huấn luyện' })
+  @ApiOperation({ summary: 'Gỡ Khóa huấn luyện (DL-3.02 / BTN-3.09)' })
   releaseLock(
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserPayload,
@@ -149,7 +154,7 @@ export class MedicalController {
   @Post('locks/:id/extend')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('placeLock')
-  @ApiOperation({ summary: 'Gia hạn ngày xem xét Khóa huấn luyện' })
+  @ApiOperation({ summary: 'Gia hạn ngày xem xét Khóa huấn luyện (DL-3.03 / BTN-3.10)' })
   extendLock(
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserPayload,

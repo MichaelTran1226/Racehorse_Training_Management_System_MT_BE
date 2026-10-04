@@ -27,6 +27,7 @@ describe('MedicalService', () => {
       findFirst: jest.fn(),
       findUnique: jest.fn(),
       findMany: jest.fn(),
+      count: jest.fn(),
       update: jest.fn(),
     },
     injuryLog: {
@@ -164,28 +165,142 @@ describe('MedicalService', () => {
     });
   });
 
-  describe('createMedicalLock', () => {
-    it('should create medical lock and update horse status', async () => {
-      mockPrismaService.horse.findUnique.mockResolvedValue({ id: 'horse-1', name: 'Thunder' });
+  describe('MedicalLock (Task P2-04)', () => {
+    it('should create medical lock with auto lockCode, impact assessment, and update horse status', async () => {
+      mockPrismaService.horse.findUnique.mockResolvedValue({
+        id: 'horse-1',
+        name: 'Thunder',
+        status: 'ACTIVE',
+        medicalLocks: [],
+        isMedicalLocked: false,
+      });
       mockPrismaService.medicalLock.findFirst.mockResolvedValue(null);
+      mockPrismaService.medicalLock.count.mockResolvedValue(0);
       mockPrismaService.medicalLock.create.mockResolvedValue({
         id: 'lock-1',
+        lockCode: 'KH-000001',
         horseId: 'horse-1',
         isLocked: true,
+        recheckDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       });
 
       const result = await service.createMedicalLock(mockVetUser, {
         horseId: 'horse-1',
         expectedRestDays: 7,
-        lockReason: 'Chấn thương cơ đùi',
+        lockReason: 'Chấn thương cơ đùi nghiêm trọng',
         unlockConditions: 'Hết sưng và chạy bình thường',
       });
 
       expect(result.id).toBe('lock-1');
+      expect(result.impactAssessment).toBeDefined();
+      expect(result.impactAssessment.notificationRecipients).toHaveLength(4);
       expect(mockPrismaService.horse.update).toHaveBeenCalledWith({
         where: { id: 'horse-1' },
-        data: expect.objectContaining({ isMedicalLocked: true }),
+        data: expect.objectContaining({ isMedicalLocked: true, status: 'INJURED' }),
       });
+    });
+
+    it('should throw BadRequestException if horse already has active lock', async () => {
+      mockPrismaService.horse.findUnique.mockResolvedValue({
+        id: 'horse-1',
+        name: 'Thunder',
+        medicalLocks: [{ id: 'lock-old', isLocked: true }],
+        isMedicalLocked: true,
+      });
+
+      await expect(
+        service.createMedicalLock(mockVetUser, {
+          horseId: 'horse-1',
+          lockReason: 'Thử khóa lại con ngựa đã bị khóa',
+        }),
+      ).rejects.toThrow('Chiến mã này đã có Khóa huấn luyện đang hiệu lực');
+    });
+
+    it('should release medical lock and check warning flags', async () => {
+      mockPrismaService.medicalLock.findUnique.mockResolvedValue({
+        id: 'lock-1',
+        lockCode: 'KH-000001',
+        horseId: 'horse-1',
+        isLocked: true,
+        horse: {
+          id: 'horse-1',
+          name: 'Thunder',
+          injuryLogs: [{ id: 'inj-1', stage: 'ACUTE' }],
+        },
+      });
+      mockPrismaService.medicalLock.update.mockResolvedValue({
+        id: 'lock-1',
+        lockCode: 'KH-000001',
+        isLocked: false,
+        horse: { id: 'horse-1', name: 'Thunder' },
+      });
+
+      const result = await service.releaseMedicalLock('lock-1', mockVetUser, {
+        unlockReason: 'Đã khỏi hoàn toàn và đủ điều kiện vận động',
+        newHorseStatus: 'RESTING' as any,
+      });
+
+      expect(result.isLocked).toBe(false);
+      expect(result.warnings).toHaveLength(1);
+      expect(result.warnings[0]).toContain('giai đoạn Cấp tính');
+      expect(mockPrismaService.horse.update).toHaveBeenCalledWith({
+        where: { id: 'horse-1' },
+        data: expect.objectContaining({ isMedicalLocked: false, status: 'RESTING' }),
+      });
+    });
+
+    it('should extend medical lock with new recheck date and history timeline', async () => {
+      const currentRecheck = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      const newRecheck = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+
+      mockPrismaService.medicalLock.findUnique.mockResolvedValue({
+        id: 'lock-1',
+        lockCode: 'KH-000001',
+        isLocked: true,
+        lockedAt: new Date(),
+        recheckDate: currentRecheck,
+        extensionHistory: null,
+      });
+
+      mockPrismaService.medicalLock.update.mockResolvedValue({
+        id: 'lock-1',
+        lockCode: 'KH-000001',
+        recheckDate: newRecheck,
+        isLocked: true,
+      });
+
+      const result = await service.extendMedicalLock('lock-1', mockVetUser, {
+        recheckDate: newRecheck.toISOString(),
+        recheckNotes: 'Cần thêm 7 ngày điều trị dứt điểm',
+      });
+
+      expect(result.recheckDate).toEqual(newRecheck);
+      expect(mockAuditService.record).toHaveBeenCalledWith(
+        expect.anything(),
+        'EXTEND_MEDICAL_LOCK',
+        expect.any(String),
+        'lock-1',
+      );
+    });
+
+    it('should query medical locks with overdue status calculation', async () => {
+      const pastRecheck = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+      mockPrismaService.medicalLock.count.mockResolvedValue(1);
+      mockPrismaService.medicalLock.findMany.mockResolvedValue([
+        {
+          id: 'lock-1',
+          lockCode: 'KH-000001',
+          isLocked: true,
+          lockedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+          recheckDate: pastRecheck,
+          horse: { id: 'h1', name: 'Thunder' },
+        },
+      ]);
+
+      const result = await service.getMedicalLocks(mockVetUser, { overdueOnly: 'true' });
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].isOverdue).toBe(true);
+      expect(result.data[0].daysOverdue).toBeGreaterThanOrEqual(3);
     });
   });
 
