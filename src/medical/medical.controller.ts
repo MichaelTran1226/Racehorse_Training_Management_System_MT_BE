@@ -63,6 +63,13 @@ export class MedicalController {
     return this.medicalService.getHealthBoard(query);
   }
 
+  @Get('horses/:id')
+  @RequirePermission('viewMedical')
+  @ApiOperation({ summary: 'Hồ sơ y tế ngựa' })
+  getHorseMedicalProfile(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
+    return this.medicalService.getHorseMedicalProfile(id, user);
+  }
+
   // ---------------------------------------------------------------------------
   // 2D INJURIES & RECOVERY PROGRESS (TASK P2-03 / API-007)
   // ---------------------------------------------------------------------------

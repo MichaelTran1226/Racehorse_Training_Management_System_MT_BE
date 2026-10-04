@@ -302,14 +302,17 @@ model StaffInvitation {
 
 model Horse {
   id              String      @id @default(uuid())
+  horseCode       String?     @unique
   name            String
+  microchip       String?     @unique
+  rfid            String?     @unique
   microchipRfid   String      @unique
   breed           String
   dob             DateTime
   gender          String
   color           String
   avatarUrl       String?
-  status          HorseStatus @default(ACTIVE)
+  status          HorseStatus @default(RESTING)
   isMedicalLocked Boolean     @default(false)
   ownerId         String?
   owner           User?       @relation("OwnerHorses", fields: [ownerId], references: [id], onDelete: SetNull)
@@ -329,6 +332,9 @@ model Horse {
   financialInvoices       FinancialInvoice[]
   aiInsights              AIInsight[]
 
+  @@index([horseCode])
+  @@index([microchip])
+  @@index([rfid])
   @@index([microchipRfid])
   @@index([ownerId])
   @@index([status])

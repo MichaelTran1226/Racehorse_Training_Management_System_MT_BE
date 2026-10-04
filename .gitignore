@@ -46,3 +46,4 @@ logs
 
 # MCP private config
 .agents/mcp_config.json
+~$*
