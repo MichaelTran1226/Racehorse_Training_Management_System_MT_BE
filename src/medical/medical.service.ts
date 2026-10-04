@@ -27,6 +27,7 @@ import {
   CreateMedicalLockDto,
   ExtendMedicalLockDto,
   ReleaseMedicalLockDto,
+  MedicalLockQueryDto,
 } from './dto/medical-lock.dto';
 import { HealthBoardQueryDto } from './dto/health-board-query.dto';
 
@@ -942,7 +943,7 @@ export class MedicalService {
   }
 
   // ---------------------------------------------------------------------------
-  // MEDICAL LOCKS (KHÓA HUẤN LUYỆN)
+  // MEDICAL LOCKS (KHÓA HUẤN LUYỆN - TASK P2-04)
   // ---------------------------------------------------------------------------
 
   async createMedicalLock(actor: CurrentUserPayload, dto: CreateMedicalLockDto) {
@@ -950,48 +951,108 @@ export class MedicalService {
       throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền đặt Khóa huấn luyện');
     }
 
-    const horse = await this.prisma.horse.findUnique({ where: { id: dto.horseId } });
+    const horse = await this.prisma.horse.findUnique({
+      where: { id: dto.horseId },
+      include: {
+        medicalLocks: { where: { isLocked: true } },
+        stallAllocations: { where: { isActive: true }, include: { stall: true } },
+      },
+    });
     if (!horse) throw new NotFoundException('Không tìm thấy chiến mã');
 
-    const existingLock = await this.prisma.medicalLock.findFirst({
-      where: { horseId: dto.horseId, isLocked: true },
-    });
+    const existingLock =
+      horse.medicalLocks[0] ||
+      (await this.prisma.medicalLock.findFirst({
+        where: { horseId: dto.horseId, isLocked: true },
+      }));
     if (existingLock) {
       throw new BadRequestException('Chiến mã này đã có Khóa huấn luyện đang hiệu lực');
     }
 
+    const appliedStatus = dto.appliedMedicalStatus || dto.medicalStatus || HorseStatus.INJURED;
+
+    const now = new Date();
+    let recheckDate: Date;
+    if (dto.recheckDate) {
+      recheckDate = new Date(dto.recheckDate);
+    } else {
+      const restDays = dto.expectedRestDays || 7;
+      recheckDate = new Date(now.getTime() + restDays * 24 * 60 * 60 * 1000);
+    }
+
+    if (recheckDate <= now) {
+      throw new BadRequestException('Ngày xem xét lại phải từ ngày mai trở đi');
+    }
+
+    const maxRecheck = new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000);
+    if (recheckDate > maxRecheck) {
+      throw new BadRequestException('Ngày xem xét lại tối đa 180 ngày kể từ hôm nay');
+    }
+
+    const restDaysCalculated = Math.ceil(
+      (recheckDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000),
+    );
+
+    const lockCount = await this.prisma.medicalLock.count();
+    const lockCode = `KH-${String(lockCount + 1).padStart(6, '0')}`;
+
     const lock = await this.prisma.medicalLock.create({
       data: {
+        lockCode,
         horseId: dto.horseId,
+        medicalRecordId: dto.medicalRecordId || null,
         veterinarianUserId: actor.userId,
-        expectedRestDays: dto.expectedRestDays,
+        expectedRestDays: restDaysCalculated,
+        recheckDate,
+        appliedMedicalStatus: appliedStatus,
         lockReason: dto.lockReason,
-        unlockConditions: dto.unlockConditions,
+        unlockConditions:
+          dto.unlockConditions || 'Hết triệu chứng chấn thương và được Bác sĩ thú y khám lại',
         isLocked: true,
       },
       include: {
-        horse: true,
-        veterinarian: true,
+        horse: { select: { id: true, name: true, microchipRfid: true } },
+        veterinarian: { select: { id: true, fullName: true, email: true } },
+        medicalRecord: { select: { id: true, examinationDate: true, clinicalDiagnosis: true } },
       },
     });
 
-    // Update horse medical lock status & optional health status
+    // Update horse medical lock status & health status
     await this.prisma.horse.update({
       where: { id: dto.horseId },
       data: {
         isMedicalLocked: true,
-        status: dto.medicalStatus || HorseStatus.INJURED,
+        status: appliedStatus,
       },
     });
 
     await this.audit.record(
       { id: actor.userId, name: actor.fullName },
       'CREATE_MEDICAL_LOCK',
-      `Medical lock created for horse ${dto.horseId}`,
+      `Medical lock ${lockCode} created for horse ${dto.horseId}`,
       lock.id,
     );
 
-    return lock;
+    const impactAssessment = {
+      horseId: horse.id,
+      horseName: horse.name,
+      previousStatus: horse.status,
+      newStatus: appliedStatus,
+      blockedWorkoutsMessage: 'Các buổi tập nặng sắp tới sẽ tự động bị chặn',
+      suspendedRegistrationsMessage: 'Đăng ký thi đấu chưa diễn ra sẽ tạm treo',
+      notificationRecipients: [
+        'Huấn luyện viên Trưởng',
+        'Quản lý Câu lạc bộ',
+        'Nhân viên chăm sóc phụ trách',
+        'Chủ sở hữu chiến mã',
+      ],
+    };
+
+    return {
+      ...lock,
+      impactAssessment,
+      message: `Đã đặt Khóa huấn luyện cho ${horse.name}`,
+    };
   }
 
   async releaseMedicalLock(lockId: string, actor: CurrentUserPayload, dto: ReleaseMedicalLockDto) {
@@ -999,10 +1060,21 @@ export class MedicalService {
       throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền gỡ Khóa huấn luyện');
     }
 
-    const lock = await this.prisma.medicalLock.findUnique({ where: { id: lockId } });
+    const lock = await this.prisma.medicalLock.findUnique({
+      where: { id: lockId },
+      include: {
+        horse: {
+          include: {
+            injuryLogs: { where: { stage: 'ACUTE' } },
+          },
+        },
+      },
+    });
     if (!lock || !lock.isLocked) {
       throw new BadRequestException('Không tìm thấy Khóa huấn luyện hoặc khóa đã được gỡ');
     }
+
+    const newHorseStatus = dto.newHorseStatus || HorseStatus.RESTING;
 
     const unlocked = await this.prisma.medicalLock.update({
       where: { id: lockId },
@@ -1010,7 +1082,13 @@ export class MedicalService {
         isLocked: false,
         unlockedAt: new Date(),
         unlockVetUserId: actor.userId,
+        unlockReason: dto.unlockReason,
         recheckNotes: dto.unlockReason,
+      },
+      include: {
+        horse: { select: { id: true, name: true, microchipRfid: true } },
+        veterinarian: { select: { id: true, fullName: true } },
+        unlockVet: { select: { id: true, fullName: true } },
       },
     });
 
@@ -1018,18 +1096,28 @@ export class MedicalService {
       where: { id: lock.horseId },
       data: {
         isMedicalLocked: false,
-        status: dto.newHorseStatus || HorseStatus.RESTING,
+        status: newHorseStatus,
       },
     });
 
     await this.audit.record(
       { id: actor.userId, name: actor.fullName },
       'RELEASE_MEDICAL_LOCK',
-      `Medical lock ${lockId} released`,
+      `Medical lock ${lock.lockCode || lockId} released for horse ${lock.horseId}`,
       lockId,
     );
 
-    return unlocked;
+    const warnings: string[] = [];
+    if (lock.horse?.injuryLogs && lock.horse.injuryLogs.length > 0) {
+      warnings.push(`Ngựa còn ${lock.horse.injuryLogs.length} chấn thương ở giai đoạn Cấp tính`);
+    }
+
+    return {
+      ...unlocked,
+      warnings,
+      message: `Đã gỡ Khóa huấn luyện cho ${lock.horse.name}`,
+      notificationToTrainer: 'Có các buổi tập bị chặn có thể khôi phục',
+    };
   }
 
   async extendMedicalLock(lockId: string, actor: CurrentUserPayload, dto: ExtendMedicalLockDto) {
@@ -1042,33 +1130,237 @@ export class MedicalService {
       throw new BadRequestException('Không tìm thấy Khóa huấn luyện đang hiệu lực');
     }
 
+    const now = new Date();
+    let newRecheckDate: Date;
+
+    if (dto.recheckDate) {
+      newRecheckDate = new Date(dto.recheckDate);
+    } else if (dto.additionalDays) {
+      const baseDate = lock.recheckDate && lock.recheckDate > now ? lock.recheckDate : now;
+      newRecheckDate = new Date(baseDate.getTime() + dto.additionalDays * 24 * 60 * 60 * 1000);
+    } else {
+      throw new BadRequestException('Vui lòng chọn ngày xem xét mới hoặc số ngày gia hạn');
+    }
+
+    if (newRecheckDate <= now) {
+      throw new BadRequestException('Ngày xem xét mới phải sau ngày hiện tại');
+    }
+
+    if (lock.recheckDate && newRecheckDate <= lock.recheckDate) {
+      throw new BadRequestException(
+        `Ngày xem xét mới phải sau ngày xem xét cũ (${lock.recheckDate.toLocaleDateString()})`,
+      );
+    }
+
+    const maxRecheck = new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000);
+    if (newRecheckDate > maxRecheck) {
+      throw new BadRequestException('Ngày xem xét mới tối đa 180 ngày kể từ hôm nay');
+    }
+
+    let history: any[] = [];
+    if (lock.extensionHistory) {
+      try {
+        history =
+          typeof lock.extensionHistory === 'string'
+            ? JSON.parse(lock.extensionHistory)
+            : (lock.extensionHistory as any[]);
+      } catch {
+        history = [];
+      }
+    }
+
+    const extensionReason = dto.recheckNotes || dto.extendReason || 'Gia hạn ngày xem xét lại';
+
+    const historyEntry = {
+      id: `ext-${Date.now()}`,
+      oldRecheckDate: lock.recheckDate ? lock.recheckDate.toISOString() : null,
+      newRecheckDate: newRecheckDate.toISOString(),
+      reason: extensionReason,
+      updatedByUserId: actor.userId,
+      updatedByName: actor.fullName,
+      createdAt: now.toISOString(),
+    };
+
+    history.push(historyEntry);
+
+    const newRestDays = Math.ceil(
+      (newRecheckDate.getTime() - new Date(lock.lockedAt).getTime()) / (24 * 60 * 60 * 1000),
+    );
+
     const extended = await this.prisma.medicalLock.update({
       where: { id: lockId },
       data: {
-        expectedRestDays: lock.expectedRestDays + dto.additionalDays,
-        recheckNotes: dto.recheckNotes
-          ? `${lock.recheckNotes || ''}\n[Gia hạn +${dto.additionalDays} ngày]: ${dto.recheckNotes}`
-          : lock.recheckNotes,
+        recheckDate: newRecheckDate,
+        expectedRestDays: newRestDays,
+        recheckNotes: extensionReason,
+        extensionHistory: history,
       },
-    });
-
-    return extended;
-  }
-
-  async getMedicalLocks(query: { horseId?: string; isLocked?: boolean }) {
-    const where: any = {};
-    if (query.horseId) where.horseId = query.horseId;
-    if (query.isLocked !== undefined) where.isLocked = query.isLocked;
-
-    return this.prisma.medicalLock.findMany({
-      where,
-      orderBy: { lockedAt: 'desc' },
       include: {
         horse: { select: { id: true, name: true, microchipRfid: true } },
         veterinarian: { select: { id: true, fullName: true } },
-        unlockVet: { select: { id: true, fullName: true } },
       },
     });
+
+    await this.audit.record(
+      { id: actor.userId, name: actor.fullName },
+      'EXTEND_MEDICAL_LOCK',
+      `Medical lock ${lock.lockCode || lockId} extended to ${newRecheckDate.toLocaleDateString()}`,
+      lockId,
+    );
+
+    return {
+      ...extended,
+      message: `Đã gia hạn ngày xem xét lại đến ${newRecheckDate.toLocaleDateString()}`,
+    };
+  }
+
+  async getMedicalLocks(currentUser: CurrentUserPayload, query: MedicalLockQueryDto) {
+    const {
+      horseId,
+      isLocked,
+      tab,
+      overdueOnly,
+      appliedMedicalStatus,
+      search,
+      page = '1',
+      limit = '10',
+    } = query;
+    const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);
+    const take = parseInt(limit, 10);
+
+    const where: any = {};
+
+    if (horseId) {
+      await this.checkHorseAccess(horseId, currentUser);
+      where.horseId = horseId;
+    } else if (currentUser.role === Role.HORSE_OWNER) {
+      where.horse = { ownerId: currentUser.userId };
+    } else if (currentUser.role === Role.GROOM) {
+      where.horse = {
+        stallAllocations: {
+          some: {
+            assignedGroomUserId: currentUser.userId,
+            isActive: true,
+          },
+        },
+      };
+    }
+
+    if (tab === 'ACTIVE') {
+      where.isLocked = true;
+    } else if (tab === 'HISTORY') {
+      where.isLocked = false;
+    } else if (isLocked !== undefined) {
+      where.isLocked = isLocked === 'true';
+    }
+
+    if (appliedMedicalStatus) {
+      where.appliedMedicalStatus = appliedMedicalStatus;
+    }
+
+    const now = new Date();
+    if (overdueOnly === 'true') {
+      where.isLocked = true;
+      where.recheckDate = { lt: now };
+    }
+
+    if (search) {
+      where.OR = [
+        { lockCode: { contains: search, mode: 'insensitive' } },
+        { lockReason: { contains: search, mode: 'insensitive' } },
+        { horse: { name: { contains: search, mode: 'insensitive' } } },
+        { horse: { microchipRfid: { contains: search, mode: 'insensitive' } } },
+      ];
+    }
+
+    const [total, locks] = await Promise.all([
+      this.prisma.medicalLock.count({ where }),
+      this.prisma.medicalLock.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { lockedAt: 'desc' },
+        include: {
+          horse: { select: { id: true, name: true, microchipRfid: true, status: true } },
+          veterinarian: { select: { id: true, fullName: true, email: true } },
+          unlockVet: { select: { id: true, fullName: true, email: true } },
+          medicalRecord: { select: { id: true, examinationDate: true, clinicalDiagnosis: true } },
+        },
+      }),
+    ]);
+
+    const mappedLocks = locks.map((lock) => {
+      const isOverdue = lock.isLocked && !!lock.recheckDate && lock.recheckDate < now;
+      let daysOverdue = 0;
+      if (isOverdue && lock.recheckDate) {
+        daysOverdue = Math.floor(
+          (now.getTime() - new Date(lock.recheckDate).getTime()) / (24 * 60 * 60 * 1000),
+        );
+      }
+
+      const lockDurationDays = Math.ceil(
+        ((lock.unlockedAt ? new Date(lock.unlockedAt) : now).getTime() -
+          new Date(lock.lockedAt).getTime()) /
+          (24 * 60 * 60 * 1000),
+      );
+
+      return {
+        ...lock,
+        isOverdue,
+        daysOverdue,
+        lockDurationDays,
+      };
+    });
+
+    return {
+      data: mappedLocks,
+      total,
+      page: parseInt(page, 10),
+      limit: parseInt(limit, 10),
+      totalPages: Math.ceil(total / take),
+    };
+  }
+
+  async getMedicalLockDetail(id: string, currentUser: CurrentUserPayload) {
+    const lock = await this.prisma.medicalLock.findUnique({
+      where: { id },
+      include: {
+        horse: {
+          select: { id: true, name: true, microchipRfid: true, status: true, ownerId: true },
+        },
+        veterinarian: { select: { id: true, fullName: true, email: true, phoneNumber: true } },
+        unlockVet: { select: { id: true, fullName: true, email: true } },
+        medicalRecord: { select: { id: true, examinationDate: true, clinicalDiagnosis: true } },
+      },
+    });
+
+    if (!lock) {
+      throw new NotFoundException('Không tìm thấy Khóa huấn luyện');
+    }
+
+    await this.checkHorseAccess(lock.horseId, currentUser);
+
+    const now = new Date();
+    const isOverdue = lock.isLocked && !!lock.recheckDate && lock.recheckDate < now;
+    let daysOverdue = 0;
+    if (isOverdue && lock.recheckDate) {
+      daysOverdue = Math.floor(
+        (now.getTime() - new Date(lock.recheckDate).getTime()) / (24 * 60 * 60 * 1000),
+      );
+    }
+
+    const lockDurationDays = Math.ceil(
+      ((lock.unlockedAt ? new Date(lock.unlockedAt) : now).getTime() -
+        new Date(lock.lockedAt).getTime()) /
+        (24 * 60 * 60 * 1000),
+    );
+
+    return {
+      ...lock,
+      isOverdue,
+      daysOverdue,
+      lockDurationDays,
+    };
   }
 
   // ---------------------------------------------------------------------------

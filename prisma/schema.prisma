@@ -431,7 +431,8 @@ model MedicalRecord {
   createdAt           DateTime   @default(now())
   updatedAt           DateTime   @updatedAt
 
-  injuries InjuryLog[]
+  injuries     InjuryLog[]
+  medicalLocks MedicalLock[]
 
   @@index([horseId])
   @@index([veterinarianUserId])
@@ -464,24 +465,32 @@ model InjuryLog {
 }
 
 model MedicalLock {
-  id                 String    @id @default(uuid())
-  horseId            String
-  horse              Horse     @relation(fields: [horseId], references: [id], onDelete: Restrict)
-  veterinarianUserId String
-  veterinarian       User      @relation("VetLocksIssued", fields: [veterinarianUserId], references: [id], onDelete: Restrict)
-  lockedAt           DateTime  @default(now())
-  expectedRestDays   Int
-  lockReason         String
-  unlockConditions   String
-  isLocked           Boolean   @default(true)
-  unlockedAt         DateTime?
-  unlockVetUserId    String?
-  unlockVet          User?     @relation("VetLocksUnlocked", fields: [unlockVetUserId], references: [id], onDelete: SetNull)
-  recheckNotes       String?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  id                   String         @id @default(uuid())
+  lockCode             String?        @unique // e.g. KH-000001
+  horseId              String
+  horse                Horse          @relation(fields: [horseId], references: [id], onDelete: Restrict)
+  medicalRecordId      String?
+  medicalRecord        MedicalRecord? @relation(fields: [medicalRecordId], references: [id], onDelete: SetNull)
+  veterinarianUserId   String
+  veterinarian         User           @relation("VetLocksIssued", fields: [veterinarianUserId], references: [id], onDelete: Restrict)
+  lockedAt             DateTime       @default(now())
+  expectedRestDays     Int            @default(7)
+  recheckDate          DateTime?      // Ngày xem xét lại (DL-3.01)
+  appliedMedicalStatus HorseStatus    @default(INJURED)
+  lockReason           String
+  unlockConditions     String?
+  isLocked             Boolean        @default(true)
+  unlockedAt           DateTime?
+  unlockVetUserId      String?
+  unlockVet            User?          @relation("VetLocksUnlocked", fields: [unlockVetUserId], references: [id], onDelete: SetNull)
+  unlockReason         String?
+  recheckNotes         String?
+  extensionHistory     Json?          // Array of { oldRecheckDate, newRecheckDate, reason, updatedByUserId, updatedByName, createdAt }
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
 
   @@index([horseId, isLocked])
+  @@index([medicalRecordId])
 }
 
 model PreventiveSchedule {
