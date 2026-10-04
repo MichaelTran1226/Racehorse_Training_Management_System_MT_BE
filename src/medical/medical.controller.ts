@@ -32,6 +32,9 @@ import {
 } from './dto/medical-lock.dto';
 import { HealthBoardQueryDto } from './dto/health-board-query.dto';
 import { CreateInjuryDto } from './dto/create-injury.dto';
+import { UpdateInjuryDto } from './dto/update-injury.dto';
+import { UpdateRecoveryProgressDto } from './dto/update-recovery-progress.dto';
+import { InjuryQueryDto } from './dto/injury-query.dto';
 
 @ApiTags('Medical')
 @ApiBearerAuth('JWT-auth')
@@ -51,14 +54,63 @@ export class MedicalController {
   }
 
   // ---------------------------------------------------------------------------
-  // 2D INJURIES (API-007)
+  // 2D INJURIES & RECOVERY PROGRESS (TASK P2-03 / API-007)
   // ---------------------------------------------------------------------------
+
+  @Get('horses/:id/injuries')
+  @RequirePermission('viewMedical')
+  @ApiOperation({ summary: 'Danh sách các điểm chấn thương 2D của chiến mã' })
+  getHorseInjuries(
+    @Param('id') horseId: string,
+    @CurrentUser() user: CurrentUserPayload,
+    @Query() query: InjuryQueryDto,
+  ) {
+    return this.medicalService.getHorseInjuries(horseId, user, query);
+  }
 
   @Post('injuries')
   @RequirePermission('viewMedical')
-  @ApiOperation({ summary: 'Đánh dấu vị trí chấn thương 2D và tạo/liên kết bệnh án (API-007)' })
+  @ApiOperation({ summary: 'Đánh dấu vị trí chấn thương 2D trên mô hình (API-007 / DL-3.10)' })
   createInjury(@CurrentUser() user: CurrentUserPayload, @Body() dto: CreateInjuryDto) {
     return this.medicalService.createInjury(user, dto);
+  }
+
+  @Get('injuries/:id')
+  @RequirePermission('viewMedical')
+  @ApiOperation({ summary: 'Chi tiết điểm chấn thương 2D và lịch sử tiến trình hồi phục' })
+  getInjuryDetail(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
+    return this.medicalService.getInjuryDetail(id, user);
+  }
+
+  @Put('injuries/:id')
+  @RequirePermission('viewMedical')
+  @ApiOperation({ summary: 'Chỉnh sửa vị trí / thông tin điểm chấn thương 2D (DL-3.10 Sửa)' })
+  updateInjury(
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: UpdateInjuryDto,
+  ) {
+    return this.medicalService.updateInjury(id, user, dto);
+  }
+
+  @Delete('injuries/:id')
+  @RequirePermission('viewMedical')
+  @ApiOperation({
+    summary: 'Xóa điểm chấn thương (chỉ trong 24h và chưa cập nhật hồi phục - BTN-3.37)',
+  })
+  deleteInjury(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
+    return this.medicalService.deleteInjury(id, user);
+  }
+
+  @Post('injuries/:id/recovery')
+  @RequirePermission('viewMedical')
+  @ApiOperation({ summary: 'Cập nhật tiến trình hồi phục chấn thương (DL-3.11 / BTN-3.36)' })
+  updateRecoveryProgress(
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: UpdateRecoveryProgressDto,
+  ) {
+    return this.medicalService.updateRecoveryProgress(id, user, dto);
   }
 
   // ---------------------------------------------------------------------------
