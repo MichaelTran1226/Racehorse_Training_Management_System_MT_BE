@@ -1384,6 +1384,82 @@ export class MedicalService {
   // HEALTH BOARD & OVERVIEW
   // ---------------------------------------------------------------------------
 
+  async getHorseMedicalProfile(horseId: string, currentUser: CurrentUserPayload) {
+    await this.checkHorseAccess(horseId, currentUser);
+
+    const horse = await this.prisma.horse.findUnique({
+      where: { id: horseId },
+      include: {
+        medicalLocks: { where: { isLocked: true } },
+        stallAllocations: {
+          where: { isActive: true },
+          include: { stall: true },
+        },
+      },
+    });
+
+    if (!horse) {
+      throw new NotFoundException('Không tìm thấy chiến mã');
+    }
+
+    const records = await this.prisma.medicalRecord.findMany({
+      where: { horseId },
+      orderBy: { createdAt: 'desc' },
+      include: { veterinarian: { select: { id: true, fullName: true } } },
+    });
+
+    const injuries = await this.prisma.injuryLog.findMany({
+      where: { horseId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Transform to match the FE HorseMedicalProfile mock
+    const activeLock = horse.medicalLocks[0] || null;
+    const isMedicalLocked = horse.isMedicalLocked || !!activeLock;
+
+    return {
+      horse: {
+        id: horse.id,
+        name: horse.name,
+        microchipRfid: horse.microchipRfid,
+        breed: horse.breed,
+        dob: horse.dob?.toISOString(),
+        gender: horse.gender,
+        color: horse.color,
+        stallCode: horse.stallAllocations[0]?.stall?.code || 'Unassigned',
+        healthStatus: horse.status || 'RESTING',
+        isMedicalLocked,
+        activeLock,
+      },
+      overview: {
+        allowedActivity: 'N/A',
+        careInstructions: [],
+        activeMedications: [],
+        latestVitals: null,
+        vitalsHistory: [],
+        upcomingPreventive: [],
+      },
+      medicalRecords: records.map((r) => ({
+        id: r.id,
+        examinationDate: r.examinationDate.toISOString(),
+        examinationType: 'Routine Clinical',
+        clinicalDiagnosis: r.clinicalDiagnosis,
+        severity: 'MODERATE',
+        status: 'CLOSED',
+        veterinarianName: r.veterinarian?.fullName,
+        symptoms: r.symptoms,
+        treatmentProtocol: r.treatmentProtocol,
+        prescriptionDetails: r.prescriptionDetails,
+      })),
+      injuries: injuries.map((i) => ({
+        ...i,
+        region: i.anatomicalZone,
+        view: i.viewSide,
+      })),
+      observations: [],
+    };
+  }
+
   async getHealthBoard(query: HealthBoardQueryDto) {
     const horses = await this.prisma.horse.findMany({
       include: {

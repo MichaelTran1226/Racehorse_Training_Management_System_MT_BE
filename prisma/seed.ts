@@ -99,9 +99,16 @@ async function main() {
   // 3. Create Sample Horses
   await prisma.horse.upsert({
     where: { microchipRfid: 'RFID-985141002341' },
-    update: {},
+    update: {
+      horseCode: 'HR-000001',
+      microchip: '985141002341001',
+      rfid: 'RFID-985141002341',
+    },
     create: {
+      horseCode: 'HR-000001',
       name: 'Thunderbolt Swift',
+      microchip: '985141002341001',
+      rfid: 'RFID-985141002341',
       microchipRfid: 'RFID-985141002341',
       breed: 'Thoroughbred',
       dob: new Date('2021-04-12'),
@@ -115,9 +122,16 @@ async function main() {
 
   await prisma.horse.upsert({
     where: { microchipRfid: 'RFID-985141002342' },
-    update: {},
+    update: {
+      horseCode: 'HR-000002',
+      microchip: '985141002342002',
+      rfid: 'RFID-985141002342',
+    },
     create: {
+      horseCode: 'HR-000002',
       name: 'Northern Dancer Legacy',
+      microchip: '985141002342002',
+      rfid: 'RFID-985141002342',
       microchipRfid: 'RFID-985141002342',
       breed: 'Thoroughbred',
       dob: new Date('2020-03-15'),
