@@ -36,6 +36,15 @@ import { CreateInjuryDto } from './dto/create-injury.dto';
 import { UpdateInjuryDto } from './dto/update-injury.dto';
 import { UpdateRecoveryProgressDto } from './dto/update-recovery-progress.dto';
 import { InjuryQueryDto } from './dto/injury-query.dto';
+import {
+  CreatePreventiveTypeCatalogDto,
+  UpdatePreventiveTypeCatalogDto,
+} from './dto/preventive-catalog.dto';
+import {
+  RecordPreventiveCareDto,
+  SetupHorsePreventiveDto,
+  PreventiveQueryDto,
+} from './dto/preventive-care.dto';
 
 @ApiTags('Medical')
 @ApiBearerAuth('JWT-auth')
@@ -302,5 +311,75 @@ export class MedicalController {
     @Body() dto: CreateFollowUpDto,
   ) {
     return this.medicalService.addFollowUp(id, user, dto);
+  }
+
+  // ---------------------------------------------------------------------------
+  // PREVENTIVE CARE & CATALOGS (P2-05)
+  // ---------------------------------------------------------------------------
+
+  @Get('preventive/catalogs')
+  @RequirePermission('viewMedical')
+  @ApiOperation({ summary: 'Lấy danh mục loại chăm sóc định kỳ' })
+  getPreventiveCatalogs() {
+    return this.medicalService.getPreventiveCatalogs();
+  }
+
+  @Post('preventive/catalogs')
+  @RequirePermission('viewMedical')
+  @ApiOperation({ summary: 'Tạo loại chăm sóc định kỳ' })
+  createPreventiveCatalog(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: CreatePreventiveTypeCatalogDto,
+  ) {
+    return this.medicalService.createPreventiveCatalog(user, dto);
+  }
+
+  @Put('preventive/catalogs/:id')
+  @RequirePermission('viewMedical')
+  @ApiOperation({ summary: 'Cập nhật loại chăm sóc định kỳ' })
+  updatePreventiveCatalog(
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: UpdatePreventiveTypeCatalogDto,
+  ) {
+    return this.medicalService.updatePreventiveCatalog(id, user, dto);
+  }
+
+  @Post('preventive/catalogs/:id/toggle-status')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('viewMedical')
+  @ApiOperation({ summary: 'Bật/Tắt trạng thái active loại chăm sóc định kỳ' })
+  togglePreventiveCatalogStatus(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
+    return this.medicalService.togglePreventiveCatalogStatus(id, user);
+  }
+
+  @Get('preventive/schedules')
+  @RequirePermission('viewMedical')
+  @ApiOperation({ summary: 'Danh sách lịch chăm sóc định kỳ' })
+  getPreventiveSchedules(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query() query: PreventiveQueryDto,
+  ) {
+    return this.medicalService.getPreventiveSchedules(user, query);
+  }
+
+  @Post('preventive/record')
+  @RequirePermission('viewMedical')
+  @ApiOperation({ summary: 'Ghi nhận thực hiện chăm sóc định kỳ (đơn lẻ hoặc hàng loạt)' })
+  recordPreventiveCare(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: RecordPreventiveCareDto,
+  ) {
+    return this.medicalService.recordPreventiveCare(user, dto);
+  }
+
+  @Post('preventive/setup')
+  @RequirePermission('viewMedical')
+  @ApiOperation({ summary: 'Thiết lập chu kỳ định kỳ riêng cho từng ngựa' })
+  setupHorsePreventive(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: SetupHorsePreventiveDto,
+  ) {
+    return this.medicalService.setupHorsePreventive(user, dto);
   }
 }

@@ -493,22 +493,49 @@ model MedicalLock {
   @@index([medicalRecordId])
 }
 
+model PreventiveTypeCatalog {
+  id                String             @id @default(uuid())
+  code              String             @unique // e.g. VAC_RABIES
+  name              String             @unique // e.g. Tiêm phòng bệnh dại
+  category          PreventiveType     @default(VACCINATION)
+  intervalDays      Int                // Chu kỳ (ngày)
+  advanceNoticeDays Int                @default(7) // Nhắc trước (ngày)
+  applyToNewHorses  Boolean            @default(true)
+  description       String?
+  isActive          Boolean            @default(true)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  schedules PreventiveSchedule[]
+
+  @@index([category])
+  @@index([isActive])
+}
+
 model PreventiveSchedule {
-  id                 String           @id @default(uuid())
-  horseId            String
-  horse              Horse            @relation(fields: [horseId], references: [id], onDelete: Restrict)
-  veterinarianUserId String?
-  veterinarian       User?            @relation("VetPreventives", fields: [veterinarianUserId], references: [id], onDelete: SetNull)
-  scheduleType       PreventiveType
-  dueDate            DateTime
-  completedDate      DateTime?
+  id                  String                 @id @default(uuid())
+  horseId             String
+  horse               Horse                  @relation(fields: [horseId], references: [id], onDelete: Restrict)
+  typeCatalogId       String?
+  typeCatalog         PreventiveTypeCatalog? @relation(fields: [typeCatalogId], references: [id], onDelete: SetNull)
+  veterinarianUserId  String?
+  veterinarian        User?                  @relation("VetPreventives", fields: [veterinarianUserId], references: [id], onDelete: SetNull)
+  scheduleType        PreventiveType         @default(VACCINATION)
+  dueDate             DateTime
+  lastCompletedDate   DateTime?
+  completedDate       DateTime?
   productAdministered String?
-  notes              String?
-  status             PreventiveStatus @default(PENDING)
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
+  batchNumber         String?
+  performedByMode     String                 @default("SELF") // SELF | EXTERNAL
+  performedByName     String?
+  notes               String?
+  status              PreventiveStatus       @default(PENDING)
+  historyLogs         Json?                  // Timeline array of completion logs
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
 
   @@index([horseId])
+  @@index([typeCatalogId])
   @@index([dueDate, status])
 }
 

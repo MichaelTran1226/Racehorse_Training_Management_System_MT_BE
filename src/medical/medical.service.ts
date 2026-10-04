@@ -7,7 +7,15 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CurrentUserPayload } from '../common/decorators/current-user.decorator';
-import { Role, HorseStatus, BodySide, SeverityLevel, InjuryStatus } from '@prisma/client';
+import {
+  Role,
+  HorseStatus,
+  BodySide,
+  SeverityLevel,
+  InjuryStatus,
+  PreventiveType,
+  PreventiveStatus,
+} from '@prisma/client';
 import { CreateMedicalRecordDto } from './dto/create-medical-record.dto';
 import { UpdateMedicalRecordDto } from './dto/update-medical-record.dto';
 import { MedicalRecordQueryDto } from './dto/medical-record-query.dto';
@@ -30,6 +38,15 @@ import {
   MedicalLockQueryDto,
 } from './dto/medical-lock.dto';
 import { HealthBoardQueryDto } from './dto/health-board-query.dto';
+import {
+  CreatePreventiveTypeCatalogDto,
+  UpdatePreventiveTypeCatalogDto,
+} from './dto/preventive-catalog.dto';
+import {
+  RecordPreventiveCareDto,
+  SetupHorsePreventiveDto,
+  PreventiveQueryDto,
+} from './dto/preventive-care.dto';
 
 @Injectable()
 export class MedicalService {
@@ -1429,15 +1446,546 @@ export class MedicalService {
     }
 
     return {
-      counts: {
-        qualified: qualifiedCount,
-        observation: observationCount,
-        injured: injuredCount,
-        isolated: isolatedCount,
-        locked: lockedCount,
-        total: horses.length,
+      summary: {
+        qualifiedCount,
+        observationCount,
+        injuredCount,
+        isolatedCount,
+        lockedCount,
+        total: mappedHorses.length,
       },
-      horses: filtered,
+      data: filtered,
     };
+  }
+
+  // ---------------------------------------------------------------------------
+  // PREVENTIVE CARE & CATALOGS (TASK P2-05)
+  // ---------------------------------------------------------------------------
+
+  async getPreventiveCatalogs(query: { category?: PreventiveType; isActive?: string } = {}) {
+    const where: any = {};
+    if (query.category) where.category = query.category;
+    if (query.isActive !== undefined) where.isActive = query.isActive === 'true';
+
+    const catalogs = await this.prisma.preventiveTypeCatalog.findMany({
+      where,
+      orderBy: [{ category: 'asc' }, { code: 'asc' }],
+      include: {
+        _count: {
+          select: { schedules: true },
+        },
+      },
+    });
+
+    return catalogs.map((cat) => ({
+      ...cat,
+      monitoredHorsesCount: cat._count.schedules,
+    }));
+  }
+
+  async createPreventiveCatalog(actor: CurrentUserPayload, dto: CreatePreventiveTypeCatalogDto) {
+    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
+      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền tạo loại chăm sóc định kỳ');
+    }
+
+    const codeUpper = dto.code.toUpperCase();
+    const existingCode = await this.prisma.preventiveTypeCatalog.findUnique({
+      where: { code: codeUpper },
+    });
+    if (existingCode) {
+      throw new BadRequestException('Mã loại đã tồn tại');
+    }
+
+    const existingName = await this.prisma.preventiveTypeCatalog.findUnique({
+      where: { name: dto.name },
+    });
+    if (existingName) {
+      throw new BadRequestException('Tên loại đã tồn tại');
+    }
+
+    const noticeDays = dto.advanceNoticeDays || 7;
+    if (noticeDays >= dto.intervalDays) {
+      throw new BadRequestException('Số ngày nhắc trước phải nhỏ hơn chu kỳ lặp lại');
+    }
+
+    const catalog = await this.prisma.preventiveTypeCatalog.create({
+      data: {
+        code: codeUpper,
+        name: dto.name,
+        category: dto.category,
+        intervalDays: dto.intervalDays,
+        advanceNoticeDays: noticeDays,
+        applyToNewHorses: dto.applyToNewHorses ?? true,
+        description: dto.description || null,
+        isActive: true,
+      },
+    });
+
+    if (catalog.applyToNewHorses) {
+      const activeHorses = await this.prisma.horse.findMany({
+        where: { status: { not: HorseStatus.RETIRED } },
+        select: { id: true, createdAt: true },
+      });
+
+      for (const horse of activeHorses) {
+        const dueDate = new Date(horse.createdAt.getTime() + 7 * 24 * 60 * 60 * 1000);
+        await this.prisma.preventiveSchedule
+          .upsert({
+            where: { id: `schedule-${horse.id}-${catalog.id}` },
+            create: {
+              id: `schedule-${horse.id}-${catalog.id}`,
+              horseId: horse.id,
+              typeCatalogId: catalog.id,
+              scheduleType: catalog.category,
+              dueDate,
+              status: PreventiveStatus.PENDING,
+            },
+            update: {},
+          })
+          .catch(() => {});
+      }
+    }
+
+    await this.audit.record(
+      { id: actor.userId, name: actor.fullName },
+      'CREATE_PREVENTIVE_CATALOG',
+      `Preventive catalog ${codeUpper} created`,
+      catalog.id,
+    );
+
+    return catalog;
+  }
+
+  async updatePreventiveCatalog(
+    id: string,
+    actor: CurrentUserPayload,
+    dto: UpdatePreventiveTypeCatalogDto,
+  ) {
+    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
+      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền sửa loại chăm sóc định kỳ');
+    }
+
+    const catalog = await this.prisma.preventiveTypeCatalog.findUnique({ where: { id } });
+    if (!catalog) throw new NotFoundException('Không tìm thấy loại chăm sóc định kỳ');
+
+    if (dto.name && dto.name !== catalog.name) {
+      const existingName = await this.prisma.preventiveTypeCatalog.findUnique({
+        where: { name: dto.name },
+      });
+      if (existingName) throw new BadRequestException('Tên loại đã tồn tại');
+    }
+
+    const newInterval = dto.intervalDays || catalog.intervalDays;
+    const newNotice = dto.advanceNoticeDays || catalog.advanceNoticeDays;
+    if (newNotice >= newInterval) {
+      throw new BadRequestException('Số ngày nhắc trước phải nhỏ hơn chu kỳ lặp lại');
+    }
+
+    const updated = await this.prisma.preventiveTypeCatalog.update({
+      where: { id },
+      data: {
+        ...(dto.name && { name: dto.name }),
+        ...(dto.intervalDays && { intervalDays: dto.intervalDays }),
+        ...(dto.advanceNoticeDays && { advanceNoticeDays: dto.advanceNoticeDays }),
+        ...(dto.applyToNewHorses !== undefined && { applyToNewHorses: dto.applyToNewHorses }),
+        ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.isActive !== undefined && { isActive: dto.isActive }),
+      },
+    });
+
+    await this.audit.record(
+      { id: actor.userId, name: actor.fullName },
+      'UPDATE_PREVENTIVE_CATALOG',
+      `Preventive catalog ${catalog.code} updated`,
+      id,
+    );
+
+    return updated;
+  }
+
+  async togglePreventiveCatalogStatus(id: string, actor: CurrentUserPayload) {
+    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
+      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền đổi trạng thái loại chăm sóc');
+    }
+
+    const catalog = await this.prisma.preventiveTypeCatalog.findUnique({ where: { id } });
+    if (!catalog) throw new NotFoundException('Không tìm thấy loại chăm sóc định kỳ');
+
+    const updated = await this.prisma.preventiveTypeCatalog.update({
+      where: { id },
+      data: { isActive: !catalog.isActive },
+    });
+
+    await this.audit.record(
+      { id: actor.userId, name: actor.fullName },
+      'TOGGLE_PREVENTIVE_CATALOG_STATUS',
+      `Preventive catalog ${catalog.code} active status changed to ${updated.isActive}`,
+      id,
+    );
+
+    return {
+      ...updated,
+      message: updated.isActive
+        ? `Đã kích hoạt lại loại chăm sóc '${catalog.name}'`
+        : `Đã ngừng sử dụng loại chăm sóc '${catalog.name}'`,
+    };
+  }
+
+  async getPreventiveSchedules(currentUser: CurrentUserPayload, query: PreventiveQueryDto) {
+    const {
+      horseId,
+      category,
+      typeCatalogId,
+      status,
+      zone,
+      search,
+      page = '1',
+      limit = '10',
+    } = query;
+
+    const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);
+    const take = parseInt(limit, 10);
+
+    const where: any = {};
+
+    if (horseId) {
+      await this.checkHorseAccess(horseId, currentUser);
+      where.horseId = horseId;
+    } else if (currentUser.role === Role.HORSE_OWNER) {
+      where.horse = { ownerId: currentUser.userId };
+    } else if (currentUser.role === Role.GROOM) {
+      where.horse = {
+        stallAllocations: {
+          some: {
+            assignedGroomUserId: currentUser.userId,
+            isActive: true,
+          },
+        },
+      };
+    }
+
+    if (typeCatalogId) {
+      where.typeCatalogId = typeCatalogId;
+    } else if (category) {
+      where.OR = [{ scheduleType: category }, { typeCatalog: { category } }];
+    }
+
+    if (zone) {
+      where.horse = {
+        ...where.horse,
+        stallAllocations: {
+          some: {
+            isActive: true,
+            stall: { zone },
+          },
+        },
+      };
+    }
+
+    if (search) {
+      where.OR = [
+        { horse: { name: { contains: search, mode: 'insensitive' } } },
+        { horse: { microchipRfid: { contains: search, mode: 'insensitive' } } },
+        { typeCatalog: { name: { contains: search, mode: 'insensitive' } } },
+      ];
+    }
+
+    const [total, schedules] = await Promise.all([
+      this.prisma.preventiveSchedule.count({ where }),
+      this.prisma.preventiveSchedule.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { dueDate: 'asc' },
+        include: {
+          horse: {
+            select: {
+              id: true,
+              name: true,
+              microchipRfid: true,
+              status: true,
+              stallAllocations: {
+                where: { isActive: true },
+                select: { stall: { select: { code: true, zone: true } } },
+              },
+            },
+          },
+          typeCatalog: true,
+          veterinarian: { select: { id: true, fullName: true, email: true } },
+        },
+      }),
+    ]);
+
+    const now = new Date();
+    let overdueCount = 0;
+    let upcoming7DaysCount = 0;
+    let upcoming30DaysCount = 0;
+
+    const mapped = schedules.map((sch) => {
+      const noticeDays = sch.typeCatalog?.advanceNoticeDays || 7;
+      const dueDate = new Date(sch.dueDate);
+
+      const isOverdue = dueDate < now;
+      const isUpcoming7 =
+        !isOverdue && dueDate <= new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+      const isUpcoming30 =
+        !isOverdue && dueDate <= new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      const isNotice =
+        !isOverdue && dueDate <= new Date(now.getTime() + noticeDays * 24 * 60 * 60 * 1000);
+
+      if (isOverdue) overdueCount++;
+      if (isUpcoming7) upcoming7DaysCount++;
+      if (isUpcoming30) upcoming30DaysCount++;
+
+      let statusBadge = 'NORMAL';
+      if (isOverdue) {
+        statusBadge = 'OVERDUE';
+      } else if (isNotice) {
+        statusBadge = 'UPCOMING';
+      } else if (!sch.lastCompletedDate && !sch.completedDate) {
+        statusBadge = 'NODATA';
+      }
+
+      return {
+        ...sch,
+        stallCode: sch.horse?.stallAllocations[0]?.stall?.code || null,
+        zone: sch.horse?.stallAllocations[0]?.stall?.zone || null,
+        statusBadge,
+        isOverdue,
+        isUpcomingNotice: isNotice,
+        daysUntilDue: Math.ceil((dueDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)),
+      };
+    });
+
+    let filteredResult = mapped;
+    if (status) {
+      if (status === 'OVERDUE') {
+        filteredResult = mapped.filter((item) => item.statusBadge === 'OVERDUE');
+      } else if (status === 'UPCOMING') {
+        filteredResult = mapped.filter((item) => item.statusBadge === 'UPCOMING');
+      } else if (status === 'NORMAL') {
+        filteredResult = mapped.filter((item) => item.statusBadge === 'NORMAL');
+      } else if (status === 'NODATA') {
+        filteredResult = mapped.filter((item) => item.statusBadge === 'NODATA');
+      } else if (status === 'UPCOMING_7') {
+        filteredResult = mapped.filter((item) => item.isUpcomingNotice);
+      }
+    }
+
+    return {
+      counts: {
+        overdue: overdueCount,
+        upcoming7Days: upcoming7DaysCount,
+        upcoming30Days: upcoming30DaysCount,
+        total,
+      },
+      data: filteredResult,
+      total: filteredResult.length,
+      page: parseInt(page, 10),
+      limit: parseInt(limit, 10),
+      totalPages: Math.ceil(filteredResult.length / take),
+    };
+  }
+
+  async recordPreventiveCare(actor: CurrentUserPayload, dto: RecordPreventiveCareDto) {
+    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
+      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền ghi nhận thực hiện định kỳ');
+    }
+
+    const catalog = await this.prisma.preventiveTypeCatalog.findUnique({
+      where: { id: dto.typeCatalogId },
+    });
+    if (!catalog) {
+      throw new NotFoundException('Không tìm thấy loại chăm sóc định kỳ');
+    }
+
+    const horseIds =
+      dto.horseIds && dto.horseIds.length > 0 ? dto.horseIds : dto.horseId ? [dto.horseId] : [];
+
+    if (horseIds.length === 0) {
+      throw new BadRequestException('Vui lòng chọn ít nhất một chiến mã');
+    }
+
+    if (
+      dto.performedByMode === 'EXTERNAL' &&
+      (!dto.performedByName || dto.performedByName.trim().length === 0)
+    ) {
+      throw new BadRequestException('Vui lòng nhập tên người thực hiện');
+    }
+
+    if (
+      (catalog.category === PreventiveType.VACCINATION ||
+        catalog.category === PreventiveType.DEWORMING) &&
+      !dto.productAdministered
+    ) {
+      throw new BadRequestException('Vui lòng chọn sản phẩm / vaccine đã dùng');
+    }
+
+    const now = new Date();
+    const performedDate = dto.performedDate ? new Date(dto.performedDate) : now;
+    if (performedDate > now) {
+      throw new BadRequestException('Ngày thực hiện không được sau thời điểm hiện tại');
+    }
+
+    const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+    if (performedDate < ninetyDaysAgo) {
+      throw new BadRequestException('Ngày thực hiện không được sớm hơn 90 ngày');
+    }
+
+    let nextDueDate: Date;
+    if (dto.customNextDueDate) {
+      nextDueDate = new Date(dto.customNextDueDate);
+      if (nextDueDate <= performedDate) {
+        throw new BadRequestException('Ngày đến hạn tiếp theo phải sau ngày thực hiện');
+      }
+    } else {
+      nextDueDate = new Date(performedDate.getTime() + catalog.intervalDays * 24 * 60 * 60 * 1000);
+    }
+
+    const performedByName =
+      dto.performedByMode === 'EXTERNAL' ? dto.performedByName! : actor.fullName;
+
+    for (const horseId of horseIds) {
+      const horse = await this.prisma.horse.findUnique({ where: { id: horseId } });
+      if (!horse) continue;
+
+      const schedule = await this.prisma.preventiveSchedule.findFirst({
+        where: { horseId, typeCatalogId: catalog.id },
+      });
+
+      let history: any[] = [];
+      if (schedule?.historyLogs) {
+        try {
+          history =
+            typeof schedule.historyLogs === 'string'
+              ? JSON.parse(schedule.historyLogs)
+              : (schedule.historyLogs as any[]);
+        } catch {
+          history = [];
+        }
+      }
+
+      const logEntry = {
+        id: `log-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        performedDate: performedDate.toISOString(),
+        performedByMode: dto.performedByMode || 'SELF',
+        performedByName,
+        productAdministered: dto.productAdministered || null,
+        batchNumber: dto.batchNumber || null,
+        nextDueDate: nextDueDate.toISOString(),
+        notes: dto.notes || null,
+        createdAt: now.toISOString(),
+      };
+      history.push(logEntry);
+
+      if (schedule) {
+        await this.prisma.preventiveSchedule.update({
+          where: { id: schedule.id },
+          data: {
+            veterinarianUserId: actor.userId,
+            lastCompletedDate: performedDate,
+            completedDate: performedDate,
+            dueDate: nextDueDate,
+            productAdministered: dto.productAdministered || null,
+            batchNumber: dto.batchNumber || null,
+            performedByMode: dto.performedByMode || 'SELF',
+            performedByName,
+            notes: dto.notes || null,
+            status: PreventiveStatus.COMPLETED,
+            historyLogs: history,
+          },
+        });
+      } else {
+        await this.prisma.preventiveSchedule.create({
+          data: {
+            horseId,
+            typeCatalogId: catalog.id,
+            scheduleType: catalog.category,
+            veterinarianUserId: actor.userId,
+            lastCompletedDate: performedDate,
+            completedDate: performedDate,
+            dueDate: nextDueDate,
+            productAdministered: dto.productAdministered || null,
+            batchNumber: dto.batchNumber || null,
+            performedByMode: dto.performedByMode || 'SELF',
+            performedByName,
+            notes: dto.notes || null,
+            status: PreventiveStatus.COMPLETED,
+            historyLogs: history,
+          },
+        });
+      }
+    }
+
+    await this.audit.record(
+      { id: actor.userId, name: actor.fullName },
+      'RECORD_PREVENTIVE_CARE',
+      `Recorded ${catalog.name} for ${horseIds.length} horse(s)`,
+      catalog.id,
+    );
+
+    return {
+      message: `Đã ghi nhận ${catalog.name} cho ${horseIds.length} chiến mã thành công`,
+      count: horseIds.length,
+      nextDueDate: nextDueDate.toLocaleDateString(),
+    };
+  }
+
+  async setupHorsePreventive(actor: CurrentUserPayload, dto: SetupHorsePreventiveDto) {
+    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
+      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền thiết lập lịch định kỳ');
+    }
+
+    const horse = await this.prisma.horse.findUnique({ where: { id: dto.horseId } });
+    if (!horse) throw new NotFoundException('Không tìm thấy chiến mã');
+
+    const now = new Date();
+    for (const item of dto.schedules) {
+      const catalog = await this.prisma.preventiveTypeCatalog.findUnique({
+        where: { id: item.typeCatalogId },
+      });
+      if (!catalog) continue;
+
+      const schedule = await this.prisma.preventiveSchedule.findFirst({
+        where: { horseId: dto.horseId, typeCatalogId: item.typeCatalogId },
+      });
+
+      if (item.enabled) {
+        let dueDate: Date;
+        if (item.initialDueDate) {
+          dueDate = new Date(item.initialDueDate);
+        } else if (schedule?.dueDate) {
+          dueDate = schedule.dueDate;
+        } else {
+          dueDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+        }
+
+        if (schedule) {
+          await this.prisma.preventiveSchedule.update({
+            where: { id: schedule.id },
+            data: { dueDate, status: PreventiveStatus.PENDING },
+          });
+        } else {
+          await this.prisma.preventiveSchedule.create({
+            data: {
+              horseId: dto.horseId,
+              typeCatalogId: catalog.id,
+              scheduleType: catalog.category,
+              dueDate,
+              status: PreventiveStatus.PENDING,
+            },
+          });
+        }
+      }
+    }
+
+    await this.audit.record(
+      { id: actor.userId, name: actor.fullName },
+      'SETUP_HORSE_PREVENTIVE',
+      `Setup preventive schedules for horse ${dto.horseId}`,
+      dto.horseId,
+    );
+
+    return { message: 'Đã thiết lập lịch chăm sóc định kỳ cho chiến mã thành công' };
   }
 }
