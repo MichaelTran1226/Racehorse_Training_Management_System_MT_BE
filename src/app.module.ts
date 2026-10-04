@@ -8,6 +8,7 @@ import { MailModule } from './mail/mail.module';
 import { AuditModule } from './audit/audit.module';
 import { AccountsModule } from './accounts/accounts.module';
 import { MedicalModule } from './medical/medical.module';
+import { HorsesModule } from './horses/horses.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { PermissionsGuard } from './common/guards/permissions.guard';
@@ -27,6 +28,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     AuthModule,
     AccountsModule,
     MedicalModule,
+    HorsesModule,
   ],
   controllers: [],
   providers: [
