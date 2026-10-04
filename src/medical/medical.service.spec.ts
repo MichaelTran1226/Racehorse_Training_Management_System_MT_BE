@@ -37,6 +37,20 @@ describe('MedicalService', () => {
       update: jest.fn(),
       delete: jest.fn(),
     },
+    preventiveTypeCatalog: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+    },
+    preventiveSchedule: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+      upsert: jest.fn(),
+    },
   };
 
   const mockAuditService = {
@@ -396,6 +410,98 @@ describe('MedicalService', () => {
           }),
         }),
       );
+    });
+  });
+
+  describe('Preventive Care & Catalogs (P2-05)', () => {
+    it('should create a preventive type catalog', async () => {
+      mockPrismaService.preventiveTypeCatalog.findUnique.mockResolvedValue(null);
+      mockPrismaService.preventiveTypeCatalog.create.mockResolvedValue({
+        id: 'cat-1',
+        code: 'VAC_INFLUENZA',
+        name: 'Tiêm cúm ngựa',
+        category: 'VACCINATION',
+        intervalDays: 180,
+        advanceNoticeDays: 14,
+        isActive: true,
+      });
+
+      const res = await service.createPreventiveCatalog(mockVetUser, {
+        code: 'vac_influenza',
+        name: 'Tiêm cúm ngựa',
+        category: 'VACCINATION' as any,
+        intervalDays: 180,
+        advanceNoticeDays: 14,
+      });
+
+      expect(res.code).toBe('VAC_INFLUENZA');
+      expect(mockPrismaService.preventiveTypeCatalog.create).toHaveBeenCalled();
+    });
+
+    it('should record preventive care for single horse', async () => {
+      mockPrismaService.horse.findUnique.mockResolvedValue({ id: 'horse-1', name: 'Thunder' });
+      mockPrismaService.preventiveTypeCatalog.findUnique.mockResolvedValue({
+        id: 'cat-1',
+        name: 'Tiêm cúm',
+        category: 'VACCINATION',
+        intervalDays: 180,
+        advanceNoticeDays: 14,
+      });
+      mockPrismaService.preventiveSchedule.findFirst.mockResolvedValue({
+        id: 'sched-1',
+        horseId: 'horse-1',
+        intervalDays: 180,
+        advanceNoticeDays: 14,
+        historyLogs: [],
+      });
+      mockPrismaService.preventiveSchedule.update.mockResolvedValue({
+        id: 'sched-1',
+        lastCompletedDate: new Date(),
+        status: 'NORMAL',
+      });
+
+      const res = await service.recordPreventiveCare(mockVetUser, {
+        horseId: 'horse-1',
+        typeCatalogId: 'cat-1',
+        performedDate: new Date().toISOString(),
+        productAdministered: 'Equine Influenza Vaccine',
+        batchNumber: 'BATCH-001',
+        performedByMode: 'INTERNAL',
+      });
+
+      expect(res.count).toBe(1);
+      expect(mockPrismaService.preventiveSchedule.update).toHaveBeenCalled();
+    });
+
+    it('should setup custom preventive schedule for a horse', async () => {
+      mockPrismaService.horse.findUnique.mockResolvedValue({ id: 'horse-1', name: 'Thunder' });
+      mockPrismaService.preventiveTypeCatalog.findUnique.mockResolvedValue({
+        id: 'cat-1',
+        name: 'Tẩy giun',
+        category: 'DEWORMING',
+        intervalDays: 90,
+        advanceNoticeDays: 7,
+      });
+      mockPrismaService.preventiveSchedule.findFirst.mockResolvedValue(null);
+      mockPrismaService.preventiveSchedule.create.mockResolvedValue({
+        id: 'sched-1',
+        horseId: 'horse-1',
+        typeCatalogId: 'cat-1',
+      });
+
+      const res = await service.setupHorsePreventive(mockVetUser, {
+        horseId: 'horse-1',
+        schedules: [
+          {
+            typeCatalogId: 'cat-1',
+            enabled: true,
+            initialDueDate: new Date().toISOString(),
+          },
+        ],
+      });
+
+      expect(res.message).toBe('Đã thiết lập lịch chăm sóc định kỳ cho chiến mã thành công');
+      expect(mockPrismaService.preventiveSchedule.create).toHaveBeenCalled();
     });
   });
 });
