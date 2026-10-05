@@ -8,6 +8,7 @@ import { CurrentUserPayload } from '../common/decorators/current-user.decorator'
 import { CreateHorseDto } from './dto/create-horse.dto';
 import { UpdateHorseDto } from './dto/update-horse.dto';
 import { QueryHorseDto } from './dto/query-horse.dto';
+import { ChangeHorseStatusDto } from './dto/change-status.dto';
 
 @Injectable()
 export class HorsesService {
@@ -541,5 +542,51 @@ export class HorsesService {
     );
 
     return { success: true, message: `Đã xóa hồ sơ ngựa ${horse.name}.` };
+  }
+  async changeStatus(id: string, dto: ChangeHorseStatusDto, user: CurrentUserPayload) {
+    const horse = await this.prisma.horse.findUnique({ where: { id } });
+    if (!horse) {
+      throw apiError(HttpStatus.NOT_FOUND, 'HORSE_NOT_FOUND', 'Không tìm thấy hồ sơ ngựa.');
+    }
+
+    if (horse.status === dto.status) {
+      throw apiError(HttpStatus.BAD_REQUEST, 'SAME_STATUS', `Ngựa đang ở trạng thái ${dto.status}.`);
+    }
+
+    if (horse.isMedicalLocked) {
+      if (user.role === UserRole.VETERINARIAN) {
+        if (!['INJURED', 'ISOLATED', 'UNDER_OBSERVATION'].includes(dto.status)) {
+           throw apiError(HttpStatus.FORBIDDEN, 'MEDICAL_LOCK_ACTIVE', 'Ngựa đang bị Khóa huấn luyện y tế. Không thể chuyển sang trạng thái vận hành.');
+        }
+      } else if (user.role === UserRole.CLUB_MANAGER && dto.status === 'RETIRED') {
+        // allow CM to retire
+      } else {
+        throw apiError(HttpStatus.FORBIDDEN, 'MEDICAL_LOCK_ACTIVE', 'Ngựa đang bị Khóa huấn luyện y tế. Không thể thực hiện thao tác này cho đến khi Bác sĩ thú y mở khóa.');
+      }
+    }
+
+    if (user.role === UserRole.HEAD_TRAINER) {
+      if (!['RESTING', 'IN_TRAINING', 'ACTIVE'].includes(dto.status as string)) {
+        throw apiError(HttpStatus.FORBIDDEN, 'ROLE_RESTRICTION', 'Head Trainer chỉ được chuyển các trạng thái vận hành.');
+      }
+    } else if (user.role === UserRole.VETERINARIAN) {
+      if (!['INJURED', 'ISOLATED', 'UNDER_OBSERVATION', 'RESTING', 'IN_TRAINING'].includes(dto.status as string)) {
+        throw apiError(HttpStatus.FORBIDDEN, 'ROLE_RESTRICTION', 'Veterinarian chỉ được thiết lập/gỡ các trạng thái y tế.');
+      }
+    }
+
+    const updated = await this.prisma.horse.update({
+      where: { id },
+      data: { status: dto.status },
+    });
+
+    await this.auditService.record(
+      { id: user.userId, name: user.fullName || user.email },
+      'HORSE_STATUS_CHANGED',
+      `Chuyển trạng thái ngựa ${horse.name} từ ${horse.status} sang ${dto.status}. Lý do: ${dto.reason || 'Không có'}`,
+      horse.id,
+    );
+
+    return { success: true, data: updated, message: `Đã chuyển trạng thái sang ${dto.status}.` };
   }
 }
