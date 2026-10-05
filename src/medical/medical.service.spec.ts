@@ -180,6 +180,23 @@ describe('MedicalService', () => {
   });
 
   describe('MedicalLock (Task P2-04)', () => {
+    it('should throw ForbiddenException if user is not VETERINARIAN or CLUB_MANAGER when creating lock', async () => {
+      await expect(
+        service.createMedicalLock(mockOwnerUser, {
+          horseId: 'horse-1',
+          lockReason: 'Test',
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw ForbiddenException if user is not VETERINARIAN or CLUB_MANAGER when releasing lock', async () => {
+      await expect(
+        service.releaseMedicalLock('lock-1', mockOwnerUser, {
+          unlockReason: 'Test',
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
     it('should create medical lock with auto lockCode, impact assessment, and update horse status', async () => {
       mockPrismaService.horse.findUnique.mockResolvedValue({
         id: 'horse-1',

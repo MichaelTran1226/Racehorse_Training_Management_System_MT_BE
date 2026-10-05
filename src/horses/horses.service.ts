@@ -550,28 +550,52 @@ export class HorsesService {
     }
 
     if (horse.status === dto.status) {
-      throw apiError(HttpStatus.BAD_REQUEST, 'SAME_STATUS', `Ngựa đang ở trạng thái ${dto.status}.`);
+      throw apiError(
+        HttpStatus.BAD_REQUEST,
+        'SAME_STATUS',
+        `Ngựa đang ở trạng thái ${dto.status}.`,
+      );
     }
 
     if (horse.isMedicalLocked) {
       if (user.role === UserRole.VETERINARIAN) {
         if (!['INJURED', 'ISOLATED', 'UNDER_OBSERVATION'].includes(dto.status)) {
-           throw apiError(HttpStatus.FORBIDDEN, 'MEDICAL_LOCK_ACTIVE', 'Ngựa đang bị Khóa huấn luyện y tế. Không thể chuyển sang trạng thái vận hành.');
+          throw apiError(
+            HttpStatus.FORBIDDEN,
+            'MEDICAL_LOCK_ACTIVE',
+            'Ngựa đang bị Khóa huấn luyện y tế. Không thể chuyển sang trạng thái vận hành.',
+          );
         }
       } else if (user.role === UserRole.CLUB_MANAGER && dto.status === 'RETIRED') {
         // allow CM to retire
       } else {
-        throw apiError(HttpStatus.FORBIDDEN, 'MEDICAL_LOCK_ACTIVE', 'Ngựa đang bị Khóa huấn luyện y tế. Không thể thực hiện thao tác này cho đến khi Bác sĩ thú y mở khóa.');
+        throw apiError(
+          HttpStatus.FORBIDDEN,
+          'MEDICAL_LOCK_ACTIVE',
+          'Ngựa đang bị Khóa huấn luyện y tế. Không thể thực hiện thao tác này cho đến khi Bác sĩ thú y mở khóa.',
+        );
       }
     }
 
     if (user.role === UserRole.HEAD_TRAINER) {
       if (!['RESTING', 'IN_TRAINING', 'ACTIVE'].includes(dto.status as string)) {
-        throw apiError(HttpStatus.FORBIDDEN, 'ROLE_RESTRICTION', 'Head Trainer chỉ được chuyển các trạng thái vận hành.');
+        throw apiError(
+          HttpStatus.FORBIDDEN,
+          'ROLE_RESTRICTION',
+          'Head Trainer chỉ được chuyển các trạng thái vận hành.',
+        );
       }
     } else if (user.role === UserRole.VETERINARIAN) {
-      if (!['INJURED', 'ISOLATED', 'UNDER_OBSERVATION', 'RESTING', 'IN_TRAINING'].includes(dto.status as string)) {
-        throw apiError(HttpStatus.FORBIDDEN, 'ROLE_RESTRICTION', 'Veterinarian chỉ được thiết lập/gỡ các trạng thái y tế.');
+      if (
+        !['INJURED', 'ISOLATED', 'UNDER_OBSERVATION', 'RESTING', 'IN_TRAINING'].includes(
+          dto.status as string,
+        )
+      ) {
+        throw apiError(
+          HttpStatus.FORBIDDEN,
+          'ROLE_RESTRICTION',
+          'Veterinarian chỉ được thiết lập/gỡ các trạng thái y tế.',
+        );
       }
     }
 
