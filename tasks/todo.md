@@ -60,3 +60,39 @@ Kế hoạch, lịch sprint và điểm nối giữa 2 cặp: [plan.md](plan.md)
 - [ ] `P2-09` Kết quả buổi tập, biểu đồ thể lực, tổng quan huấn luyện — [#54](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_BE/issues/54)
 
 Đã xong trước khi chia lại: nền tảng BE (NestJS + Prisma, CI) — PR #20; API đăng nhập — PR #21.
+
+## BACKLOG MỞ RỘNG — FLOW 4: CHUỒNG TRẠI & DINH DƯỠNG
+
+| ID | Task Name | Assignee | Trạng thái | PR Link | Notes |
+|---|---|---|---|---|---|
+| F4-01 | Danh mục vật tư và ca trực | Cặp 1 | ToDo | — | Foundation độc lập |
+| F4-02 | Phân ca theo ngày × ca × khu | Cặp 1 | ToDo | — | Cần khu/ô và Groom scope Flow 1 |
+| F4-03 | Vòng đời khẩu phần | Cặp 2 | ToDo | — | HT tạo, VET duyệt |
+| F4-04 | Sinh checklist chăm sóc hằng ngày | Cặp 2 | ToDo | — | Cần Flow 2/3 API ổn định |
+| F4-05 | Thực hiện và giám sát công việc | Cặp 1 | ToDo | — | Mobile Groom, offline queue |
+| F4-06 | Tồn kho và đề xuất bổ sung | Cặp 1 | ToDo | — | Transaction và data masking |
+
+## BACKLOG MỞ RỘNG — FLOW 5: THI ĐẤU & TÀI CHÍNH
+
+| ID | Task Name | Assignee | Trạng thái | PR Link | Notes |
+|---|---|---|---|---|---|
+| F5-01 | Danh mục và vòng đời giải đua | Cặp 1 | ToDo | — | Foundation độc lập |
+| F5-02 | Eligibility và đăng ký thi đấu | Cặp 2 | ToDo | — | Medical Lock + withdrawal |
+| F5-03 | Tạm treo/rút đăng ký và kết quả | Cặp 2 | ToDo | — | Job theo thời gian + audit |
+| F5-04 | Sổ tài chính | Cặp 1 | ToDo | — | Ownership effective date |
+| F5-05 | Báo cáo và dashboard | Cặp 1 | ToDo | — | PDF + Owner isolation |
+
+## BACKLOG MỞ RỘNG — FLOW 6: AI INSIGHTS
+
+| ID | Task Name | Assignee | Trạng thái | PR Link | Notes |
+|---|---|---|---|---|---|
+| F6-00 | Chốt provider và chính sách dữ liệu | Chung | ToDo | — | Lead quyết định; Cặp 1 ghi Decision, Cặp 2 phản biện dữ liệu y tế |
+| F6-01 | Schema và lifecycle AIInsight | Cặp 1 | ToDo | — | Prisma + typed JSON |
+| F6-02 | Context Projection và Risk Engine | Cặp 2 | ToDo | — | Deterministic rules + RBAC |
+| F6-03 | Gợi ý giáo án | Cặp 2 | ToDo | — | AI chỉ tạo Draft |
+| F6-04 | Cảnh báo nguy cơ chấn thương | Cặp 2 | ToDo | — | Owner không thấy risk score |
+| F6-05 | Trợ lý AI có nguồn | Cặp 2 | ToDo | — | Read-only + rate limit |
+| F6-06 | Tóm tắt và báo cáo AI | Cặp 1 | ToDo | — | CM duyệt trước phát hành |
+| F6-07 | Cấu hình, observability và kill switch | Cặp 1 | ToDo | — | Audit + rollback |
+
+Chi tiết acceptance criteria, dependency và verification: [FLOW4_6_IMPLEMENTATION_PLAN.md](../docs/FLOW4_6_IMPLEMENTATION_PLAN.md).

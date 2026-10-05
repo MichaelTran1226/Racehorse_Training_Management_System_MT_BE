@@ -5,7 +5,7 @@ Nguồn: đặc tả `Tai_Lieu` (Flow1_HoSoNgua, Flow2_GiaoAn, Flow3_YTe) · [SR
 ## 1. Phạm vi
 
 - **Làm:** Auth & phân quyền, Flow 1 Hồ sơ & định danh ngựa (gồm sơ đồ chuồng), Flow 3 Y tế & chấn thương, Flow 2 Giáo án huấn luyện. Website desktop.
-- **Để sau:** Flow 4 Chuồng trại & dinh dưỡng, Flow 5 Thi đấu & tài chính, Flow 6 AI.
+- **Kế hoạch mở rộng:** Flow 4 Chuồng trại & dinh dưỡng, Flow 5 Thi đấu & tài chính, Flow 6 AI được lập ở Mục 7; chưa thay đổi trạng thái Flow 1–3.
 
 ## 2. Đội hình
 
@@ -48,3 +48,44 @@ Cài đặt, tạo nhánh, chạy kiểm tra và mở PR để qua bot CI: xem [
 - **P0 Critical:** nền tảng, Auth/RBAC, các task liên quan Khóa huấn luyện (P1-08, P2-04, P2-07).
 - **P1 High:** các task chức năng chính còn lại.
 - **P3 Low:** task chỉ gồm chức năng [BỔ SUNG] (P1-11, P1-12).
+
+## 7. Kế hoạch mở rộng Flow 4–6
+
+Tài liệu triển khai chi tiết: [FLOW4_6_IMPLEMENTATION_PLAN.md](../docs/FLOW4_6_IMPLEMENTATION_PLAN.md). Các task dưới đây được lập ngay khi Flow 1–3 còn đang hoàn thiện; foundation độc lập có thể chuẩn bị trước, còn lát cắt tích hợp chỉ bắt đầu khi API phụ thuộc đã ổn định.
+
+| Wave | Flow 4 | Flow 5 | Flow 6 |
+|---|---|---|---|
+| Foundation | F4-01 Danh mục vật tư và ca trực | F5-01 Danh mục và vòng đời giải đua | F6-00 Chốt provider/chính sách dữ liệu; F6-01 Schema/lifecycle AIInsight |
+| Core | F4-02 Phân ca; F4-03 Khẩu phần | F5-02 Eligibility và đăng ký; F5-03 Kết quả | F6-02 Context Projection/Risk Engine; F6-03 Gợi ý giáo án; F6-04 Cảnh báo nguy cơ |
+| Operations | F4-04 Sinh checklist; F4-05 Thực hiện/giám sát; F4-06 Tồn kho | F5-04 Sổ tài chính; F5-05 Báo cáo/dashboard | F6-05 Trợ lý có nguồn; F6-06 Tóm tắt; F6-07 Cấu hình/observability |
+
+### 7.1 Phân công theo cặp
+
+| Cặp | Flow 4 | Flow 5 | Flow 6 | Tổng task |
+|---|---|---|---|---:|
+| **Cặp 1** | F4-01, F4-02, F4-05, F4-06 | F5-01, F5-04, F5-05 | F6-01, F6-06, F6-07 | 10 |
+| **Cặp 2** | F4-03, F4-04 | F5-02, F5-03 | F6-02, F6-03, F6-04, F6-05 | 8 |
+| **Chung** | — | — | F6-00 | 1 |
+
+- Cặp 1 tiếp tục trục hồ sơ/chuồng trại, vận hành, tài chính, báo cáo và nền tảng hệ thống.
+- Cặp 2 tiếp tục trục y tế/huấn luyện, các luật Medical Lock, eligibility và mô hình nguy cơ.
+- `F6-00` cần Lead chốt; Cặp 1 ghi Decision, Cặp 2 rà soát dữ liệu y tế được phép gửi.
+- Chưa gán tên cá nhân do bảng `Thành viên` chưa có tên FE/BE; tên sẽ tự lấy theo cặp sau khi điền bảng.
+
+### 7.2 Điểm nối bắt buộc
+
+| Nguồn | Task dùng | Contract cần ổn định |
+|---|---|---|
+| Flow 1 | F4-02, F4-04 | Khu/ô chuồng, ngựa, Groom được giao, Owner scope |
+| Flow 2 | F4-04, F5-02, F6-02, F6-03 | Buổi tập, tải tập, kết quả và giáo án Draft |
+| Flow 3 | F4-04, F5-02, F5-03, F6-02, F6-04 | Medical Lock, đơn thuốc/withdrawal, chỉ định chăm sóc, chấn thương |
+| Flow 4 | F5-04, F6-06 | Tiêu hao theo ngựa, nhật ký chăm sóc |
+| Flow 5 | F6-06 | Thành tích, chi phí, doanh thu và báo cáo đã chốt |
+
+### 7.3 Quy tắc lập issue và triển khai
+
+1. Chưa gán số issue hoặc tên cá nhân khi chưa có bằng chứng trên GitHub Project; giữ `—` ở cột issue và dùng ownership theo cặp trong todo.
+2. Mỗi ID là một vertical slice, chốt API contract trước rồi tách PR BE/FE nếu cần.
+3. Không chuyển `Done` nếu mới có UI/mock hoặc test cục bộ; cần merge FE/BE và chạy real API.
+4. Mọi integration với Medical Lock phải giữ luật chặn bài nặng/đăng ký thi đấu tại thời điểm lưu.
+5. Flow 6 không được tự ghi dữ liệu nghiệp vụ; mọi nội dung AI phải có nguồn, nhãn và disclaimer.
