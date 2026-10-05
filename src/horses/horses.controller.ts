@@ -8,6 +8,7 @@ import {
   Param,
   Post,
   Put,
+  Patch,
   Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -18,6 +19,7 @@ import { HorsesService } from './horses.service';
 import { CreateHorseDto } from './dto/create-horse.dto';
 import { UpdateHorseDto } from './dto/update-horse.dto';
 import { QueryHorseDto } from './dto/query-horse.dto';
+import { ChangeHorseStatusDto } from './dto/change-status.dto';
 
 @ApiTags('Horses')
 @ApiBearerAuth('JWT-auth')
@@ -61,5 +63,16 @@ export class HorsesController {
   @ApiOperation({ summary: 'Xóa hồ sơ ngựa (chưa có dữ liệu phụ thuộc) - Chỉ Club Manager' })
   async remove(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
     return this.horsesService.remove(id, user);
+  }
+
+  @Patch(':id/status')
+  @Roles(UserRole.CLUB_MANAGER, UserRole.HEAD_TRAINER, UserRole.VETERINARIAN)
+  @ApiOperation({ summary: 'Chuyển trạng thái ngựa (FR-1.05, FR-1.06, FR-1.08)' })
+  async changeStatus(
+    @Param('id') id: string,
+    @Body() dto: ChangeHorseStatusDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.horsesService.changeStatus(id, dto, user);
   }
 }

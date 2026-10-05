@@ -712,3 +712,4 @@ Toàn bộ 22 chức năng trong hệ thống đã được chuẩn hóa câu l�
   - `FR-020`: Giao Diện Trợ Lý Ảo AI Assistant Hỗ Trợ Tra Cứu Dinh Dưỡng/Y Tế 24/7 (Mobile & Desktop).
   - `FR-021`: Màn hình Tra Cứu Nhật Ký Kiểm Toán Bất Biến (Audit Trail Logging Explorer) (Desktop).
   - `FR-022`: Thư Viện Quy Chuẩn Design System & Registry Prompt Stitch MCP (Desktop Portal).
+- [Flow 1-08: Trạng thái và Khóa y tế (Medical Lock)](specs/Flow1_08_TrangThaiVaKhoaYTe.md)
