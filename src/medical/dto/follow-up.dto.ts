@@ -1,4 +1,11 @@
-import { IsOptional, IsString, MaxLength, MinLength, ValidateNested } from 'class-validator';
+import {
+  IsNumber,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { VitalsDto } from './create-medical-record.dto';
 
@@ -16,6 +23,22 @@ export class CreateFollowUpDto {
   @MinLength(5)
   @MaxLength(2000)
   progressNotes: string;
+
+  @IsOptional()
+  @IsString()
+  followUpDate?: string;
+
+  @IsOptional()
+  @IsNumber()
+  temperature?: number;
+
+  @IsOptional()
+  @IsNumber()
+  restingHeartRate?: number;
+
+  @IsOptional()
+  @IsNumber()
+  respiratoryRate?: number;
 
   @IsOptional()
   @IsString()
