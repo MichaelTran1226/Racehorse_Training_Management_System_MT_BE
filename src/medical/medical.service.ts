@@ -27,6 +27,7 @@ import {
 } from './dto/prescription.dto';
 import { CreateFollowUpDto } from './dto/follow-up.dto';
 import { CloseMedicalRecordDto, ReopenMedicalRecordDto } from './dto/close-record.dto';
+import { FinalizeRecordDto } from './dto/finalize-record.dto';
 import { CreateInjuryDto } from './dto/create-injury.dto';
 import { UpdateInjuryDto } from './dto/update-injury.dto';
 import { UpdateRecoveryProgressDto } from './dto/update-recovery-progress.dto';
@@ -711,6 +712,59 @@ export class MedicalService {
     return { message: 'Đã xóa bệnh án thành công' };
   }
 
+  async finalizeMedicalRecord(recordId: string, actor: CurrentUserPayload, dto: FinalizeRecordDto) {
+    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
+      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền chốt bệnh án');
+    }
+
+    const record = await this.prisma.medicalRecord.findUnique({
+      where: { id: recordId },
+      include: { horse: true },
+    });
+    if (!record) throw new NotFoundException('Không tìm thấy bệnh án');
+    const recAny = record as any;
+    if (recAny.isDraft === false) {
+      throw new BadRequestException('Bệnh án đã được chốt trước đó');
+    }
+
+    // 1. Chốt bệnh án
+    const updated = await this.prisma.medicalRecord.update({
+      where: { id: recordId },
+      data: { isDraft: false } as any,
+    });
+
+    // 2. Nếu FE yêu cầu áp dụng trạng thái đề xuất lên ngựa
+    if (dto.applyProposedStatus && recAny.recommendedHorseStatus) {
+      await this.prisma.horse.update({
+        where: { id: record.horseId },
+        data: { status: recAny.recommendedHorseStatus as any },
+      });
+    }
+
+    // 3. Nếu FE yêu cầu tạo Medical Lock kèm theo
+    if (dto.proposeMedicalLock) {
+      try {
+        await this.createMedicalLock(actor, {
+          horseId: record.horseId,
+          appliedMedicalStatus: (recAny.recommendedHorseStatus as string) || 'INJURED',
+          lockReason: dto.lockReason || `Khóa do chốt bệnh án #${recAny.recordNumber || record.id}`,
+          expectedRestDays: dto.lockExpectedRestDays || 7,
+        } as any);
+      } catch {
+        // Nếu đã có lock thì bỏ qua, không throw
+      }
+    }
+
+    await this.audit.record(
+      { id: actor.userId, name: actor.fullName },
+      'FINALIZE_MEDICAL_RECORD',
+      `Medical record ${recordId} finalized`,
+      recordId,
+    );
+
+    return { record: updated };
+  }
+
   async closeMedicalRecord(id: string, actor: CurrentUserPayload, dto: CloseMedicalRecordDto) {
     if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
       throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền kết thúc bệnh án');
@@ -782,7 +836,19 @@ export class MedicalService {
     const record = await this.prisma.medicalRecord.findUnique({ where: { id: recordId } });
     if (!record) throw new NotFoundException('Không tìm thấy bệnh án');
 
-    const phaseNote = `[PHÁC ĐỒ - ${dto.phaseName}]: Tu: ${dto.startDate} Den: ${dto.endDate} | Muc tieu: ${dto.target || 'N/A'} | Van dong: ${dto.allowedActivityLevel}`;
+    const allowedActivity = dto.allowedActivity || dto.allowedActivityLevel || '';
+
+    const phase = {
+      id: `phase-${Date.now()}`,
+      phaseName: dto.phaseName,
+      startDate: dto.startDate,
+      endDate: dto.endDate,
+      target: dto.target || null,
+      allowedActivity,
+      careInstructions: dto.careInstructions || [],
+    };
+
+    const phaseNote = `[PHÁC ĐỒ - ${dto.phaseName}]: Tu: ${dto.startDate} Den: ${dto.endDate} | Muc tieu: ${dto.target || 'N/A'} | Van dong: ${allowedActivity}`;
     const updatedProtocol = record.treatmentProtocol
       ? `${record.treatmentProtocol}\n${phaseNote}`
       : phaseNote;
@@ -792,7 +858,7 @@ export class MedicalService {
       data: { treatmentProtocol: updatedProtocol },
     });
 
-    return { message: 'Đã thêm giai đoạn phác đồ thành công', record: updated };
+    return { message: 'Đã thêm giai đoạn phác đồ thành công', phase, record: updated };
   }
 
   async updateTreatmentPhase(
@@ -833,14 +899,21 @@ export class MedicalService {
       }
     }
 
+    const adminRoute = dto.administrationRoute || dto.route || '';
+    const freq = dto.frequency || (dto.frequencyPerDay ? `${dto.frequencyPerDay} lần/ngày` : '');
+
     const newPrescription = {
       id: `rx-${Date.now()}`,
       medicationName: dto.medicationName,
       dosage: dto.dosage,
-      administrationRoute: dto.administrationRoute,
-      frequency: dto.frequency,
+      unit: dto.unit || '',
+      route: adminRoute,
+      administrationRoute: adminRoute,
+      frequencyPerDay: dto.frequencyPerDay || dto.frequency,
+      frequency: freq,
       startDate: dto.startDate,
       endDate: dto.endDate,
+      daysCount: dto.daysCount || 0,
       withdrawalDays: dto.withdrawalDays || 0,
       notes: dto.notes || '',
       status: 'ACTIVE',
@@ -945,7 +1018,19 @@ export class MedicalService {
     const record = await this.prisma.medicalRecord.findUnique({ where: { id: recordId } });
     if (!record) throw new NotFoundException('Không tìm thấy bệnh án');
 
-    const visitDate = dto.visitDate ? new Date(dto.visitDate) : new Date();
+    const rawVisitDate = dto.followUpDate || dto.visitDate;
+    const visitDate = rawVisitDate ? new Date(rawVisitDate) : new Date();
+
+    const followUp = {
+      id: `fu-${Date.now()}`,
+      followUpDate: visitDate.toISOString().split('T')[0],
+      temperature: dto.temperature ?? (dto.vitals?.temperature || null),
+      restingHeartRate: dto.restingHeartRate ?? (dto.vitals?.restingHeartRate || null),
+      respiratoryRate: dto.respiratoryRate ?? (dto.vitals?.respiratoryRate || null),
+      progressNotes: dto.progressNotes,
+      adjustments: dto.adjustments || null,
+      vetName: actor.fullName || actor.email || 'Veterinarian',
+    };
 
     const updated = await this.prisma.medicalRecord.update({
       where: { id: recordId },
@@ -956,7 +1041,7 @@ export class MedicalService {
       },
     });
 
-    return { message: 'Ghi nhận tái khám thành công', record: updated };
+    return { message: 'Ghi nhận tái khám thành công', followUp, record: updated };
   }
 
   // ---------------------------------------------------------------------------

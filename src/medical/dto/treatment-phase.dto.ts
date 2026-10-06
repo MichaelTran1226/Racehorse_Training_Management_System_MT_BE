@@ -15,8 +15,13 @@ export class CreateTreatmentPhaseDto {
   @IsString()
   target?: string;
 
+  @IsOptional()
   @IsString()
-  allowedActivityLevel: string;
+  allowedActivityLevel?: string;
+
+  @IsOptional()
+  @IsString()
+  allowedActivity?: string;
 
   @IsOptional()
   @IsArray()

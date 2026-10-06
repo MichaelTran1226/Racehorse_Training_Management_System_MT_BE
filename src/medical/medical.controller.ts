@@ -25,6 +25,7 @@ import {
 } from './dto/prescription.dto';
 import { CreateFollowUpDto } from './dto/follow-up.dto';
 import { CloseMedicalRecordDto, ReopenMedicalRecordDto } from './dto/close-record.dto';
+import { FinalizeRecordDto } from './dto/finalize-record.dto';
 import {
   CreateMedicalLockDto,
   ExtendMedicalLockDto,
@@ -45,6 +46,7 @@ import {
   SetupHorsePreventiveDto,
   PreventiveQueryDto,
 } from './dto/preventive-care.dto';
+// import { PreventiveType } from '@prisma/client';
 
 @ApiTags('Medical')
 @ApiBearerAuth('JWT-auth')
@@ -206,6 +208,18 @@ export class MedicalController {
     @Body() dto: UpdateMedicalRecordDto,
   ) {
     return this.medicalService.updateMedicalRecord(id, user, dto);
+  }
+
+  @Post('records/:id/finalize')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('viewMedical')
+  @ApiOperation({ summary: 'Chốt bệnh án (chuyển từ Nháp sang Chính thức)' })
+  finalize(
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: FinalizeRecordDto,
+  ) {
+    return this.medicalService.finalizeMedicalRecord(id, user, dto);
   }
 
   @Delete('records/:id')

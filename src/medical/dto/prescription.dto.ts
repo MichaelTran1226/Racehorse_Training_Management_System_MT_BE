@@ -7,11 +7,13 @@ export class CreatePrescriptionDto {
   @IsString()
   dosage: string;
 
+  @IsOptional()
   @IsString()
-  administrationRoute: string;
+  administrationRoute?: string;
 
+  @IsOptional()
   @IsString()
-  frequency: string;
+  frequency?: string;
 
   @IsString()
   startDate: string;
@@ -27,6 +29,23 @@ export class CreatePrescriptionDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsString()
+  unit?: string;
+
+  @IsOptional()
+  @IsString()
+  route?: string;
+
+  @IsOptional()
+  @IsNumber()
+  frequencyPerDay?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  daysCount?: number;
 }
 
 export class UpdatePrescriptionDto {
