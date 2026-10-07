@@ -20,6 +20,7 @@ import { CreateHorseDto } from './dto/create-horse.dto';
 import { UpdateHorseDto } from './dto/update-horse.dto';
 import { QueryHorseDto } from './dto/query-horse.dto';
 import { ChangeHorseStatusDto } from './dto/change-status.dto';
+import { TransferHorseOwnerDto } from './dto/transfer-owner.dto';
 
 @ApiTags('Horses')
 @ApiBearerAuth('JWT-auth')
@@ -56,6 +57,17 @@ export class HorsesController {
     @CurrentUser() user: CurrentUserPayload,
   ) {
     return this.horsesService.update(id, dto, user);
+  }
+
+  @Patch(':id/transfer-owner')
+  @Roles(UserRole.CLUB_MANAGER)
+  @ApiOperation({ summary: 'Chuyển quyền sở hữu ngựa (FR-1.02, Flow 1) - Chỉ Club Manager' })
+  async transferOwner(
+    @Param('id') id: string,
+    @Body() dto: TransferHorseOwnerDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.horsesService.transferOwner(id, dto, user);
   }
 
   @Delete(':id')

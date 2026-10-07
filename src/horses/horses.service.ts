@@ -1,5 +1,5 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { HorseStatus, Prisma } from '@prisma/client';
+import { HorseStatus, Prisma, Role, UserStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { apiError } from '../common/exceptions/api-error';
@@ -9,6 +9,7 @@ import { CreateHorseDto } from './dto/create-horse.dto';
 import { UpdateHorseDto } from './dto/update-horse.dto';
 import { QueryHorseDto } from './dto/query-horse.dto';
 import { ChangeHorseStatusDto } from './dto/change-status.dto';
+import { TransferHorseOwnerDto } from './dto/transfer-owner.dto';
 
 @Injectable()
 export class HorsesService {
@@ -282,6 +283,17 @@ export class HorsesService {
       }
     }
 
+    if (dto.ownerId) {
+      const owner = await this.prisma.user.findUnique({ where: { id: dto.ownerId } });
+      if (!owner || owner.role !== Role.HORSE_OWNER) {
+        throw apiError(
+          HttpStatus.BAD_REQUEST,
+          'INVALID_OWNER',
+          'The specified owner does not exist or does not hold the Horse Owner role.',
+        );
+      }
+    }
+
     const updated = await this.prisma.horse.update({
       where: { id },
       data: {
@@ -313,11 +325,94 @@ export class HorsesService {
     await this.auditService.record(
       { id: user.userId, name: user.fullName || user.email },
       'HORSE_UPDATED',
-      `Cập nhật hồ sơ định danh ngựa ${updated.name} (${updated.horseCode || updated.id})`,
+      `Updated identification record for horse ${updated.name} (${updated.horseCode || updated.id})`,
       updated.id,
       {
         oldValues: { name: horse.name, status: horse.status, microchip: horse.microchip },
         newValues: { name: updated.name, status: updated.status, microchip: updated.microchip },
+      },
+    );
+
+    return this.applyRolePolicy(updated, user);
+  }
+
+  /**
+   * Chuyển quyền sở hữu ngựa sang chủ mới (FR-1.02, Flow 1 Governance).
+   * Chỉ Club Manager được phép thực hiện.
+   */
+  async transferOwner(id: string, dto: TransferHorseOwnerDto, user: CurrentUserPayload) {
+    const horse = await this.prisma.horse.findUnique({
+      where: { id },
+      include: {
+        owner: { select: { id: true, fullName: true, email: true } },
+      },
+    });
+
+    if (!horse) {
+      throw apiError(HttpStatus.NOT_FOUND, 'HORSE_NOT_FOUND', 'Horse profile not found.');
+    }
+
+    if (horse.status === HorseStatus.RETIRED) {
+      throw apiError(
+        HttpStatus.BAD_REQUEST,
+        'HORSE_RETIRED',
+        'Cannot transfer ownership of a retired horse. Please reactivate the horse profile first.',
+      );
+    }
+
+    if (horse.ownerId === dto.newOwnerId) {
+      throw apiError(
+        HttpStatus.BAD_REQUEST,
+        'ALREADY_OWNED',
+        'Horse is already assigned to this owner.',
+      );
+    }
+
+    const newOwner = await this.prisma.user.findUnique({
+      where: { id: dto.newOwnerId },
+      select: { id: true, fullName: true, email: true, role: true, status: true },
+    });
+
+    if (!newOwner || newOwner.role !== Role.HORSE_OWNER) {
+      throw apiError(
+        HttpStatus.BAD_REQUEST,
+        'INVALID_NEW_OWNER',
+        'The specified account does not exist or is not registered as a Horse Owner.',
+      );
+    }
+
+    if (newOwner.status !== UserStatus.ACTIVE) {
+      throw apiError(
+        HttpStatus.BAD_REQUEST,
+        'INACTIVE_OWNER',
+        'New owner account is not currently active.',
+      );
+    }
+
+    const previousOwnerName = horse.owner ? horse.owner.fullName : 'Unassigned';
+
+    const updated = await this.prisma.horse.update({
+      where: { id },
+      data: {
+        ownerId: newOwner.id,
+      },
+      include: {
+        owner: { select: { id: true, fullName: true, email: true } },
+        stallAllocations: {
+          where: { isActive: true },
+          include: { stall: true, assignedGroom: { select: { id: true, fullName: true } } },
+        },
+      },
+    });
+
+    await this.auditService.record(
+      { id: user.userId, name: user.fullName || user.email },
+      'HORSE_OWNERSHIP_TRANSFERRED',
+      `Transferred ownership of horse ${horse.name} (${horse.horseCode || horse.id}) from ${previousOwnerName} to ${newOwner.fullName}. Reason: ${dto.reason || 'None specified'}`,
+      horse.id,
+      {
+        oldValues: { ownerId: horse.ownerId, ownerName: previousOwnerName },
+        newValues: { ownerId: newOwner.id, ownerName: newOwner.fullName, reason: dto.reason },
       },
     );
 
@@ -505,55 +600,72 @@ export class HorsesService {
         workoutSessions: { take: 1 },
         trainingPlans: { take: 1 },
         medicalRecords: { take: 1 },
+        injuryLogs: { take: 1 },
+        medicalLocks: { take: 1 },
+        preventiveSchedules: { take: 1 },
+        tournamentRegistrations: { take: 1 },
+        financialInvoices: { take: 1 },
       },
     });
 
     if (!horse) {
-      throw apiError(HttpStatus.NOT_FOUND, 'HORSE_NOT_FOUND', 'Không tìm thấy hồ sơ ngựa.');
+      throw apiError(HttpStatus.NOT_FOUND, 'HORSE_NOT_FOUND', 'Horse profile not found.');
     }
 
     if (horse.isMedicalLocked) {
       throw apiError(
         HttpStatus.BAD_REQUEST,
         'HORSE_LOCKED',
-        'Không thể xóa hồ sơ ngựa đang trong thời gian Khóa huấn luyện.',
+        'Cannot delete horse profile while an active Medical Lock is in effect.',
       );
     }
 
     if (
       horse.workoutSessions.length > 0 ||
       horse.trainingPlans.length > 0 ||
-      horse.medicalRecords.length > 0
+      horse.medicalRecords.length > 0 ||
+      horse.injuryLogs.length > 0 ||
+      horse.medicalLocks.length > 0 ||
+      horse.preventiveSchedules.length > 0 ||
+      horse.tournamentRegistrations.length > 0 ||
+      horse.financialInvoices.length > 0
     ) {
       throw apiError(
         HttpStatus.BAD_REQUEST,
         'HAS_DEPENDENT_DATA',
-        'Ngựa đã có dữ liệu huấn luyện, y tế, chăm sóc hoặc thi đấu. Vui lòng dùng Ngừng quản lý.',
+        'Horse has linked historical data (training, medical records, or invoices). Deletion is prohibited to preserve integrity; use Retire instead.',
       );
     }
+
+    // Release any stall allocation before deletion
+    await this.prisma.stallAllocation.updateMany({
+      where: { horseId: id, isActive: true },
+      data: { isActive: false, endDate: new Date() },
+    });
 
     await this.prisma.horse.delete({ where: { id } });
 
     await this.auditService.record(
       { id: user.userId, name: user.fullName || user.email },
       'HORSE_DELETED',
-      `Xóa hồ sơ ngựa ${horse.name} (${horse.horseCode || horse.id})`,
+      `Deleted horse profile ${horse.name} (${horse.horseCode || horse.id})`,
       horse.id,
     );
 
-    return { success: true, message: `Đã xóa hồ sơ ngựa ${horse.name}.` };
+    return { success: true, message: `Successfully deleted horse ${horse.name}.` };
   }
+
   async changeStatus(id: string, dto: ChangeHorseStatusDto, user: CurrentUserPayload) {
     const horse = await this.prisma.horse.findUnique({ where: { id } });
     if (!horse) {
-      throw apiError(HttpStatus.NOT_FOUND, 'HORSE_NOT_FOUND', 'Không tìm thấy hồ sơ ngựa.');
+      throw apiError(HttpStatus.NOT_FOUND, 'HORSE_NOT_FOUND', 'Horse profile not found.');
     }
 
     if (horse.status === dto.status) {
       throw apiError(
         HttpStatus.BAD_REQUEST,
         'SAME_STATUS',
-        `Ngựa đang ở trạng thái ${dto.status}.`,
+        `Horse is already in status ${dto.status}.`,
       );
     }
 
@@ -563,7 +675,7 @@ export class HorsesService {
           throw apiError(
             HttpStatus.FORBIDDEN,
             'MEDICAL_LOCK_ACTIVE',
-            'Ngựa đang bị Khóa huấn luyện y tế. Không thể chuyển sang trạng thái vận hành.',
+            'Horse is currently under protective Medical Lock. Cannot transition to operational status.',
           );
         }
       } else if (user.role === UserRole.CLUB_MANAGER && dto.status === 'RETIRED') {
@@ -572,7 +684,7 @@ export class HorsesService {
         throw apiError(
           HttpStatus.FORBIDDEN,
           'MEDICAL_LOCK_ACTIVE',
-          'Ngựa đang bị Khóa huấn luyện y tế. Không thể thực hiện thao tác này cho đến khi Bác sĩ thú y mở khóa.',
+          'Horse is currently under protective Medical Lock. Only a Veterinarian can release the lock before operational status change.',
         );
       }
     }
@@ -582,7 +694,7 @@ export class HorsesService {
         throw apiError(
           HttpStatus.FORBIDDEN,
           'ROLE_RESTRICTION',
-          'Head Trainer chỉ được chuyển các trạng thái vận hành.',
+          'Head Trainer is only authorized to transition operational statuses (RESTING, IN_TRAINING, ACTIVE).',
         );
       }
     } else if (user.role === UserRole.VETERINARIAN) {
@@ -594,9 +706,17 @@ export class HorsesService {
         throw apiError(
           HttpStatus.FORBIDDEN,
           'ROLE_RESTRICTION',
-          'Veterinarian chỉ được thiết lập/gỡ các trạng thái y tế.',
+          'Veterinarian is only authorized to manage clinical and recuperation statuses.',
         );
       }
+    }
+
+    // When a horse is retired, automatically deallocate active stalls
+    if (dto.status === HorseStatus.RETIRED) {
+      await this.prisma.stallAllocation.updateMany({
+        where: { horseId: id, isActive: true },
+        data: { isActive: false, endDate: new Date() },
+      });
     }
 
     const updated = await this.prisma.horse.update({
@@ -607,10 +727,14 @@ export class HorsesService {
     await this.auditService.record(
       { id: user.userId, name: user.fullName || user.email },
       'HORSE_STATUS_CHANGED',
-      `Chuyển trạng thái ngựa ${horse.name} từ ${horse.status} sang ${dto.status}. Lý do: ${dto.reason || 'Không có'}`,
+      `Changed status of horse ${horse.name} from ${horse.status} to ${dto.status}. Reason: ${dto.reason || 'None specified'}`,
       horse.id,
     );
 
-    return { success: true, data: updated, message: `Đã chuyển trạng thái sang ${dto.status}.` };
+    return {
+      success: true,
+      data: updated,
+      message: `Status successfully updated to ${dto.status}.`,
+    };
   }
 }
