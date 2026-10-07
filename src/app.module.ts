@@ -15,6 +15,7 @@ import { PermissionsGuard } from './common/guards/permissions.guard';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { StallsModule } from './stalls/stalls.module';
+import { TrainingModule } from './training/training.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { StallsModule } from './stalls/stalls.module';
     MedicalModule,
     HorsesModule,
     StallsModule,
+    TrainingModule,
   ],
   controllers: [],
   providers: [
