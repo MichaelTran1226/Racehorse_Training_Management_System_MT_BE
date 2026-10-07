@@ -96,13 +96,17 @@ async function main() {
     });
   }
 
-  // 3. Create Sample Horses
-  await prisma.horse.upsert({
+  // 3. Create 3 Canonical Horses
+  const horse1 = await prisma.horse.upsert({
     where: { microchipRfid: 'RFID-985141002341' },
     update: {
       horseCode: 'HR-000001',
+      name: 'Thunderbolt Swift',
       microchip: '985141002341001',
       rfid: 'RFID-985141002341',
+      status: HorseStatus.ACTIVE,
+      isMedicalLocked: false,
+      ownerId: owner.id,
     },
     create: {
       horseCode: 'HR-000001',
@@ -120,12 +124,16 @@ async function main() {
     },
   });
 
-  await prisma.horse.upsert({
+  const horse2 = await prisma.horse.upsert({
     where: { microchipRfid: 'RFID-985141002342' },
     update: {
       horseCode: 'HR-000002',
+      name: 'Northern Dancer Legacy',
       microchip: '985141002342002',
       rfid: 'RFID-985141002342',
+      status: HorseStatus.INJURED,
+      isMedicalLocked: true,
+      ownerId: owner.id,
     },
     create: {
       horseCode: 'HR-000002',
@@ -143,7 +151,144 @@ async function main() {
     },
   });
 
-  console.log('--- Seeding Completed Successfully ---');
+  const horse3 = await prisma.horse.upsert({
+    where: { microchipRfid: 'RFID-985141002343' },
+    update: {
+      horseCode: 'HR-000003',
+      name: 'Shadowfax Wonder',
+      microchip: '985141002343003',
+      rfid: 'RFID-985141002343',
+      status: HorseStatus.UNDER_OBSERVATION,
+      isMedicalLocked: false,
+      ownerId: owner.id,
+    },
+    create: {
+      horseCode: 'HR-000003',
+      name: 'Shadowfax Wonder',
+      microchip: '985141002343003',
+      rfid: 'RFID-985141002343',
+      microchipRfid: 'RFID-985141002343',
+      breed: 'Arabian Cross',
+      dob: new Date('2022-01-20'),
+      gender: 'Filly',
+      color: 'Gray Roaming',
+      status: HorseStatus.UNDER_OBSERVATION,
+      isMedicalLocked: false,
+      ownerId: owner.id,
+    },
+  });
+
+  // 4. Seed Active Medical Lock for Horse 2 (RULE-MED-01)
+  await prisma.medicalLock.upsert({
+    where: { lockCode: 'LOCK-HR-000002-001' },
+    update: {
+      isLocked: true,
+      appliedMedicalStatus: HorseStatus.INJURED,
+    },
+    create: {
+      lockCode: 'LOCK-HR-000002-001',
+      horseId: horse2.id,
+      veterinarianUserId: vet.id,
+      lockedAt: new Date(Date.now() - 3 * 86400000),
+      expectedRestDays: 14,
+      recheckDate: new Date(Date.now() + 11 * 86400000),
+      appliedMedicalStatus: HorseStatus.INJURED,
+      lockReason: 'Suspensory ligament acute desmitis during intense trial run',
+      unlockConditions: 'Complete clinical ultrasound resolution and soundness on flexion test',
+      isLocked: true,
+    },
+  });
+
+  // 5. Seed 2D Musculoskeletal Injury for Horse 3 (SC-3.05)
+  const existingInjury = await prisma.injuryLog.findFirst({
+    where: { horseId: horse3.id },
+  });
+  if (!existingInjury) {
+    await prisma.injuryLog.create({
+      data: {
+        horseId: horse3.id,
+        coordinateX: 0.46,
+        coordinateY: 0.62,
+        viewSide: 'LEFT',
+        layer: 'MUSCLE',
+        anatomicalZone: 'Superficial Digital Flexor Tendon (SDFT)',
+        bodySide: 'LEFT',
+        injuryType: 'Tendon Strain & Mild Synovitis',
+        severity: 'MODERATE',
+        stage: 'RECOVERING',
+        status: 'ACTIVE',
+        description: 'Superficial flexor tendon strain observed after turf workout session.',
+        discoveryDate: new Date(Date.now() - 10 * 86400000),
+        recoveryHistory: [
+          {
+            id: 'rec-01',
+            stage: 'ACUTE',
+            evaluationDate: new Date(Date.now() - 10 * 86400000).toISOString(),
+            severity: 'MODERATE',
+            notes: 'Initial acute heat and focal sensitivity along mid-metacarpal zone.',
+            updatedByName: 'Dr. Sarah Connor',
+          },
+          {
+            id: 'rec-02',
+            stage: 'RECOVERING',
+            evaluationDate: new Date(Date.now() - 2 * 86400000).toISOString(),
+            severity: 'MILD',
+            notes: 'Reduced heat and improved weight-bearing; progressive trotting allowed.',
+            updatedByName: 'Dr. Sarah Connor',
+          },
+        ],
+      },
+    });
+  }
+
+  // 6. Seed Stall Allocations
+  const stallA01 = await prisma.stall.findUnique({ where: { code: 'STALL-A01' } });
+  const stallA02 = await prisma.stall.findUnique({ where: { code: 'STALL-A02' } });
+  const stallB01 = await prisma.stall.findUnique({ where: { code: 'STALL-B01' } });
+
+  if (stallA01) {
+    await prisma.stallAllocation.upsert({
+      where: { id: `alloc-${horse1.id}` },
+      update: {},
+      create: {
+        id: `alloc-${horse1.id}`,
+        stallId: stallA01.id,
+        horseId: horse1.id,
+        assignedGroomUserId: groom.id,
+        isActive: true,
+      },
+    }).catch(() => null);
+  }
+
+  if (stallA02) {
+    await prisma.stallAllocation.upsert({
+      where: { id: `alloc-${horse2.id}` },
+      update: {},
+      create: {
+        id: `alloc-${horse2.id}`,
+        stallId: stallA02.id,
+        horseId: horse2.id,
+        assignedGroomUserId: groom.id,
+        isActive: true,
+      },
+    }).catch(() => null);
+  }
+
+  if (stallB01) {
+    await prisma.stallAllocation.upsert({
+      where: { id: `alloc-${horse3.id}` },
+      update: {},
+      create: {
+        id: `alloc-${horse3.id}`,
+        stallId: stallB01.id,
+        horseId: horse3.id,
+        assignedGroomUserId: groom.id,
+        isActive: true,
+      },
+    }).catch(() => null);
+  }
+
+  console.log('--- Seeding Completed Successfully with 3 Canonical Horses ---');
 }
 
 main()
@@ -154,3 +299,4 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+
