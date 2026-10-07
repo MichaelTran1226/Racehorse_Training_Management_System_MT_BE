@@ -52,9 +52,15 @@ export class CreateHorseDto {
   })
   @IsOptional()
   @IsString()
+feat/p1-01-canonical-horses-be
   @Matches(/^RFID-[A-Z0-9-]{4,28}$/, {
     message:
       "RFID tag must start with 'RFID-' prefix followed by 4-28 uppercase letters, digits, or hyphens (e.g. RFID-985141002341).",
+
+  @Matches(/^RFID-[A-Z0-9-]{1,27}$/, {
+    message:
+      'Mã thẻ RFID phải bắt đầu bằng "RFID-" và dài từ 6 đến 32 ký tự, chỉ gồm chữ in hoa A-Z, chữ số và dấu gạch ngang.',
+main
   })
   rfid?: string;
 
