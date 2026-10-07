@@ -52,9 +52,9 @@ export class CreateHorseDto {
   })
   @IsOptional()
   @IsString()
-  @Matches(/^[A-Z0-9-]{4,32}$/, {
+  @Matches(/^RFID-[A-Z0-9-]{1,27}$/, {
     message:
-      'Mã thẻ RFID phải từ 4 đến 32 ký tự, chỉ gồm chữ in hoa A-Z, chữ số và dấu gạch ngang.',
+      'Mã thẻ RFID phải bắt đầu bằng "RFID-" và dài từ 6 đến 32 ký tự, chỉ gồm chữ in hoa A-Z, chữ số và dấu gạch ngang.',
   })
   rfid?: string;
 
