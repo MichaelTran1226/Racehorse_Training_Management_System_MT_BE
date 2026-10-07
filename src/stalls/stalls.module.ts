@@ -7,6 +7,6 @@ import { AuditModule } from '../audit/audit.module';
 @Module({
   imports: [PrismaModule, AuditModule],
   controllers: [StallsController],
-  providers: [StallsService]
+  providers: [StallsService],
 })
 export class StallsModule {}

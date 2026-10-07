@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Put, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Put, Query } from '@nestjs/common';
 import { StallsService } from './stalls.service';
 import { CreateStallDto } from './dto/create-stall.dto';
 import { UpdateStallDto } from './dto/update-stall.dto';
@@ -38,7 +38,11 @@ export class StallsController {
   @Put(':id')
   @Roles(UserRole.CLUB_MANAGER)
   @ApiOperation({ summary: 'Cập nhật ô chuồng (CM)' })
-  update(@Param('id') id: string, @Body() updateStallDto: UpdateStallDto, @CurrentUser() user: CurrentUserPayload) {
+  update(
+    @Param('id') id: string,
+    @Body() updateStallDto: UpdateStallDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
     return this.stallsService.update(id, updateStallDto, user);
   }
 
@@ -52,21 +56,33 @@ export class StallsController {
   @Post(':id/allocations')
   @Roles(UserRole.CLUB_MANAGER, UserRole.HEAD_TRAINER)
   @ApiOperation({ summary: 'Gán ngựa vào ô chuồng (CM, HT)' })
-  assignHorse(@Param('id') id: string, @Body() dto: AssignHorseDto, @CurrentUser() user: CurrentUserPayload) {
+  assignHorse(
+    @Param('id') id: string,
+    @Body() dto: AssignHorseDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
     return this.stallsService.assignHorse(id, dto, user);
   }
 
   @Put('allocations/:id/transfer')
   @Roles(UserRole.CLUB_MANAGER, UserRole.HEAD_TRAINER)
   @ApiOperation({ summary: 'Chuyển ngựa sang ô chuồng khác (CM, HT)' })
-  transferHorse(@Param('id') id: string, @Body() dto: TransferHorseDto, @CurrentUser() user: CurrentUserPayload) {
+  transferHorse(
+    @Param('id') id: string,
+    @Body() dto: TransferHorseDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
     return this.stallsService.transferHorse(id, dto, user);
   }
 
   @Put('allocations/:id/return')
   @Roles(UserRole.CLUB_MANAGER, UserRole.HEAD_TRAINER)
   @ApiOperation({ summary: 'Trả ô chuồng, rút ngựa ra khỏi ô (CM, HT)' })
-  returnStall(@Param('id') id: string, @Body() dto: ReturnStallDto, @CurrentUser() user: CurrentUserPayload) {
+  returnStall(
+    @Param('id') id: string,
+    @Body() dto: ReturnStallDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
     return this.stallsService.returnStall(id, dto, user);
   }
 }

@@ -6,9 +6,7 @@ import { AssignHorseDto } from './dto/assign-horse.dto';
 import { TransferHorseDto } from './dto/transfer-horse.dto';
 import { ReturnStallDto } from './dto/return-stall.dto';
 import { CurrentUserPayload } from '../common/decorators/current-user.decorator';
-import { UserRole } from '../common/enums/role.enum';
 import { AuditService } from '../audit/audit.service';
-import { StallStatus } from '@prisma/client';
 
 @Injectable()
 export class StallsService {
@@ -17,7 +15,7 @@ export class StallsService {
     private auditService: AuditService,
   ) {}
 
-  async findAll(query: any, user: CurrentUserPayload) {
+  async findAll(query: any, _user: CurrentUserPayload) {
     const { zone, status, search } = query;
 
     const where: any = {};
@@ -71,7 +69,13 @@ export class StallsService {
       },
     });
 
-    await this.auditService.record({ id: user.userId, name: 'System' }, 'CREATE_STALL', 'Tạo ô chuồng', stall.id, { newValues: stall });
+    await this.auditService.record(
+      { id: user.userId, name: 'System' },
+      'CREATE_STALL',
+      'Tạo ô chuồng',
+      stall.id,
+      { newValues: stall },
+    );
     return stall;
   }
 
@@ -98,7 +102,13 @@ export class StallsService {
       },
     });
 
-    await this.auditService.record({ id: user.userId, name: 'System' }, 'UPDATE_STALL', 'Cập nhật ô chuồng', id, { oldValues: stall as any, newValues: updated });
+    await this.auditService.record(
+      { id: user.userId, name: 'System' },
+      'UPDATE_STALL',
+      'Cập nhật ô chuồng',
+      id,
+      { oldValues: stall as any, newValues: updated },
+    );
     return updated;
   }
 
@@ -114,7 +124,13 @@ export class StallsService {
     }
 
     await this.prisma.stall.delete({ where: { id } });
-    await this.auditService.record({ id: user.userId, name: 'System' }, 'DELETE_STALL', 'Xóa ô chuồng', id, { oldValues: stall as any });
+    await this.auditService.record(
+      { id: user.userId, name: 'System' },
+      'DELETE_STALL',
+      'Xóa ô chuồng',
+      id,
+      { oldValues: stall as any },
+    );
     return { success: true };
   }
 
@@ -134,7 +150,8 @@ export class StallsService {
       });
       if (!horse) throw new NotFoundException('Không tìm thấy ngựa');
       if (horse.status === 'RETIRED') throw new BadRequestException('Ngựa đã ngừng quản lý');
-      if (horse.stallAllocations.length > 0) throw new BadRequestException('Ngựa đang ở ô chuồng khác');
+      if (horse.stallAllocations.length > 0)
+        throw new BadRequestException('Ngựa đang ở ô chuồng khác');
 
       const allocation = await prisma.stallAllocation.create({
         data: {
@@ -150,7 +167,14 @@ export class StallsService {
         data: { status: 'OCCUPIED' },
       });
 
-      await this.auditService.record({ id: user.userId, name: 'System' }, 'ASSIGN_HORSE', 'Gán ngựa vào ô chuồng', allocation.id, { newValues: allocation as any }, prisma as any);
+      await this.auditService.record(
+        { id: user.userId, name: 'System' },
+        'ASSIGN_HORSE',
+        'Gán ngựa vào ô chuồng',
+        allocation.id,
+        { newValues: allocation as any },
+        prisma as any,
+      );
       return allocation;
     });
   }
@@ -161,14 +185,16 @@ export class StallsService {
         where: { id: allocationId },
         include: { stall: true, horse: true },
       });
-      if (!oldAllocation || !oldAllocation.isActive) throw new NotFoundException('Không tìm thấy bản ghi phân bổ đang hoạt động');
+      if (!oldAllocation || !oldAllocation.isActive)
+        throw new NotFoundException('Không tìm thấy bản ghi phân bổ đang hoạt động');
 
       const newStall = await prisma.stall.findUnique({
         where: { id: dto.newStallId },
         include: { allocations: { where: { isActive: true } } },
       });
       if (!newStall) throw new NotFoundException('Không tìm thấy ô chuồng mới');
-      if (newStall.status === 'MAINTENANCE') throw new BadRequestException('Ô chuồng mới đang bảo trì');
+      if (newStall.status === 'MAINTENANCE')
+        throw new BadRequestException('Ô chuồng mới đang bảo trì');
       if (newStall.allocations.length > 0) throw new BadRequestException('Ô chuồng mới đã có ngựa');
 
       // End old allocation
@@ -199,7 +225,14 @@ export class StallsService {
         data: { status: 'OCCUPIED' },
       });
 
-      await this.auditService.record({ id: user.userId, name: 'System' }, 'TRANSFER_HORSE', 'Chuyển ngựa sang ô chuồng khác', newAllocation.id, { oldValues: oldAllocation as any, newValues: newAllocation as any }, prisma as any);
+      await this.auditService.record(
+        { id: user.userId, name: 'System' },
+        'TRANSFER_HORSE',
+        'Chuyển ngựa sang ô chuồng khác',
+        newAllocation.id,
+        { oldValues: oldAllocation as any, newValues: newAllocation as any },
+        prisma as any,
+      );
       return newAllocation;
     });
   }
@@ -209,7 +242,8 @@ export class StallsService {
       const oldAllocation = await prisma.stallAllocation.findUnique({
         where: { id: allocationId },
       });
-      if (!oldAllocation || !oldAllocation.isActive) throw new NotFoundException('Không tìm thấy bản ghi phân bổ đang hoạt động');
+      if (!oldAllocation || !oldAllocation.isActive)
+        throw new NotFoundException('Không tìm thấy bản ghi phân bổ đang hoạt động');
 
       await prisma.stallAllocation.update({
         where: { id: allocationId },
@@ -221,7 +255,14 @@ export class StallsService {
         data: { status: 'AVAILABLE' },
       });
 
-      await this.auditService.record({ id: user.userId, name: 'System' }, 'RETURN_STALL', 'Trả ô chuồng', allocationId, { oldValues: oldAllocation as any, newValues: { isActive: false } }, prisma as any);
+      await this.auditService.record(
+        { id: user.userId, name: 'System' },
+        'RETURN_STALL',
+        'Trả ô chuồng',
+        allocationId,
+        { oldValues: oldAllocation as any, newValues: { isActive: false } },
+        prisma as any,
+      );
       return { success: true };
     });
   }
