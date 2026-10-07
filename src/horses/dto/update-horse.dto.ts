@@ -3,61 +3,61 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { HorseStatus } from '@prisma/client';
 
 export class UpdateHorseDto {
-  @ApiPropertyOptional({ description: 'Tên ngựa (2-100 ký tự)' })
+  @ApiPropertyOptional({ description: 'Horse name (2-100 characters)' })
   @IsOptional()
-  @IsString({ message: 'Tên ngựa phải là chuỗi ký tự.' })
-  @Length(2, 100, { message: 'Tên ngựa phải từ 2 đến 100 ký tự.' })
+  @IsString({ message: 'Horse name must be a string.' })
+  @Length(2, 100, { message: 'Horse name must be between 2 and 100 characters.' })
   @Matches(/^[a-zA-Z0-9\s'.-]+$/, {
-    message: "Tên ngựa chỉ được chứa chữ cái, chữ số, khoảng trắng và các ký tự ' - .",
+    message: "Horse name can only contain alphanumeric characters, spaces, and ' - .",
   })
   name?: string;
 
-  @ApiPropertyOptional({ description: 'Giống ngựa' })
+  @ApiPropertyOptional({ description: 'Horse breed' })
   @IsOptional()
-  @IsString()
+  @IsString({ message: 'Invalid horse breed string.' })
   breed?: string;
 
-  @ApiPropertyOptional({ description: 'Ngày sinh (ISO 8601)' })
+  @ApiPropertyOptional({ description: 'Date of birth (ISO 8601)' })
   @IsOptional()
-  @IsISO8601({}, { message: 'Ngày sinh không đúng định dạng YYYY-MM-DD.' })
+  @IsISO8601({}, { message: 'Date of birth must follow YYYY-MM-DD format.' })
   dob?: string;
 
-  @ApiPropertyOptional({ description: 'Giới tính' })
+  @ApiPropertyOptional({ description: 'Gender' })
   @IsOptional()
-  @IsString()
+  @IsString({ message: 'Invalid gender string.' })
   gender?: string;
 
-  @ApiPropertyOptional({ description: 'Màu lông' })
+  @ApiPropertyOptional({ description: 'Coat color' })
   @IsOptional()
-  @IsString()
+  @IsString({ message: 'Invalid coat color string.' })
   color?: string;
 
-  @ApiPropertyOptional({ description: 'Số microchip (đúng 15 chữ số)' })
+  @ApiPropertyOptional({ description: 'Microchip number (exactly 15 digits)' })
   @IsOptional()
   @IsString()
-  @Matches(/^\d{15}$/, { message: 'Số microchip phải gồm đúng 15 chữ số.' })
+  @Matches(/^\d{15}$/, { message: 'Microchip number must consist of exactly 15 digits.' })
   microchip?: string;
 
-  @ApiPropertyOptional({ description: 'Mã thẻ RFID (4-32 ký tự, A-Z, 0-9, -)' })
+  @ApiPropertyOptional({ description: 'RFID tag code (must follow RFID-... prefix)' })
   @IsOptional()
   @IsString()
-  @Matches(/^RFID-[A-Z0-9-]{1,27}$/, {
+  @Matches(/^RFID-[A-Z0-9-]{4,28}$/, {
     message:
-      'Mã thẻ RFID phải bắt đầu bằng "RFID-" và dài từ 6 đến 32 ký tự, chỉ gồm chữ in hoa A-Z, chữ số và dấu gạch ngang.',
+      "RFID tag must start with 'RFID-' prefix followed by 4-28 uppercase letters, digits, or hyphens (e.g. RFID-985141002341).",
   })
   rfid?: string;
 
   @ApiPropertyOptional({ enum: HorseStatus })
   @IsOptional()
-  @IsEnum(HorseStatus, { message: 'Trạng thái không hợp lệ.' })
+  @IsEnum(HorseStatus, { message: 'Invalid horse status.' })
   status?: HorseStatus;
 
-  @ApiPropertyOptional({ description: 'ID chủ sở hữu' })
+  @ApiPropertyOptional({ description: 'Owner User ID' })
   @IsOptional()
   @IsString()
   ownerId?: string;
 
-  @ApiPropertyOptional({ description: 'URL ảnh đại diện' })
+  @ApiPropertyOptional({ description: 'Avatar URL' })
   @IsOptional()
   @IsString()
   avatarUrl?: string;
