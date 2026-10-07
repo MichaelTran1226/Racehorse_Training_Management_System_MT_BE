@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { HttpStatus } from '@nestjs/common';
-import { HorseStatus } from '@prisma/client';
+import { HorseStatus, Role, UserStatus } from '@prisma/client';
 import { HorsesService } from './horses.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -43,6 +43,12 @@ describe('HorsesService', () => {
         create: jest.fn(),
         update: jest.fn(),
         delete: jest.fn(),
+      },
+      user: {
+        findUnique: jest.fn(),
+      },
+      stallAllocation: {
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
     };
 
@@ -208,6 +214,198 @@ describe('HorsesService', () => {
       await expect(service.findOne('h-2', mockOwner)).rejects.toMatchObject({
         status: HttpStatus.NOT_FOUND,
         response: expect.objectContaining({ code: 'HORSE_NOT_FOUND' }),
+      });
+    });
+  });
+
+  describe('transferOwner', () => {
+    it('should transfer ownership to a valid new owner and record audit log', async () => {
+      const existingHorse = {
+        id: 'h-1',
+        name: 'Thunderbolt',
+        status: HorseStatus.ACTIVE,
+        ownerId: 'owner-old',
+        owner: { id: 'owner-old', fullName: 'Old Owner', email: 'old@gmail.com' },
+      };
+      const newOwner = {
+        id: 'owner-new',
+        fullName: 'New Owner',
+        email: 'new@gmail.com',
+        role: Role.HORSE_OWNER,
+        status: UserStatus.ACTIVE,
+      };
+      const updatedHorse = {
+        ...existingHorse,
+        ownerId: 'owner-new',
+        owner: newOwner,
+        stallAllocations: [],
+      };
+
+      prisma.horse.findUnique.mockResolvedValue(existingHorse);
+      prisma.user.findUnique.mockResolvedValue(newOwner);
+      prisma.horse.update.mockResolvedValue(updatedHorse);
+
+      const res = await service.transferOwner(
+        'h-1',
+        { newOwnerId: 'owner-new', reason: 'Syndicate sale agreement' },
+        mockManager,
+      );
+
+      expect(res.ownerId).toBe('owner-new');
+      expect(prisma.horse.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'h-1' },
+          data: { ownerId: 'owner-new' },
+        }),
+      );
+      expect(audit.record).toHaveBeenCalledWith(
+        expect.anything(),
+        'HORSE_OWNERSHIP_TRANSFERRED',
+        expect.stringContaining('Transferred ownership of horse'),
+        'h-1',
+        expect.anything(),
+      );
+    });
+
+    it('should throw 400 ALREADY_OWNED if horse already belongs to newOwnerId', async () => {
+      const existingHorse = {
+        id: 'h-1',
+        name: 'Thunderbolt',
+        status: HorseStatus.ACTIVE,
+        ownerId: 'owner-same',
+        owner: { id: 'owner-same', fullName: 'Same Owner' },
+      };
+
+      prisma.horse.findUnique.mockResolvedValue(existingHorse);
+
+      await expect(
+        service.transferOwner('h-1', { newOwnerId: 'owner-same' }, mockManager),
+      ).rejects.toMatchObject({
+        status: HttpStatus.BAD_REQUEST,
+        response: expect.objectContaining({ code: 'ALREADY_OWNED' }),
+      });
+    });
+
+    it('should throw 400 HORSE_RETIRED if horse status is RETIRED', async () => {
+      const retiredHorse = {
+        id: 'h-1',
+        name: 'Thunderbolt',
+        status: HorseStatus.RETIRED,
+        ownerId: 'owner-1',
+      };
+
+      prisma.horse.findUnique.mockResolvedValue(retiredHorse);
+
+      await expect(
+        service.transferOwner('h-1', { newOwnerId: 'owner-new' }, mockManager),
+      ).rejects.toMatchObject({
+        status: HttpStatus.BAD_REQUEST,
+        response: expect.objectContaining({ code: 'HORSE_RETIRED' }),
+      });
+    });
+
+    it('should throw 400 INVALID_NEW_OWNER if new owner does not have HORSE_OWNER role', async () => {
+      const existingHorse = {
+        id: 'h-1',
+        name: 'Thunderbolt',
+        status: HorseStatus.ACTIVE,
+        ownerId: 'owner-1',
+      };
+      const invalidRoleUser = {
+        id: 'user-trainer',
+        role: Role.HEAD_TRAINER,
+        status: UserStatus.ACTIVE,
+      };
+
+      prisma.horse.findUnique.mockResolvedValue(existingHorse);
+      prisma.user.findUnique.mockResolvedValue(invalidRoleUser);
+
+      await expect(
+        service.transferOwner('h-1', { newOwnerId: 'user-trainer' }, mockManager),
+      ).rejects.toMatchObject({
+        status: HttpStatus.BAD_REQUEST,
+        response: expect.objectContaining({ code: 'INVALID_NEW_OWNER' }),
+      });
+    });
+  });
+
+  describe('remove', () => {
+    it('should delete horse and release stalls if no historical dependencies exist', async () => {
+      const cleanHorse = {
+        id: 'h-clean',
+        name: 'Clean Horse',
+        isMedicalLocked: false,
+        workoutSessions: [],
+        trainingPlans: [],
+        medicalRecords: [],
+        injuryLogs: [],
+        medicalLocks: [],
+        preventiveSchedules: [],
+        tournamentRegistrations: [],
+        financialInvoices: [],
+      };
+
+      prisma.horse.findUnique.mockResolvedValue(cleanHorse);
+      prisma.horse.delete.mockResolvedValue(cleanHorse);
+
+      const res = await service.remove('h-clean', mockManager);
+      expect(res.success).toBe(true);
+      expect(prisma.stallAllocation.updateMany).toHaveBeenCalledWith({
+        where: { horseId: 'h-clean', isActive: true },
+        data: expect.objectContaining({ isActive: false }),
+      });
+      expect(prisma.horse.delete).toHaveBeenCalledWith({ where: { id: 'h-clean' } });
+      expect(audit.record).toHaveBeenCalledWith(
+        expect.anything(),
+        'HORSE_DELETED',
+        expect.stringContaining('Deleted horse profile'),
+        'h-clean',
+      );
+    });
+
+    it('should throw 400 HAS_DEPENDENT_DATA if horse has medical or training dependencies', async () => {
+      const horseWithRecords = {
+        id: 'h-records',
+        name: 'Veteran Horse',
+        isMedicalLocked: false,
+        workoutSessions: [{ id: 'ws-1' }],
+        trainingPlans: [],
+        medicalRecords: [],
+        injuryLogs: [],
+        medicalLocks: [],
+        preventiveSchedules: [],
+        tournamentRegistrations: [],
+        financialInvoices: [],
+      };
+
+      prisma.horse.findUnique.mockResolvedValue(horseWithRecords);
+
+      await expect(service.remove('h-records', mockManager)).rejects.toMatchObject({
+        status: HttpStatus.BAD_REQUEST,
+        response: expect.objectContaining({ code: 'HAS_DEPENDENT_DATA' }),
+      });
+    });
+
+    it('should throw 400 HORSE_LOCKED if horse is medical locked', async () => {
+      const lockedHorse = {
+        id: 'h-locked',
+        name: 'Locked Horse',
+        isMedicalLocked: true,
+        workoutSessions: [],
+        trainingPlans: [],
+        medicalRecords: [],
+        injuryLogs: [],
+        medicalLocks: [],
+        preventiveSchedules: [],
+        tournamentRegistrations: [],
+        financialInvoices: [],
+      };
+
+      prisma.horse.findUnique.mockResolvedValue(lockedHorse);
+
+      await expect(service.remove('h-locked', mockManager)).rejects.toMatchObject({
+        status: HttpStatus.BAD_REQUEST,
+        response: expect.objectContaining({ code: 'HORSE_LOCKED' }),
       });
     });
   });
