@@ -15,6 +15,8 @@ import {
   InjuryStatus,
   PreventiveType,
   PreventiveStatus,
+  PlanStatus,
+  WorkoutStatus,
 } from '@prisma/client';
 import { CreateMedicalRecordDto } from './dto/create-medical-record.dto';
 import { UpdateMedicalRecordDto } from './dto/update-medical-record.dto';
@@ -1125,6 +1127,30 @@ export class MedicalService {
       data: {
         isMedicalLocked: true,
         status: appliedStatus,
+      },
+    });
+
+    // Cascading RULE-MED-01 enforcement:
+    // 1. Suspend active/approved training plans for this horse
+    await this.prisma.trainingPlan.updateMany({
+      where: {
+        horseId: dto.horseId,
+        status: { in: [PlanStatus.ACTIVE, PlanStatus.APPROVED] },
+      },
+      data: {
+        status: PlanStatus.SUSPENDED,
+      },
+    });
+
+    // 2. Automatically cancel scheduled workouts with CANCELLED_MEDICAL_LOCK
+    await this.prisma.workoutSession.updateMany({
+      where: {
+        horseId: dto.horseId,
+        status: WorkoutStatus.SCHEDULED,
+      },
+      data: {
+        status: WorkoutStatus.CANCELLED_MEDICAL_LOCK,
+        trainerNotes: `Tự động hủy do Khóa huấn luyện thú y ${lockCode}: ${dto.lockReason}`,
       },
     });
 

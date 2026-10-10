@@ -30,6 +30,12 @@ describe('MedicalService', () => {
       count: jest.fn(),
       update: jest.fn(),
     },
+    trainingPlan: {
+      updateMany: jest.fn(),
+    },
+    workoutSession: {
+      updateMany: jest.fn(),
+    },
     injuryLog: {
       create: jest.fn(),
       findMany: jest.fn(),

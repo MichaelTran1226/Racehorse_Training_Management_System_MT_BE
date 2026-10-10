@@ -253,4 +253,49 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
       );
     });
   });
+
+  describe('findWorkoutById and getFitnessMetrics', () => {
+    it('should retrieve workout by id', async () => {
+      prisma.workoutSession.findUnique.mockResolvedValue({
+        id: 'workout-1',
+        distanceMeters: 1200,
+        horse: { id: 'horse-1', name: 'Thunderbolt Swift' },
+        trainingPlan: { id: 'plan-1', phaseName: 'Speed Work' },
+      });
+
+      const res = await service.findWorkoutById('workout-1');
+      expect(res.id).toBe('workout-1');
+      expect(res.distanceMeters).toBe(1200);
+    });
+
+    it('should compute fitness metrics for a horse', async () => {
+      prisma.horse.findUnique.mockResolvedValue({
+        id: 'horse-1',
+        name: 'Thunderbolt Swift',
+        isMedicalLocked: false,
+      });
+
+      prisma.workoutSession.findMany.mockResolvedValue([
+        {
+          id: 'w-1',
+          horseId: 'horse-1',
+          scheduledDate: new Date('2026-10-01'),
+          distanceMeters: 1200,
+          actualTimeSeconds: 72,
+          heartRatePeak: 175,
+          heartRateRecovery: 110,
+          performanceScore: 8.5,
+          workoutType: 'REGULAR',
+          trackSurface: 'TURF',
+          staminaScore: 85,
+        },
+      ]);
+
+      const metrics = await service.getFitnessMetrics('horse-1', mockTrainer);
+      expect(Array.isArray(metrics)).toBe(true);
+      expect(metrics.length).toBe(1);
+      expect(metrics[0].avgSpeedKmh).toBe(60);
+      expect(metrics[0].maxHeartRate).toBe(175);
+    });
+  });
 });

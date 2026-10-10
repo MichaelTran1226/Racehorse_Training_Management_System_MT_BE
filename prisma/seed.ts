@@ -1,4 +1,4 @@
-import { PrismaClient, Role, UserStatus, HorseStatus, StallStatus } from '@prisma/client';
+import { PrismaClient, Role, UserStatus, HorseStatus, StallStatus, PlanStatus, WorkoutStatus, TrackSurface } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -288,7 +288,171 @@ async function main() {
     }).catch(() => null);
   }
 
-  console.log('--- Seeding Completed Successfully with 3 Canonical Horses ---');
+  // 6. Seed Training Plans and Workout Sessions
+  const now = new Date();
+  const plan1 = await prisma.trainingPlan.upsert({
+    where: { id: `plan-${horse1.id}` },
+    update: {},
+    create: {
+      id: `plan-${horse1.id}`,
+      horseId: horse1.id,
+      trainerUserId: trainer.id,
+      phaseName: 'Derby Speed & Stamina Conditioning 2026',
+      targetSpeed: 58.0,
+      targetDistance: 2000,
+      trackSurface: TrackSurface.TURF,
+      startDate: new Date(now.getTime() - 20 * 86400000),
+      endDate: new Date(now.getTime() + 40 * 86400000),
+      status: PlanStatus.ACTIVE,
+      phases: [
+        {
+          order: 1,
+          name: 'Phase 1: Volume Building & Aerobic Base',
+          weeks: 'Weeks 1-2',
+          targetDistanceMeters: 1600,
+          targetSpeedKmh: 38,
+          intensity: 'MODERATE',
+        },
+        {
+          order: 2,
+          name: 'Phase 2: Speed Work & Sprint Conditioning',
+          weeks: 'Weeks 3-4',
+          targetDistanceMeters: 2000,
+          targetSpeedKmh: 58,
+          intensity: 'HEAVY',
+        },
+        {
+          order: 3,
+          name: 'Phase 3: Tapering & Gate Rehearsal',
+          weeks: 'Weeks 5-6',
+          targetDistanceMeters: 1200,
+          targetSpeedKmh: 45,
+          intensity: 'LIGHT',
+        },
+      ],
+    },
+  });
+
+  // Seed Workout Sessions for Plan 1
+  const workout1 = await prisma.workoutSession.upsert({
+    where: { id: `w1-${horse1.id}` },
+    update: {},
+    create: {
+      id: `w1-${horse1.id}`,
+      trainingPlanId: plan1.id,
+      horseId: horse1.id,
+      assignedStaffUserId: trainer.id,
+      scheduledDate: new Date(now.getTime() - 14 * 86400000),
+      distanceMeters: 1200,
+      actualTimeSeconds: 72.0,
+      heartRatePeak: 175,
+      heartRateRecovery: 108,
+      performanceScore: 8.9,
+      status: WorkoutStatus.COMPLETED,
+      workoutType: 'REGULAR',
+      intensity: 'MODERATE',
+      trackSurface: 'TURF',
+      averageSpeedKmh: 60.0,
+      topSpeedKmh: 64.2,
+      recoveryTimeMinutes: 4.5,
+      staminaScore: 86,
+      injuryRiskLevel: 'LOW',
+      trainerNotes: 'Excellent gate break and strong forward stride in final 200m.',
+    },
+  });
+
+  const workout2 = await prisma.workoutSession.upsert({
+    where: { id: `w2-${horse1.id}` },
+    update: {},
+    create: {
+      id: `w2-${horse1.id}`,
+      trainingPlanId: plan1.id,
+      horseId: horse1.id,
+      assignedStaffUserId: trainer.id,
+      scheduledDate: new Date(now.getTime() - 7 * 86400000),
+      distanceMeters: 1600,
+      actualTimeSeconds: 98.5,
+      heartRatePeak: 182,
+      heartRateRecovery: 114,
+      performanceScore: 8.6,
+      status: WorkoutStatus.COMPLETED,
+      workoutType: 'TIME_TRIAL',
+      intensity: 'HEAVY',
+      trackSurface: 'DIRT',
+      averageSpeedKmh: 58.5,
+      topSpeedKmh: 63.8,
+      recoveryTimeMinutes: 5.2,
+      staminaScore: 88,
+      injuryRiskLevel: 'LOW',
+      trainerNotes: 'Solid stamina endurance throughout backstretch turns.',
+    },
+  });
+
+  const workout3 = await prisma.workoutSession.upsert({
+    where: { id: `w3-${horse1.id}` },
+    update: {},
+    create: {
+      id: `w3-${horse1.id}`,
+      trainingPlanId: plan1.id,
+      horseId: horse1.id,
+      assignedStaffUserId: trainer.id,
+      scheduledDate: new Date(now.getTime() + 2 * 86400000),
+      distanceMeters: 1400,
+      targetDurationSeconds: 84,
+      status: WorkoutStatus.SCHEDULED,
+      workoutType: 'REGULAR',
+      intensity: 'MODERATE',
+      trackSurface: 'TURF',
+      trainerNotes: 'Targeting smooth splits and controlled deceleration.',
+    },
+  });
+
+  // Suspended plan and cancelled workout for Horse 2 (Medical Lock)
+  const plan2 = await prisma.trainingPlan.upsert({
+    where: { id: `plan-${horse2.id}` },
+    update: {},
+    create: {
+      id: `plan-${horse2.id}`,
+      horseId: horse2.id,
+      trainerUserId: trainer.id,
+      phaseName: 'Rehabilitation & Low-Impact Conditioning',
+      targetSpeed: 25.0,
+      targetDistance: 800,
+      trackSurface: TrackSurface.TURF,
+      startDate: new Date(now.getTime() - 5 * 86400000),
+      endDate: new Date(now.getTime() + 25 * 86400000),
+      status: PlanStatus.SUSPENDED,
+      phases: [
+        {
+          order: 1,
+          name: 'Phase 1: Hand Walking & Gentle Trot',
+          weeks: 'Weeks 1-2',
+          targetDistanceMeters: 800,
+          targetSpeedKmh: 20,
+          intensity: 'LIGHT',
+        },
+      ],
+    },
+  });
+
+  await prisma.workoutSession.upsert({
+    where: { id: `w1-${horse2.id}` },
+    update: {},
+    create: {
+      id: `w1-${horse2.id}`,
+      trainingPlanId: plan2.id,
+      horseId: horse2.id,
+      assignedStaffUserId: trainer.id,
+      scheduledDate: new Date(now.getTime() + 1 * 86400000),
+      distanceMeters: 800,
+      status: WorkoutStatus.CANCELLED_MEDICAL_LOCK,
+      workoutType: 'RECOVERY',
+      intensity: 'LIGHT',
+      trainerNotes: 'Tự động hủy do Khóa huấn luyện thú y: Khám lâm sàng phát hiện sưng gân chi trước',
+    },
+  });
+
+  console.log('--- Seeding Completed Successfully with Training Plans & Telemetry ---');
 }
 
 main()

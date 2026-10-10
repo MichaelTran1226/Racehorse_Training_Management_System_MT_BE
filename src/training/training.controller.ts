@@ -94,6 +94,12 @@ export class TrainingController {
     return this.trainingService.createWorkout(planId, dto, user);
   }
 
+  @Get('workouts/:id')
+  @ApiOperation({ summary: 'Get detailed workout session metrics and results' })
+  async findWorkoutById(@Param('id') id: string) {
+    return this.trainingService.findWorkoutById(id);
+  }
+
   @Patch('workouts/:id')
   @Roles(UserRole.HEAD_TRAINER, UserRole.CLUB_MANAGER, UserRole.GROOM)
   @ApiOperation({ summary: 'Record actual workout metrics, debrief, or execution status' })
@@ -103,5 +109,14 @@ export class TrainingController {
     @CurrentUser() user: CurrentUserPayload,
   ) {
     return this.trainingService.updateWorkout(workoutId, dto, user);
+  }
+
+  @Get('horses/:horseId/fitness-metrics')
+  @ApiOperation({ summary: 'Get calculated longitudinal fitness metrics for horse' })
+  async getFitnessMetrics(
+    @Param('horseId') horseId: string,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.trainingService.getFitnessMetrics(horseId, user);
   }
 }

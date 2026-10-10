@@ -72,6 +72,12 @@ export class CreateTrainingPlanDto {
   status?: PlanStatus;
 
   @ApiPropertyOptional({
+    description: 'Multi-phase structured training plan breakdown (e.g., Conditioning, Speed, Peak)',
+  })
+  @IsOptional()
+  phases?: any;
+
+  @ApiPropertyOptional({
     description: 'Optional initial workout sessions',
     type: [CreateWorkoutSessionDto],
   })
