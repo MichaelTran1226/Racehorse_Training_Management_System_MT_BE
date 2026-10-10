@@ -9,29 +9,29 @@ Nguồn: đặc tả `Tai_Lieu` (Flow1_HoSoNgua, Flow2_GiaoAn, Flow3_YTe) · [SR
 
 ## 2. Đội hình
 
-| Cặp | Frontend (`MT_FE`) | Backend (`MT_BE`) | Phạm vi |
-|---|---|---|---|
-| **Cặp 1** | _FE Cặp 1_ | _BE Cặp 1_ | Auth + Flow 1 Hồ sơ ngựa (gồm sơ đồ chuồng) + Sơ đồ sức khỏe SC-3.01 |
-| **Cặp 2** | _FE Cặp 2_ | _BE Cặp 2_ | Flow 3 Y tế & chấn thương + Flow 2 Giáo án huấn luyện |
+| Cặp       | Frontend (`MT_FE`) | Backend (`MT_BE`) | Phạm vi                                                              |
+| --------- | ------------------ | ----------------- | -------------------------------------------------------------------- |
+| **Cặp 1** | _FE Cặp 1_         | _BE Cặp 1_        | Auth + Flow 1 Hồ sơ ngựa (gồm sơ đồ chuồng) + Sơ đồ sức khỏe SC-3.01 |
+| **Cặp 2** | _FE Cặp 2_         | _BE Cặp 2_        | Flow 3 Y tế & chấn thương + Flow 2 Giáo án huấn luyện                |
 
 ## 3. Lịch 3 sprint
 
-| Sprint | Thời gian | Cặp 1 | Cặp 2 | Chung |
-|---|---|---|---|---|
-| Sprint 1 | 28/09 – 04/10/2026 | P1-01 Đăng nhập, JWT & điều hướng 5 vai trò<br>P1-02 Đăng ký Chủ ngựa & xác thực OTP email<br>P1-03 Quên & đặt lại mật khẩu<br>P1-04 Mời nhân sự nội bộ & danh sách nhân sự<br>P1-05 RBAC 5 vai trò, route guard & cách ly dữ liệu Chủ ngựa<br>P1-06 Nhật ký kiểm toán (Audit trail) | P2-01 Hồ sơ y tế ngựa (6 tab), ghi chú quan sát, quyền xem Owner/Groom<br>P2-02 Bệnh án, phác đồ điều trị & kê đơn thuốc | C-01 Nền tảng FE: design tokens, Master layout & routing |
-| Sprint 2 | 05/10 – 11/10/2026 | P1-07 Danh sách, tạo/sửa, chi tiết hồ sơ ngựa (6 tab)<br>P1-08 Trạng thái ngựa, nhóm y tế, badge/banner Khóa huấn luyện, lịch sử trạng thái<br>P1-09 Sơ đồ chuồng trại, gán/chuyển/trả ô, danh mục khu & ô chuồng | P2-03 Mô hình chấn thương 2D & tiến trình hồi phục<br>P2-04 Khóa huấn luyện: đặt/gỡ/gia hạn, danh sách & thông báo<br>P2-05 Lịch chăm sóc định kỳ (tiêm phòng, tẩy giun, móng) & danh mục loại | — |
-| Sprint 3 | 12/10 – 18/10/2026 | P1-10 Nhân viên chăm sóc, lịch sinh hoạt hằng ngày & lịch mẫu<br>P1-11 Chủ sở hữu, ngừng quản lý/kích hoạt lại, xóa mềm & khôi phục<br>P1-12 Danh mục Giống & Màu lông<br>P1-13 Dòng thời gian vòng đời ngựa<br>P1-14 Sơ đồ sức khỏe đàn ngựa 4 mã màu | P2-06 Giáo án huấn luyện: lập, sửa, kích hoạt, kết thúc, nhân bản<br>P2-07 Chặn bài tập nặng khi có Khóa huấn luyện & khôi phục<br>P2-08 Lịch tập, phân công Groom/nài, điều phối chạy thử<br>P2-09 Kết quả buổi tập, biểu đồ thể lực, tổng quan huấn luyện | C-03 Nghiệm thu toàn trình MVP-QA |
+| Sprint   | Thời gian          | Cặp 1                                                                                                                                                                                                                                                                                | Cặp 2                                                                                                                                                                                                                                                       | Chung                                                    |
+| -------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| Sprint 1 | 28/09 – 04/10/2026 | P1-01 Đăng nhập, JWT & điều hướng 5 vai trò<br>P1-02 Đăng ký Chủ ngựa & xác thực OTP email<br>P1-03 Quên & đặt lại mật khẩu<br>P1-04 Mời nhân sự nội bộ & danh sách nhân sự<br>P1-05 RBAC 5 vai trò, route guard & cách ly dữ liệu Chủ ngựa<br>P1-06 Nhật ký kiểm toán (Audit trail) | P2-01 Hồ sơ y tế ngựa (6 tab), ghi chú quan sát, quyền xem Owner/Groom<br>P2-02 Bệnh án, phác đồ điều trị & kê đơn thuốc                                                                                                                                    | C-01 Nền tảng FE: design tokens, Master layout & routing |
+| Sprint 2 | 05/10 – 11/10/2026 | P1-07 Danh sách, tạo/sửa, chi tiết hồ sơ ngựa (6 tab)<br>P1-08 Trạng thái ngựa, nhóm y tế, badge/banner Khóa huấn luyện, lịch sử trạng thái<br>P1-09 Sơ đồ chuồng trại, gán/chuyển/trả ô, danh mục khu & ô chuồng                                                                    | P2-03 Mô hình chấn thương 2D & tiến trình hồi phục<br>P2-04 Khóa huấn luyện: đặt/gỡ/gia hạn, danh sách & thông báo<br>P2-05 Lịch chăm sóc định kỳ (tiêm phòng, tẩy giun, móng) & danh mục loại                                                              | —                                                        |
+| Sprint 3 | 12/10 – 18/10/2026 | P1-10 Nhân viên chăm sóc, lịch sinh hoạt hằng ngày & lịch mẫu<br>P1-11 Chủ sở hữu, ngừng quản lý/kích hoạt lại, xóa mềm & khôi phục<br>P1-12 Danh mục Giống & Màu lông<br>P1-13 Dòng thời gian vòng đời ngựa<br>P1-14 Sơ đồ sức khỏe đàn ngựa 4 mã màu                               | P2-06 Giáo án huấn luyện: lập, sửa, kích hoạt, kết thúc, nhân bản<br>P2-07 Chặn bài tập nặng khi có Khóa huấn luyện & khôi phục<br>P2-08 Lịch tập, phân công Groom/nài, điều phối chạy thử<br>P2-09 Kết quả buổi tập, biểu đồ thể lực, tổng quan huấn luyện | C-03 Nghiệm thu toàn trình MVP-QA                        |
 
 Hai cặp chạy song song từ Sprint 1. Trong Sprint 1, Cặp 2 dùng dữ liệu ngựa giả (mock) cho tới khi `P1-07` có API.
 
 ## 4. Điểm nối giữa 2 cặp (cần thống nhất API)
 
-| Cặp cung cấp | Cặp dùng | Nội dung |
-|---|---|---|
-| Cặp 1 (P1-05) | Cặp 2 | Đăng nhập, vai trò, cách ly dữ liệu Owner — mọi API của Cặp 2 dùng chung guard |
-| Cặp 1 (P1-07, P1-09, P1-10) | Cặp 2 | Danh sách ngựa, trạng thái, ô chuồng, nhân viên chăm sóc phụ trách |
-| Cặp 2 (P2-04) | Cặp 1 (P1-08, P1-14) | Đặt/gỡ Khóa huấn luyện → đổi trạng thái ngựa, bật/tắt banner, màu trên sơ đồ sức khỏe |
-| Cặp 2 (P2-02, P2-06 → P2-09) | Cặp 1 (P1-13) | Sự kiện y tế & huấn luyện cho dòng thời gian ngựa |
+| Cặp cung cấp                 | Cặp dùng             | Nội dung                                                                              |
+| ---------------------------- | -------------------- | ------------------------------------------------------------------------------------- |
+| Cặp 1 (P1-05)                | Cặp 2                | Đăng nhập, vai trò, cách ly dữ liệu Owner — mọi API của Cặp 2 dùng chung guard        |
+| Cặp 1 (P1-07, P1-09, P1-10)  | Cặp 2                | Danh sách ngựa, trạng thái, ô chuồng, nhân viên chăm sóc phụ trách                    |
+| Cặp 2 (P2-04)                | Cặp 1 (P1-08, P1-14) | Đặt/gỡ Khóa huấn luyện → đổi trạng thái ngựa, bật/tắt banner, màu trên sơ đồ sức khỏe |
+| Cặp 2 (P2-02, P2-06 → P2-09) | Cặp 1 (P1-13)        | Sự kiện y tế & huấn luyện cho dòng thời gian ngựa                                     |
 
 ## 5. Cách làm việc
 
@@ -53,19 +53,19 @@ Cài đặt, tạo nhánh, chạy kiểm tra và mở PR để qua bot CI: xem [
 
 Tài liệu triển khai chi tiết: [FLOW4_6_IMPLEMENTATION_PLAN.md](../docs/FLOW4_6_IMPLEMENTATION_PLAN.md). Các task dưới đây được lập ngay khi Flow 1–3 còn đang hoàn thiện; foundation độc lập có thể chuẩn bị trước, còn lát cắt tích hợp chỉ bắt đầu khi API phụ thuộc đã ổn định.
 
-| Wave | Flow 4 | Flow 5 | Flow 6 |
-|---|---|---|---|
-| Foundation | F4-01 Danh mục vật tư và ca trực | F5-01 Danh mục và vòng đời giải đua | F6-00 Chốt provider/chính sách dữ liệu; F6-01 Schema/lifecycle AIInsight |
-| Core | F4-02 Phân ca; F4-03 Khẩu phần | F5-02 Eligibility và đăng ký; F5-03 Kết quả | F6-02 Context Projection/Risk Engine; F6-03 Gợi ý giáo án; F6-04 Cảnh báo nguy cơ |
-| Operations | F4-04 Sinh checklist; F4-05 Thực hiện/giám sát; F4-06 Tồn kho | F5-04 Sổ tài chính; F5-05 Báo cáo/dashboard | F6-05 Trợ lý có nguồn; F6-06 Tóm tắt; F6-07 Cấu hình/observability |
+| Wave       | Flow 4                                                        | Flow 5                                      | Flow 6                                                                            |
+| ---------- | ------------------------------------------------------------- | ------------------------------------------- | --------------------------------------------------------------------------------- |
+| Foundation | F4-01 Danh mục vật tư và ca trực                              | F5-01 Danh mục và vòng đời giải đua         | F6-00 Chốt provider/chính sách dữ liệu; F6-01 Schema/lifecycle AIInsight          |
+| Core       | F4-02 Phân ca; F4-03 Khẩu phần                                | F5-02 Eligibility và đăng ký; F5-03 Kết quả | F6-02 Context Projection/Risk Engine; F6-03 Gợi ý giáo án; F6-04 Cảnh báo nguy cơ |
+| Operations | F4-04 Sinh checklist; F4-05 Thực hiện/giám sát; F4-06 Tồn kho | F5-04 Sổ tài chính; F5-05 Báo cáo/dashboard | F6-05 Trợ lý có nguồn; F6-06 Tóm tắt; F6-07 Cấu hình/observability                |
 
 ### 7.1 Phân công theo cặp
 
-| Cặp | Flow 4 | Flow 5 | Flow 6 | Tổng task |
-|---|---|---|---|---:|
-| **Cặp 1** | F4-01, F4-02, F4-05, F4-06 | F5-01, F5-04, F5-05 | F6-01, F6-06, F6-07 | 10 |
-| **Cặp 2** | F4-03, F4-04 | F5-02, F5-03 | F6-02, F6-03, F6-04, F6-05 | 8 |
-| **Chung** | — | — | F6-00 | 1 |
+| Cặp       | Flow 4                     | Flow 5              | Flow 6                     | Tổng task |
+| --------- | -------------------------- | ------------------- | -------------------------- | --------: |
+| **Cặp 1** | F4-01, F4-02, F4-05, F4-06 | F5-01, F5-04, F5-05 | F6-01, F6-06, F6-07        |        10 |
+| **Cặp 2** | F4-03, F4-04               | F5-02, F5-03        | F6-02, F6-03, F6-04, F6-05 |         8 |
+| **Chung** | —                          | —                   | F6-00                      |         1 |
 
 - Cặp 1 tiếp tục trục hồ sơ/chuồng trại, vận hành, tài chính, báo cáo và nền tảng hệ thống.
 - Cặp 2 tiếp tục trục y tế/huấn luyện, các luật Medical Lock, eligibility và mô hình nguy cơ.
@@ -74,13 +74,13 @@ Tài liệu triển khai chi tiết: [FLOW4_6_IMPLEMENTATION_PLAN.md](../docs/FL
 
 ### 7.2 Điểm nối bắt buộc
 
-| Nguồn | Task dùng | Contract cần ổn định |
-|---|---|---|
-| Flow 1 | F4-02, F4-04 | Khu/ô chuồng, ngựa, Groom được giao, Owner scope |
-| Flow 2 | F4-04, F5-02, F6-02, F6-03 | Buổi tập, tải tập, kết quả và giáo án Draft |
+| Nguồn  | Task dùng                         | Contract cần ổn định                                               |
+| ------ | --------------------------------- | ------------------------------------------------------------------ |
+| Flow 1 | F4-02, F4-04                      | Khu/ô chuồng, ngựa, Groom được giao, Owner scope                   |
+| Flow 2 | F4-04, F5-02, F6-02, F6-03        | Buổi tập, tải tập, kết quả và giáo án Draft                        |
 | Flow 3 | F4-04, F5-02, F5-03, F6-02, F6-04 | Medical Lock, đơn thuốc/withdrawal, chỉ định chăm sóc, chấn thương |
-| Flow 4 | F5-04, F6-06 | Tiêu hao theo ngựa, nhật ký chăm sóc |
-| Flow 5 | F6-06 | Thành tích, chi phí, doanh thu và báo cáo đã chốt |
+| Flow 4 | F5-04, F6-06                      | Tiêu hao theo ngựa, nhật ký chăm sóc                               |
+| Flow 5 | F6-06                             | Thành tích, chi phí, doanh thu và báo cáo đã chốt                  |
 
 ### 7.3 Quy tắc lập issue và triển khai
 

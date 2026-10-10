@@ -351,7 +351,7 @@ async function main() {
   });
 
   // Seed Workout Sessions for Plan 1
-  const workout1 = await prisma.workoutSession.upsert({
+  await prisma.workoutSession.upsert({
     where: { id: `w1-${horse1.id}` },
     update: {},
     create: {
@@ -378,7 +378,7 @@ async function main() {
     },
   });
 
-  const workout2 = await prisma.workoutSession.upsert({
+  await prisma.workoutSession.upsert({
     where: { id: `w2-${horse1.id}` },
     update: {},
     create: {
@@ -405,7 +405,7 @@ async function main() {
     },
   });
 
-  const workout3 = await prisma.workoutSession.upsert({
+  await prisma.workoutSession.upsert({
     where: { id: `w3-${horse1.id}` },
     update: {},
     create: {
@@ -513,7 +513,7 @@ async function main() {
     },
   });
 
-  const catDental = await prisma.preventiveTypeCatalog.upsert({
+  await prisma.preventiveTypeCatalog.upsert({
     where: { code: 'DENTAL_FLOAT' },
     update: {},
     create: {
