@@ -40,6 +40,12 @@ export class HorsesController {
     return this.horsesService.findOne(id, user);
   }
 
+  @Get(':id/history')
+  @ApiOperation({ summary: 'Lấy toàn bộ lịch sử vòng đời định danh, y tế, huấn luyện và chuyển nhượng của ngựa (Flow 1, FR-1.04)' })
+  async getHistory(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
+    return this.horsesService.getHistory(id, user);
+  }
+
   @Post()
   @Roles(UserRole.CLUB_MANAGER)
   @HttpCode(HttpStatus.CREATED)
