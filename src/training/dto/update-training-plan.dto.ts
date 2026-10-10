@@ -49,4 +49,8 @@ export class UpdateTrainingPlanDto {
   @IsOptional()
   @IsEnum(PlanStatus)
   status?: PlanStatus;
+
+  @ApiPropertyOptional({ description: 'Multi-phase structured training plan breakdown' })
+  @IsOptional()
+  phases?: any;
 }

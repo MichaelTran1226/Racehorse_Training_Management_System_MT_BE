@@ -50,6 +50,9 @@ describe('HorsesService', () => {
       stallAllocation: {
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
+      auditLog: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
     };
 
     audit = {
@@ -406,6 +409,98 @@ describe('HorsesService', () => {
       await expect(service.remove('h-locked', mockManager)).rejects.toMatchObject({
         status: HttpStatus.BAD_REQUEST,
         response: expect.objectContaining({ code: 'HORSE_LOCKED' }),
+      });
+    });
+  });
+
+  describe('getHistory', () => {
+    it('should aggregate unified history and timeline correctly', async () => {
+      const mockHistoryHorse = {
+        id: 'h-1',
+        horseCode: 'HR-000001',
+        name: 'Thunderbolt Swift',
+        breed: 'Thoroughbred',
+        status: HorseStatus.ACTIVE,
+        isMedicalLocked: false,
+        createdAt: new Date('2026-01-01'),
+        owner: { id: 'owner-1', fullName: 'Owner User' },
+        stallAllocations: [
+          {
+            id: 'sa-1',
+            stall: { code: 'STALL-A01', zone: 'Zone A' },
+            assignedGroom: { fullName: 'Groom User' },
+            startDate: new Date('2026-01-02'),
+            endDate: null,
+            isActive: true,
+          },
+        ],
+        medicalRecords: [
+          {
+            id: 'mr-1',
+            examinationDate: new Date('2026-02-01'),
+            clinicalDiagnosis: 'Mild tendon sensitivity',
+            symptoms: 'Heat in foreleg',
+            treatmentProtocol: 'Cold compress',
+            veterinarian: { fullName: 'Dr. Sarah Connor' },
+          },
+        ],
+        injuryLogs: [],
+        medicalLocks: [
+          {
+            id: 'ml-1',
+            lockCode: 'KH-000001',
+            lockedAt: new Date('2026-02-01'),
+            lockReason: 'Rest period',
+            isLocked: false,
+            unlockedAt: new Date('2026-02-10'),
+            unlockReason: 'Recovered',
+            veterinarian: { fullName: 'Dr. Sarah Connor' },
+            unlockVet: { fullName: 'Dr. Sarah Connor' },
+          },
+        ],
+        trainingPlans: [
+          {
+            id: 'tp-1',
+            phaseName: 'Base Conditioning',
+            targetSpeed: 40,
+            targetDistance: 1200,
+            trackSurface: 'TURF',
+            startDate: new Date('2026-03-01'),
+            endDate: new Date('2026-03-30'),
+            status: 'APPROVED',
+            createdAt: new Date('2026-03-01'),
+            trainer: { fullName: 'David Nguyen' },
+            workoutSessions: [{ status: 'COMPLETED' }],
+          },
+        ],
+        tournamentRegistrations: [],
+      };
+
+      prisma.horse.findUnique.mockResolvedValue(mockHistoryHorse);
+      prisma.auditLog.findMany.mockResolvedValue([
+        {
+          id: 'aud-1',
+          action: 'HORSE_STATUS_CHANGED',
+          timestamp: new Date('2026-02-01'),
+          user: { fullName: 'Dr. Sarah Connor' },
+          newValuesJson: JSON.stringify({ oldStatus: 'ACTIVE', newStatus: 'UNDER_OBSERVATION' }),
+        },
+      ]);
+
+      const result = await service.getHistory('h-1', mockManager);
+      expect(result).toBeDefined();
+      expect(result.horse.name).toBe('Thunderbolt Swift');
+      expect(result.statusHistory).toHaveLength(1);
+      expect(result.stallHistory).toHaveLength(1);
+      expect(result.medicalHistory.records).toHaveLength(1);
+      expect(result.trainingHistory).toHaveLength(1);
+      expect(result.timeline.length).toBeGreaterThanOrEqual(4);
+    });
+
+    it('should throw 404 HORSE_NOT_FOUND if horse does not exist', async () => {
+      prisma.horse.findUnique.mockResolvedValue(null);
+      await expect(service.getHistory('non-existent', mockManager)).rejects.toMatchObject({
+        status: HttpStatus.NOT_FOUND,
       });
     });
   });

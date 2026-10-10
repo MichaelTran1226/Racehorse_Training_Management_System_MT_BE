@@ -381,6 +381,7 @@ model TrainingPlan {
   trainerUserId String
   trainer       User         @relation("TrainerPlans", fields: [trainerUserId], references: [id], onDelete: Restrict)
   phaseName     String
+  phases        Json?
   targetSpeed   Float?
   targetDistance Int?
   trackSurface  TrackSurface @default(TURF)
@@ -413,6 +414,16 @@ model WorkoutSession {
   performanceScore     Float?
   trainerNotes         String?
   status               WorkoutStatus @default(SCHEDULED)
+  workoutType          String?       @default("REGULAR")
+  intensity            String?       @default("MODERATE")
+  trackSurface         String?       @default("TURF")
+  jockeyName           String?
+  gateNumber           Int?
+  averageSpeedKmh      Float?
+  topSpeedKmh          Float?
+  recoveryTimeMinutes  Float?
+  staminaScore         Float?
+  injuryRiskLevel      String?       @default("LOW")
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt
 

@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { HorseStatus, Prisma, Role, UserStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -13,8 +13,6 @@ import { TransferHorseOwnerDto } from './dto/transfer-owner.dto';
 
 @Injectable()
 export class HorsesService {
-  private readonly logger = new Logger(HorsesService.name);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
@@ -588,6 +586,305 @@ export class HorsesService {
     }
 
     return this.applyRolePolicy(horse, user);
+  }
+
+  /**
+   * Lấy lịch sử toàn diện vòng đời của ngựa (FR-1.04, Flow 1).
+   */
+  async getHistory(id: string, user: CurrentUserPayload) {
+    const horse = await this.prisma.horse.findUnique({
+      where: { id },
+      include: {
+        owner: { select: { id: true, fullName: true, email: true } },
+        stallAllocations: {
+          include: {
+            stall: true,
+            assignedGroom: { select: { id: true, fullName: true, email: true } },
+          },
+          orderBy: { startDate: 'desc' },
+        },
+        medicalRecords: {
+          include: {
+            veterinarian: { select: { id: true, fullName: true } },
+          },
+          orderBy: { examinationDate: 'desc' },
+        },
+        injuryLogs: {
+          orderBy: { discoveryDate: 'desc' },
+        },
+        medicalLocks: {
+          include: {
+            veterinarian: { select: { id: true, fullName: true } },
+            unlockVet: { select: { id: true, fullName: true } },
+          },
+          orderBy: { lockedAt: 'desc' },
+        },
+        trainingPlans: {
+          include: {
+            trainer: { select: { id: true, fullName: true } },
+            workoutSessions: {
+              orderBy: { scheduledDate: 'desc' },
+            },
+          },
+          orderBy: { startDate: 'desc' },
+        },
+        tournamentRegistrations: {
+          include: {
+            tournament: true,
+            result: true,
+          },
+          orderBy: { registrationDate: 'desc' },
+        },
+      },
+    });
+
+    if (!horse) {
+      throw apiError(
+        HttpStatus.NOT_FOUND,
+        'HORSE_NOT_FOUND',
+        'Không tìm thấy hồ sơ ngựa hoặc bạn không có quyền xem.',
+      );
+    }
+
+    if (user.role === UserRole.HORSE_OWNER && horse.ownerId !== user.userId) {
+      throw apiError(
+        HttpStatus.NOT_FOUND,
+        'HORSE_NOT_FOUND',
+        'Không tìm thấy hồ sơ ngựa hoặc bạn không có quyền xem.',
+      );
+    }
+
+    if (user.role === UserRole.GROOM) {
+      const allocations = horse.stallAllocations || [];
+      const isAssigned = allocations.some(
+        (a) => a.assignedGroomUserId === user.userId && a.isActive,
+      );
+      if (!isAssigned) {
+        throw apiError(
+          HttpStatus.NOT_FOUND,
+          'HORSE_NOT_FOUND',
+          'Không tìm thấy hồ sơ ngựa hoặc bạn không có quyền xem.',
+        );
+      }
+    }
+
+    // Lấy các bản ghi AuditLog liên quan đến ngựa
+    const auditLogs = await this.prisma.auditLog.findMany({
+      where: { entityId: id },
+      orderBy: { timestamp: 'desc' },
+      take: 100,
+      include: { user: { select: { id: true, fullName: true, role: true } } },
+    });
+
+    // 1. Status History
+    const statusHistory = auditLogs
+      .filter((l) => l.action === 'HORSE_STATUS_CHANGED')
+      .map((l) => {
+        let details: any = {};
+        try {
+          details = l.newValuesJson ? JSON.parse(l.newValuesJson) : {};
+        } catch {
+          details = {};
+        }
+        return {
+          id: l.id,
+          timestamp: l.timestamp,
+          changedBy: l.user?.fullName || 'System',
+          action: l.action,
+          notes: l.action,
+          oldStatus: details.oldStatus || null,
+          newStatus: details.newStatus || null,
+        };
+      });
+
+    // 2. Ownership History
+    const ownershipHistory = auditLogs
+      .filter((l) => l.action === 'HORSE_OWNERSHIP_TRANSFERRED')
+      .map((l) => {
+        let oldVal: any = {};
+        let newVal: any = {};
+        try {
+          oldVal = l.oldValuesJson ? JSON.parse(l.oldValuesJson) : {};
+          newVal = l.newValuesJson ? JSON.parse(l.newValuesJson) : {};
+        } catch {
+          // ignore
+        }
+        return {
+          id: l.id,
+          timestamp: l.timestamp,
+          previousOwner: oldVal.ownerName || 'None',
+          newOwner: newVal.ownerName || 'Unknown',
+          reason: newVal.reason || 'None specified',
+          transferredBy: l.user?.fullName || 'Club Manager',
+        };
+      });
+
+    // 3. Stall History
+    const stallHistory =
+      user.role === UserRole.HORSE_OWNER
+        ? []
+        : horse.stallAllocations.map((a) => ({
+            id: a.id,
+            stallCode: a.stall.code,
+            zone: a.stall.zone,
+            groomName: a.assignedGroom?.fullName || 'Unassigned',
+            startDate: a.startDate,
+            endDate: a.endDate,
+            isActive: a.isActive,
+          }));
+
+    // 4. Medical History
+    const medicalHistory = {
+      records: horse.medicalRecords.map((r) => ({
+        id: r.id,
+        examinationDate: r.examinationDate,
+        veterinarianName: r.veterinarian?.fullName || 'Dr. Veterinarian',
+        symptoms: r.symptoms,
+        clinicalDiagnosis: r.clinicalDiagnosis,
+        treatmentProtocol: r.treatmentProtocol,
+      })),
+      injuries: horse.injuryLogs.map((inj) => ({
+        id: inj.id,
+        discoveryDate: inj.discoveryDate,
+        anatomicalZone: inj.anatomicalZone,
+        layer: inj.layer,
+        viewSide: inj.viewSide,
+        injuryType: inj.injuryType,
+        severity: inj.severity,
+        stage: inj.stage,
+        status: inj.status,
+      })),
+      locks: horse.medicalLocks.map((l) => ({
+        id: l.id,
+        lockCode: l.lockCode,
+        lockedAt: l.lockedAt,
+        lockReason: l.lockReason,
+        veterinarianName: l.veterinarian?.fullName,
+        isLocked: l.isLocked,
+        unlockedAt: l.unlockedAt,
+        unlockReason: l.unlockReason,
+        unlockVetName: l.unlockVet?.fullName,
+      })),
+    };
+
+    // 5. Training History
+    const trainingHistory = horse.trainingPlans.map((p) => ({
+      id: p.id,
+      phaseName: p.phaseName,
+      targetSpeed: p.targetSpeed,
+      targetDistance: p.targetDistance,
+      trackSurface: p.trackSurface,
+      startDate: p.startDate,
+      endDate: p.endDate,
+      status: p.status,
+      trainerName: p.trainer?.fullName,
+      totalWorkouts: p.workoutSessions.length,
+      completedWorkouts: p.workoutSessions.filter((w) => w.status === 'COMPLETED').length,
+    }));
+
+    // 6. Chronological Unified Timeline
+    const timeline: Array<{
+      id: string;
+      category:
+        'IDENTITY' | 'STATUS' | 'STALL' | 'MEDICAL' | 'TRAINING' | 'TOURNAMENT' | 'OWNERSHIP';
+      title: string;
+      description: string;
+      timestamp: Date | string;
+      badgeTone?: string;
+    }> = [];
+
+    // Created event
+    timeline.push({
+      id: `created-${horse.id}`,
+      category: 'IDENTITY',
+      title: 'Horse identity profile created',
+      description: `Registered as ${horse.name} (${horse.horseCode || horse.id}), breed ${horse.breed}.`,
+      timestamp: horse.createdAt,
+      badgeTone: 'info',
+    });
+
+    // Medical locks
+    horse.medicalLocks.forEach((l) => {
+      timeline.push({
+        id: `lock-${l.id}`,
+        category: 'MEDICAL',
+        title: `Veterinary Medical Lock enforced (${l.lockCode || 'LOCK'})`,
+        description: `Reason: ${l.lockReason}. By: ${l.veterinarian?.fullName || 'Veterinarian'}.`,
+        timestamp: l.lockedAt,
+        badgeTone: 'danger',
+      });
+      if (!l.isLocked && l.unlockedAt) {
+        timeline.push({
+          id: `unlock-${l.id}`,
+          category: 'MEDICAL',
+          title: `Medical Lock released (${l.lockCode || 'LOCK'})`,
+          description: `Clearance: ${l.unlockReason || 'Soundness verified'}.`,
+          timestamp: l.unlockedAt,
+          badgeTone: 'ok',
+        });
+      }
+    });
+
+    // Medical records
+    horse.medicalRecords.forEach((r) => {
+      timeline.push({
+        id: `med-${r.id}`,
+        category: 'MEDICAL',
+        title: `Clinical examination: ${r.clinicalDiagnosis}`,
+        description: `Examined by ${r.veterinarian?.fullName || 'Veterinarian'}. Symptoms: ${r.symptoms}.`,
+        timestamp: r.examinationDate,
+        badgeTone: 'warn',
+      });
+    });
+
+    // Status transitions
+    statusHistory.forEach((s) => {
+      timeline.push({
+        id: `st-${s.id}`,
+        category: 'STATUS',
+        title: `Operational status transition: ${s.newStatus || 'Updated'}`,
+        description: `Status changed by ${s.changedBy}.`,
+        timestamp: s.timestamp,
+        badgeTone: 'neutral',
+      });
+    });
+
+    // Ownership transitions
+    ownershipHistory.forEach((o) => {
+      timeline.push({
+        id: `own-${o.id}`,
+        category: 'OWNERSHIP',
+        title: `Ownership transferred to ${o.newOwner}`,
+        description: `Previous owner: ${o.previousOwner}. Reason: ${o.reason}.`,
+        timestamp: o.timestamp,
+        badgeTone: 'info',
+      });
+    });
+
+    // Training plans
+    horse.trainingPlans.forEach((p) => {
+      timeline.push({
+        id: `plan-${p.id}`,
+        category: 'TRAINING',
+        title: `Training plan issued: ${p.phaseName}`,
+        description: `Status: ${p.status}. Surface: ${p.trackSurface}. Trainer: ${p.trainer?.fullName}.`,
+        timestamp: p.createdAt,
+        badgeTone: 'ok',
+      });
+    });
+
+    // Sort timeline newest first
+    timeline.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    return {
+      horse: this.applyRolePolicy(horse, user),
+      statusHistory,
+      ownershipHistory,
+      stallHistory,
+      medicalHistory,
+      trainingHistory,
+      timeline,
+    };
   }
 
   /**

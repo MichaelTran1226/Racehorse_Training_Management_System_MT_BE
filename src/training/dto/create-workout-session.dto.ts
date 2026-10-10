@@ -41,4 +41,50 @@ export class CreateWorkoutSessionDto {
   @IsOptional()
   @IsEnum(WorkoutStatus)
   status?: WorkoutStatus;
+
+  @ApiPropertyOptional({ description: 'Workout type', example: 'REGULAR' })
+  @IsOptional()
+  @IsString()
+  workoutType?: string;
+
+  @ApiPropertyOptional({ description: 'Workout intensity level', example: 'MODERATE' })
+  @IsOptional()
+  @IsString()
+  intensity?: string;
+
+  @ApiPropertyOptional({ description: 'Track surface', example: 'TURF' })
+  @IsOptional()
+  @IsString()
+  trackSurface?: string;
+
+  @ApiPropertyOptional({ description: 'Assigned jockey name', example: 'Alex Turner' })
+  @IsOptional()
+  @IsString()
+  jockeyName?: string;
+
+  @ApiPropertyOptional({ description: 'Starting gate number', example: 4 })
+  @IsOptional()
+  @IsInt()
+  gateNumber?: number;
+
+  @ApiPropertyOptional({ description: 'Average speed in km/h' })
+  @IsOptional()
+  averageSpeedKmh?: number;
+
+  @ApiPropertyOptional({ description: 'Top sprint speed in km/h' })
+  @IsOptional()
+  topSpeedKmh?: number;
+
+  @ApiPropertyOptional({ description: 'Recovery time in minutes post-workout' })
+  @IsOptional()
+  recoveryTimeMinutes?: number;
+
+  @ApiPropertyOptional({ description: 'Calculated stamina score (1 - 100)' })
+  @IsOptional()
+  staminaScore?: number;
+
+  @ApiPropertyOptional({ description: 'Injury risk level assessment', example: 'LOW' })
+  @IsOptional()
+  @IsString()
+  injuryRiskLevel?: string;
 }
