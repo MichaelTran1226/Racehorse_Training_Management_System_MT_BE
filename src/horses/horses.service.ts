@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { HorseStatus, Prisma, Role, UserStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -13,8 +13,6 @@ import { TransferHorseOwnerDto } from './dto/transfer-owner.dto';
 
 @Injectable()
 export class HorsesService {
-  private readonly logger = new Logger(HorsesService.name);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,

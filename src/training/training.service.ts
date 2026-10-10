@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { HorseStatus, PlanStatus, Prisma, TrackSurface, WorkoutStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -13,8 +13,6 @@ import { UpdateWorkoutSessionDto } from './dto/update-workout-session.dto';
 
 @Injectable()
 export class TrainingService {
-  private readonly logger = new Logger(TrainingService.name);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
