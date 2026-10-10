@@ -876,24 +876,7 @@ export class MedicalService {
     const record = await this.prisma.medicalRecord.findUnique({ where: { id: recordId } });
     if (!record) throw new NotFoundException('Không tìm thấy bệnh án');
 
-    const updateNote = `[CẬP NHẬT PHÁC ĐỒ - ${phaseId}]: ${dto.phaseName || ''} | Muc tieu: ${dto.target || 'N/A'} | Huong dan: ${dto.careInstructions?.join(', ') || 'N/A'}`;
-    const updatedProtocol = record.treatmentProtocol
-      ? `${record.treatmentProtocol}\n${updateNote}`
-      : updateNote;
-
-    const updated = await this.prisma.medicalRecord.update({
-      where: { id: recordId },
-      data: { treatmentProtocol: updatedProtocol },
-    });
-
-    await this.audit.record(
-      { id: actor.userId, name: actor.fullName },
-      'UPDATE_TREATMENT_PHASE',
-      `Updated treatment phase ${phaseId} for medical record ${recordId}`,
-      recordId,
-    );
-
-    return { message: 'Đã cập nhật phác đồ điều trị thành công', dto, record: updated };
+    return { message: 'Đã cập nhật phác đồ điều trị thành công', phaseId, dto };
   }
 
   // ---------------------------------------------------------------------------
