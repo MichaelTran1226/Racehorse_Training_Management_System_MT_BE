@@ -876,7 +876,7 @@ export class MedicalService {
     const record = await this.prisma.medicalRecord.findUnique({ where: { id: recordId } });
     if (!record) throw new NotFoundException('Không tìm thấy bệnh án');
 
-    return { message: 'Đã cập nhật phác đồ điều trị thành công', dto };
+    return { message: 'Đã cập nhật phác đồ điều trị thành công', phaseId, dto };
   }
 
   // ---------------------------------------------------------------------------

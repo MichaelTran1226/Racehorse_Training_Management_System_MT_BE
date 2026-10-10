@@ -260,7 +260,10 @@ export class StallsService {
         'RETURN_STALL',
         'Trả ô chuồng',
         allocationId,
-        { oldValues: oldAllocation as any, newValues: { isActive: false } },
+        {
+          oldValues: oldAllocation as any,
+          newValues: { isActive: false, notes: dto?.notes },
+        },
         prisma as any,
       );
       return { success: true };
