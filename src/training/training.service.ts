@@ -510,7 +510,9 @@ export class TrainingService {
         ...(dto.gateNumber !== undefined && { gateNumber: dto.gateNumber }),
         ...(dto.averageSpeedKmh !== undefined && { averageSpeedKmh: dto.averageSpeedKmh }),
         ...(dto.topSpeedKmh !== undefined && { topSpeedKmh: dto.topSpeedKmh }),
-        ...(dto.recoveryTimeMinutes !== undefined && { recoveryTimeMinutes: dto.recoveryTimeMinutes }),
+        ...(dto.recoveryTimeMinutes !== undefined && {
+          recoveryTimeMinutes: dto.recoveryTimeMinutes,
+        }),
         ...(dto.staminaScore !== undefined && { staminaScore: dto.staminaScore }),
         ...(dto.injuryRiskLevel !== undefined && { injuryRiskLevel: dto.injuryRiskLevel }),
       },

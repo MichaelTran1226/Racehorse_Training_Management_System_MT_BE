@@ -258,45 +258,51 @@ async function main() {
   const stallB01 = await prisma.stall.findUnique({ where: { code: 'STALL-B01' } });
 
   if (stallA01) {
-    await prisma.stallAllocation.upsert({
-      where: { id: `alloc-${horse1.id}` },
-      update: {},
-      create: {
-        id: `alloc-${horse1.id}`,
-        stallId: stallA01.id,
-        horseId: horse1.id,
-        assignedGroomUserId: groom.id,
-        isActive: true,
-      },
-    }).catch(() => null);
+    await prisma.stallAllocation
+      .upsert({
+        where: { id: `alloc-${horse1.id}` },
+        update: {},
+        create: {
+          id: `alloc-${horse1.id}`,
+          stallId: stallA01.id,
+          horseId: horse1.id,
+          assignedGroomUserId: groom.id,
+          isActive: true,
+        },
+      })
+      .catch(() => null);
   }
 
   if (stallA02) {
-    await prisma.stallAllocation.upsert({
-      where: { id: `alloc-${horse2.id}` },
-      update: {},
-      create: {
-        id: `alloc-${horse2.id}`,
-        stallId: stallA02.id,
-        horseId: horse2.id,
-        assignedGroomUserId: groom.id,
-        isActive: true,
-      },
-    }).catch(() => null);
+    await prisma.stallAllocation
+      .upsert({
+        where: { id: `alloc-${horse2.id}` },
+        update: {},
+        create: {
+          id: `alloc-${horse2.id}`,
+          stallId: stallA02.id,
+          horseId: horse2.id,
+          assignedGroomUserId: groom.id,
+          isActive: true,
+        },
+      })
+      .catch(() => null);
   }
 
   if (stallB01) {
-    await prisma.stallAllocation.upsert({
-      where: { id: `alloc-${horse3.id}` },
-      update: {},
-      create: {
-        id: `alloc-${horse3.id}`,
-        stallId: stallB01.id,
-        horseId: horse3.id,
-        assignedGroomUserId: groom.id,
-        isActive: true,
-      },
-    }).catch(() => null);
+    await prisma.stallAllocation
+      .upsert({
+        where: { id: `alloc-${horse3.id}` },
+        update: {},
+        create: {
+          id: `alloc-${horse3.id}`,
+          stallId: stallB01.id,
+          horseId: horse3.id,
+          assignedGroomUserId: groom.id,
+          isActive: true,
+        },
+      })
+      .catch(() => null);
   }
 
   // 6. Seed Training Plans and Workout Sessions
@@ -459,7 +465,8 @@ async function main() {
       status: WorkoutStatus.CANCELLED_MEDICAL_LOCK,
       workoutType: 'RECOVERY',
       intensity: 'LIGHT',
-      trainerNotes: 'Tự động hủy do Khóa huấn luyện thú y: Khám lâm sàng phát hiện sưng gân chi trước',
+      trainerNotes:
+        'Tự động hủy do Khóa huấn luyện thú y: Khám lâm sàng phát hiện sưng gân chi trước',
     },
   });
 
@@ -610,4 +617,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-
