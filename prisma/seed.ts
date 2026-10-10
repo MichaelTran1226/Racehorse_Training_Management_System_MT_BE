@@ -1,4 +1,15 @@
-import { PrismaClient, Role, UserStatus, HorseStatus, StallStatus, PlanStatus, WorkoutStatus, TrackSurface } from '@prisma/client';
+import {
+  PrismaClient,
+  Role,
+  UserStatus,
+  HorseStatus,
+  StallStatus,
+  PlanStatus,
+  WorkoutStatus,
+  TrackSurface,
+  PreventiveType,
+  PreventiveStatus,
+} from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -247,45 +258,51 @@ async function main() {
   const stallB01 = await prisma.stall.findUnique({ where: { code: 'STALL-B01' } });
 
   if (stallA01) {
-    await prisma.stallAllocation.upsert({
-      where: { id: `alloc-${horse1.id}` },
-      update: {},
-      create: {
-        id: `alloc-${horse1.id}`,
-        stallId: stallA01.id,
-        horseId: horse1.id,
-        assignedGroomUserId: groom.id,
-        isActive: true,
-      },
-    }).catch(() => null);
+    await prisma.stallAllocation
+      .upsert({
+        where: { id: `alloc-${horse1.id}` },
+        update: {},
+        create: {
+          id: `alloc-${horse1.id}`,
+          stallId: stallA01.id,
+          horseId: horse1.id,
+          assignedGroomUserId: groom.id,
+          isActive: true,
+        },
+      })
+      .catch(() => null);
   }
 
   if (stallA02) {
-    await prisma.stallAllocation.upsert({
-      where: { id: `alloc-${horse2.id}` },
-      update: {},
-      create: {
-        id: `alloc-${horse2.id}`,
-        stallId: stallA02.id,
-        horseId: horse2.id,
-        assignedGroomUserId: groom.id,
-        isActive: true,
-      },
-    }).catch(() => null);
+    await prisma.stallAllocation
+      .upsert({
+        where: { id: `alloc-${horse2.id}` },
+        update: {},
+        create: {
+          id: `alloc-${horse2.id}`,
+          stallId: stallA02.id,
+          horseId: horse2.id,
+          assignedGroomUserId: groom.id,
+          isActive: true,
+        },
+      })
+      .catch(() => null);
   }
 
   if (stallB01) {
-    await prisma.stallAllocation.upsert({
-      where: { id: `alloc-${horse3.id}` },
-      update: {},
-      create: {
-        id: `alloc-${horse3.id}`,
-        stallId: stallB01.id,
-        horseId: horse3.id,
-        assignedGroomUserId: groom.id,
-        isActive: true,
-      },
-    }).catch(() => null);
+    await prisma.stallAllocation
+      .upsert({
+        where: { id: `alloc-${horse3.id}` },
+        update: {},
+        create: {
+          id: `alloc-${horse3.id}`,
+          stallId: stallB01.id,
+          horseId: horse3.id,
+          assignedGroomUserId: groom.id,
+          isActive: true,
+        },
+      })
+      .catch(() => null);
   }
 
   // 6. Seed Training Plans and Workout Sessions
@@ -448,11 +465,148 @@ async function main() {
       status: WorkoutStatus.CANCELLED_MEDICAL_LOCK,
       workoutType: 'RECOVERY',
       intensity: 'LIGHT',
-      trainerNotes: 'Tự động hủy do Khóa huấn luyện thú y: Khám lâm sàng phát hiện sưng gân chi trước',
+      trainerNotes:
+        'Tự động hủy do Khóa huấn luyện thú y: Khám lâm sàng phát hiện sưng gân chi trước',
     },
   });
 
-  console.log('--- Seeding Completed Successfully with Training Plans & Telemetry ---');
+  // 7. Seed Preventive Care Catalogs & Schedules
+  const catTetanus = await prisma.preventiveTypeCatalog.upsert({
+    where: { code: 'VAC_TETANUS' },
+    update: {},
+    create: {
+      code: 'VAC_TETANUS',
+      name: 'Tiêm phòng uốn ván & cúm ngựa (Tetanus & Equine Influenza)',
+      category: PreventiveType.VACCINATION,
+      intervalDays: 180,
+      advanceNoticeDays: 14,
+      applyToNewHorses: true,
+      description: 'Phòng ngừa uốn ván Clostridium tetani và virus cúm ngựa định kỳ 6 tháng.',
+    },
+  });
+
+  const catDeworm = await prisma.preventiveTypeCatalog.upsert({
+    where: { code: 'DEWORM_BROAD' },
+    update: {},
+    create: {
+      code: 'DEWORM_BROAD',
+      name: 'Tẩy giun định kỳ phổ rộng (Broad-spectrum Deworming)',
+      category: PreventiveType.DEWORMING,
+      intervalDays: 90,
+      advanceNoticeDays: 7,
+      applyToNewHorses: true,
+      description: 'Sử dụng Ivermectin / Praziquantel luân phiên mỗi quý.',
+    },
+  });
+
+  const catFarrier = await prisma.preventiveTypeCatalog.upsert({
+    where: { code: 'FARRIER_TRIM' },
+    update: {},
+    create: {
+      code: 'FARRIER_TRIM',
+      name: 'Cắt gọt và đóng móng định kỳ (Farrier Hoof Care)',
+      category: PreventiveType.FARRIER_HOOF_CARE,
+      intervalDays: 45,
+      advanceNoticeDays: 5,
+      applyToNewHorses: true,
+      description: 'Cắt tỉa móng, cân bằng góc chân và thay móng sắt thi đấu mỗi 6 tuần.',
+    },
+  });
+
+  await prisma.preventiveTypeCatalog.upsert({
+    where: { code: 'DENTAL_FLOAT' },
+    update: {},
+    create: {
+      code: 'DENTAL_FLOAT',
+      name: 'Khám và mài răng định kỳ (Equine Dental Float)',
+      category: PreventiveType.DENTAL,
+      intervalDays: 365,
+      advanceNoticeDays: 30,
+      applyToNewHorses: true,
+      description: 'Kiểm tra mài gờ răng nhọn hàm trên và hàm dưới hàng năm.',
+    },
+  });
+
+  // Preventive Schedules for Horse 1
+  await prisma.preventiveSchedule.upsert({
+    where: { id: `prev-vac-${horse1.id}` },
+    update: {},
+    create: {
+      id: `prev-vac-${horse1.id}`,
+      horseId: horse1.id,
+      typeCatalogId: catTetanus.id,
+      veterinarianUserId: vet.id,
+      scheduleType: PreventiveType.VACCINATION,
+      dueDate: new Date(now.getTime() + 150 * 86400000),
+      lastCompletedDate: new Date(now.getTime() - 30 * 86400000),
+      productAdministered: 'Equi-Flu/Tetanus Duo 2ml',
+      batchNumber: 'LOT-2026-TF09',
+      performedByMode: 'SELF',
+      performedByName: vet.fullName,
+      status: PreventiveStatus.PENDING,
+      notes: 'Đã tiêm phòng mũi định kỳ đầu mùa thi đấu, không phản ứng phụ.',
+    },
+  });
+
+  await prisma.preventiveSchedule.upsert({
+    where: { id: `prev-far-${horse1.id}` },
+    update: {},
+    create: {
+      id: `prev-far-${horse1.id}`,
+      horseId: horse1.id,
+      typeCatalogId: catFarrier.id,
+      veterinarianUserId: vet.id,
+      scheduleType: PreventiveType.FARRIER_HOOF_CARE,
+      dueDate: new Date(now.getTime() + 10 * 86400000),
+      lastCompletedDate: new Date(now.getTime() - 35 * 86400000),
+      performedByMode: 'EXTERNAL',
+      performedByName: 'Master Farrier Kenji Sato',
+      status: PreventiveStatus.PENDING,
+      notes: 'Lịch gọt móng định kỳ chuẩn bị trước giải Derby.',
+    },
+  });
+
+  // Preventive Schedules for Horse 2
+  await prisma.preventiveSchedule.upsert({
+    where: { id: `prev-dew-${horse2.id}` },
+    update: {},
+    create: {
+      id: `prev-dew-${horse2.id}`,
+      horseId: horse2.id,
+      typeCatalogId: catDeworm.id,
+      veterinarianUserId: vet.id,
+      scheduleType: PreventiveType.DEWORMING,
+      dueDate: new Date(now.getTime() + 80 * 86400000),
+      lastCompletedDate: new Date(now.getTime() - 10 * 86400000),
+      completedDate: new Date(now.getTime() - 10 * 86400000),
+      productAdministered: 'Equimax Paste 14g',
+      batchNumber: 'LOT-2026-DW03',
+      performedByMode: 'SELF',
+      performedByName: vet.fullName,
+      status: PreventiveStatus.COMPLETED,
+      notes: 'Đã cho uống thuốc tẩy giun đầy đủ liều lượng theo thể trọng.',
+    },
+  });
+
+  await prisma.preventiveSchedule.upsert({
+    where: { id: `prev-far-${horse2.id}` },
+    update: {},
+    create: {
+      id: `prev-far-${horse2.id}`,
+      horseId: horse2.id,
+      typeCatalogId: catFarrier.id,
+      veterinarianUserId: vet.id,
+      scheduleType: PreventiveType.FARRIER_HOOF_CARE,
+      dueDate: new Date(now.getTime() - 5 * 86400000),
+      lastCompletedDate: new Date(now.getTime() - 50 * 86400000),
+      performedByMode: 'EXTERNAL',
+      performedByName: 'Farrier Team',
+      status: PreventiveStatus.OVERDUE,
+      notes: 'Quá hạn bảo dưỡng móng do đang nghỉ dưỡng thương (cần bảo dưỡng nhẹ tại chuồng).',
+    },
+  });
+
+  console.log('--- Seeding Completed Successfully with Training Plans & Preventive Care ---');
 }
 
 main()
@@ -463,4 +617,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-
