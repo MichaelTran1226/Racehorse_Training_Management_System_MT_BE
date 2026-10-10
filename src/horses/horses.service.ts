@@ -787,7 +787,8 @@ export class HorsesService {
     // 6. Chronological Unified Timeline
     const timeline: Array<{
       id: string;
-      category: 'IDENTITY' | 'STATUS' | 'STALL' | 'MEDICAL' | 'TRAINING' | 'TOURNAMENT' | 'OWNERSHIP';
+      category:
+        'IDENTITY' | 'STATUS' | 'STALL' | 'MEDICAL' | 'TRAINING' | 'TOURNAMENT' | 'OWNERSHIP';
       title: string;
       description: string;
       timestamp: Date | string;

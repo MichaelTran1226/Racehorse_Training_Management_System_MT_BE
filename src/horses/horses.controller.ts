@@ -41,7 +41,10 @@ export class HorsesController {
   }
 
   @Get(':id/history')
-  @ApiOperation({ summary: 'Lấy toàn bộ lịch sử vòng đời định danh, y tế, huấn luyện và chuyển nhượng của ngựa (Flow 1, FR-1.04)' })
+  @ApiOperation({
+    summary:
+      'Lấy toàn bộ lịch sử vòng đời định danh, y tế, huấn luyện và chuyển nhượng của ngựa (Flow 1, FR-1.04)',
+  })
   async getHistory(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
     return this.horsesService.getHistory(id, user);
   }
