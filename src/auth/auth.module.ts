@@ -8,6 +8,7 @@ import { OtpService } from './otp.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { PrismaModule } from '../prisma/prisma.module';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { requireJwtSecret } from './jwt-secret';
 
 @Module({
   imports: [
@@ -17,9 +18,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        secret:
-          configService.get<string>('JWT_SECRET') ||
-          'equiflow-secure-jwt-secret-replace-in-production-2026',
+        secret: requireJwtSecret(configService),
         signOptions: {
           expiresIn: (configService.get<string>('JWT_EXPIRES_IN') || '15m') as any,
         },
