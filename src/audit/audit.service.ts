@@ -65,7 +65,12 @@ export class AuditService {
     action: string,
     detail: string,
     entityId?: string | null,
-    snapshots: { oldValues?: Prisma.InputJsonValue; newValues?: Prisma.InputJsonValue } = {},
+    snapshots: {
+      oldValues?: Prisma.InputJsonValue;
+      newValues?: Prisma.InputJsonValue;
+      /** Loại đối tượng bị tác động (vd. 'Horse', 'MedicalLock'); mặc định 'User'. */
+      entityName?: string;
+    } = {},
     tx?: Prisma.TransactionClient,
   ) {
     try {
@@ -73,7 +78,7 @@ export class AuditService {
         data: {
           userId: actor.id ?? null,
           action,
-          entityName: 'User',
+          entityName: snapshots.entityName ?? 'User',
           entityId: entityId ?? actor.id ?? null,
           oldValuesJson:
             snapshots.oldValues === undefined ? null : JSON.stringify(snapshots.oldValues),
