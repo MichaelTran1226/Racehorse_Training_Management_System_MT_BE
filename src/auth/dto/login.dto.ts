@@ -1,14 +1,25 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Matches,
+  MinLength,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
+import { EMAIL_RE } from '../../common/utils/input';
 
 export class LoginDto {
   @ApiProperty({
-    example: 'manager@equiflow.com',
+    example: 'manager@gmail.com',
     description: 'Registered user email address',
   })
   @IsNotEmpty({ message: 'Email must not be empty' })
   @IsEmail({}, { message: 'Must be a valid email format' })
+  // Mọi luồng tài khoản chỉ nhận @gmail.com (giống đăng ký, mời, quên mật khẩu).
+  @Matches(EMAIL_RE, { message: 'Email must be a @gmail.com address' })
   @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
   email: string;
 

@@ -13,54 +13,54 @@ describe('Authentication & Session Flow (e2e)', () => {
   const hashedPassword = bcrypt.hashSync(rawPassword, 10);
 
   const mockUsers: Record<string, any> = {
-    'manager@equiflow.com': {
+    'manager@gmail.com': {
       id: 'usr-manager-1',
-      email: 'manager@equiflow.com',
+      email: 'manager@gmail.com',
       passwordHash: hashedPassword,
       fullName: 'Michael Tran (Club Manager)',
       phoneNumber: '+84901234567',
       role: Role.CLUB_MANAGER,
       status: UserStatus.ACTIVE,
     },
-    'trainer@equiflow.com': {
+    'trainer@gmail.com': {
       id: 'usr-trainer-1',
-      email: 'trainer@equiflow.com',
+      email: 'trainer@gmail.com',
       passwordHash: hashedPassword,
       fullName: 'David Nguyen (Head Trainer)',
       phoneNumber: '+84901234568',
       role: Role.HEAD_TRAINER,
       status: UserStatus.ACTIVE,
     },
-    'vet@equiflow.com': {
+    'vet@gmail.com': {
       id: 'usr-vet-1',
-      email: 'vet@equiflow.com',
+      email: 'vet@gmail.com',
       passwordHash: hashedPassword,
       fullName: 'Dr. Sarah Connor (Veterinarian)',
       phoneNumber: '+84901234569',
       role: Role.VETERINARIAN,
       status: UserStatus.ACTIVE,
     },
-    'groom@equiflow.com': {
+    'groom@gmail.com': {
       id: 'usr-groom-1',
-      email: 'groom@equiflow.com',
+      email: 'groom@gmail.com',
       passwordHash: hashedPassword,
       fullName: 'John Smith (Groom Hand)',
       phoneNumber: '+84901234570',
       role: Role.GROOM,
       status: UserStatus.ACTIVE,
     },
-    'owner@equiflow.com': {
+    'owner@gmail.com': {
       id: 'usr-owner-1',
-      email: 'owner@equiflow.com',
+      email: 'owner@gmail.com',
       passwordHash: hashedPassword,
       fullName: 'Robert Sterling (Horse Owner)',
       phoneNumber: '+84901234571',
       role: Role.HORSE_OWNER,
       status: UserStatus.ACTIVE,
     },
-    'suspended@equiflow.com': {
+    'suspended@gmail.com': {
       id: 'usr-suspended-1',
-      email: 'suspended@equiflow.com',
+      email: 'suspended@gmail.com',
       passwordHash: hashedPassword,
       fullName: 'Suspended User',
       phoneNumber: null,
@@ -171,7 +171,7 @@ describe('Authentication & Session Flow (e2e)', () => {
       const res = await request(app.getHttpServer())
         .post('/api/auth/login')
         .send({
-          email: 'manager@equiflow.com',
+          email: 'manager@gmail.com',
           password: rawPassword,
         })
         .expect(200);
@@ -186,10 +186,10 @@ describe('Authentication & Session Flow (e2e)', () => {
 
     it('should authenticate 4 other roles into their dedicated dashboards', async () => {
       const rolesConfig = [
-        { email: 'trainer@equiflow.com', role: Role.HEAD_TRAINER, dashboard: '/trainer/dashboard' },
-        { email: 'vet@equiflow.com', role: Role.VETERINARIAN, dashboard: '/vet/dashboard' },
-        { email: 'groom@equiflow.com', role: Role.GROOM, dashboard: '/groom/dashboard' },
-        { email: 'owner@equiflow.com', role: Role.HORSE_OWNER, dashboard: '/owner/dashboard' },
+        { email: 'trainer@gmail.com', role: Role.HEAD_TRAINER, dashboard: '/trainer/dashboard' },
+        { email: 'vet@gmail.com', role: Role.VETERINARIAN, dashboard: '/vet/dashboard' },
+        { email: 'groom@gmail.com', role: Role.GROOM, dashboard: '/groom/dashboard' },
+        { email: 'owner@gmail.com', role: Role.HORSE_OWNER, dashboard: '/owner/dashboard' },
       ];
 
       for (const config of rolesConfig) {
@@ -210,7 +210,7 @@ describe('Authentication & Session Flow (e2e)', () => {
       const res = await request(app.getHttpServer())
         .post('/api/auth/login')
         .send({
-          email: 'manager@equiflow.com',
+          email: 'manager@gmail.com',
           password: 'IncorrectPassword',
         })
         .expect(401);
@@ -223,7 +223,7 @@ describe('Authentication & Session Flow (e2e)', () => {
       const res = await request(app.getHttpServer())
         .post('/api/auth/login')
         .send({
-          email: 'notfound@equiflow.com',
+          email: 'notfound@gmail.com',
           password: rawPassword,
         })
         .expect(401);
@@ -235,7 +235,7 @@ describe('Authentication & Session Flow (e2e)', () => {
       const res = await request(app.getHttpServer())
         .post('/api/auth/login')
         .send({
-          email: 'suspended@equiflow.com',
+          email: 'suspended@gmail.com',
           password: rawPassword,
         })
         .expect(423);
@@ -248,7 +248,7 @@ describe('Authentication & Session Flow (e2e)', () => {
     it('should return code INVALID_CREDENTIALS with attemptsLeft on a wrong password', async () => {
       const res = await request(app.getHttpServer())
         .post('/api/auth/login')
-        .send({ email: 'manager@equiflow.com', password: 'IncorrectPassword' })
+        .send({ email: 'manager@gmail.com', password: 'IncorrectPassword' })
         .expect(401);
 
       expect(res.body.code).toBe('INVALID_CREDENTIALS');
@@ -262,7 +262,7 @@ describe('Authentication & Session Flow (e2e)', () => {
 
     beforeAll(async () => {
       const loginRes = await request(app.getHttpServer()).post('/api/auth/login').send({
-        email: 'manager@equiflow.com',
+        email: 'manager@gmail.com',
         password: rawPassword,
       });
 
@@ -281,7 +281,7 @@ describe('Authentication & Session Flow (e2e)', () => {
         .expect(200);
 
       expect(res.body.success).toBe(true);
-      expect(res.body.data.email).toBe('manager@equiflow.com');
+      expect(res.body.data.email).toBe('manager@gmail.com');
       expect(res.body.data.role).toBe(Role.CLUB_MANAGER);
       expect(res.body.data.dashboardUrl).toBe('/manager/dashboard');
     });
@@ -318,7 +318,7 @@ describe('Authentication & Session Flow (e2e)', () => {
     };
 
     it('should list accounts for the Club Manager without password hashes', async () => {
-      const token = await tokenFor('manager@equiflow.com');
+      const token = await tokenFor('manager@gmail.com');
       const res = await request(app.getHttpServer())
         .get('/api/accounts')
         .set('Authorization', `Bearer ${token}`)
@@ -330,7 +330,7 @@ describe('Authentication & Session Flow (e2e)', () => {
     });
 
     it('should refuse a Head Trainer with 403 FORBIDDEN', async () => {
-      const token = await tokenFor('trainer@equiflow.com');
+      const token = await tokenFor('trainer@gmail.com');
       const res = await request(app.getHttpServer())
         .get('/api/accounts')
         .set('Authorization', `Bearer ${token}`)
