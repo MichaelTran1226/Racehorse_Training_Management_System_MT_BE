@@ -16,14 +16,17 @@ import { UserRole } from '../common/enums/role.enum';
 export class StallsController {
   constructor(private readonly stallsService: StallsService) {}
 
+  // Q10: Chủ ngựa không xem ô chuồng.
   @Get()
-  @ApiOperation({ summary: 'Lấy danh sách ô chuồng' })
+  @Roles(UserRole.CLUB_MANAGER, UserRole.HEAD_TRAINER, UserRole.VETERINARIAN, UserRole.GROOM)
+  @ApiOperation({ summary: 'Lấy danh sách ô chuồng (không cho Owner)' })
   findAll(@Query() query: any, @CurrentUser() user: CurrentUserPayload) {
     return this.stallsService.findAll(query, user);
   }
 
   @Get('zones')
-  @ApiOperation({ summary: 'Lấy danh sách khu chuồng' })
+  @Roles(UserRole.CLUB_MANAGER, UserRole.HEAD_TRAINER, UserRole.VETERINARIAN, UserRole.GROOM)
+  @ApiOperation({ summary: 'Lấy danh sách khu chuồng (không cho Owner)' })
   getZones() {
     return this.stallsService.getZones();
   }

@@ -1,22 +1,16 @@
-import {
-  IsEnum,
-  IsISO8601,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  Length,
-  Matches,
-} from 'class-validator';
+import { IsISO8601, IsNotEmpty, IsOptional, IsString, Length, Matches } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { HorseStatus } from '@prisma/client';
+import { Transform } from 'class-transformer';
+import { HORSE_NAME_RE, normalizeName, RFID_RE } from '../horse-rules';
 
 export class CreateHorseDto {
   @ApiProperty({ description: 'Horse name (2-100 characters)', example: 'Thunderbolt Swift' })
   @IsNotEmpty({ message: 'Horse name is required.' })
   @IsString({ message: 'Horse name must be a string.' })
   @Length(2, 100, { message: 'Horse name must be between 2 and 100 characters.' })
-  @Matches(/^[a-zA-Z0-9\s'.-]+$/, {
-    message: "Horse name can only contain alphanumeric characters, spaces, and ' - .",
+  @Transform(({ value }) => normalizeName(value))
+  @Matches(HORSE_NAME_RE, {
+    message: "Horse name can only contain letters (accents allowed), digits, spaces, and ' - .",
   })
   name: string;
 
@@ -47,21 +41,16 @@ export class CreateHorseDto {
   microchip: string;
 
   @ApiPropertyOptional({
-    description: 'RFID tag code (must follow RFID-... prefix)',
+    description: 'RFID tag code (4-32 A-Z, 0-9, -)',
     example: 'RFID-985141002341',
   })
   @IsOptional()
   @IsString()
-  @Matches(/^RFID-[A-Z0-9-]{4,28}$/, {
-    message:
-      "RFID tag must start with 'RFID-' prefix followed by 4-28 uppercase letters, digits, or hyphens (e.g. RFID-985141002341).",
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value))
+  @Matches(RFID_RE, {
+    message: 'RFID tag must be 4-32 characters: uppercase letters, digits, or hyphens.',
   })
   rfid?: string;
-
-  @ApiPropertyOptional({ enum: HorseStatus, default: HorseStatus.RESTING })
-  @IsOptional()
-  @IsEnum(HorseStatus, { message: 'Invalid horse status.' })
-  status?: HorseStatus;
 
   @ApiPropertyOptional({ description: 'Owner User ID' })
   @IsOptional()

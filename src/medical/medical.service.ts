@@ -80,7 +80,7 @@ export class MedicalService {
     }
 
     const horse = await this.prisma.horse.findUnique({
-      where: { id: horseId },
+      where: { id: horseId, deletedAt: null },
       include: {
         stallAllocations: {
           where: { isActive: true },
@@ -118,7 +118,7 @@ export class MedicalService {
     await this.checkHorseAccess(horseId, currentUser);
 
     const horse = await this.prisma.horse.findUnique({
-      where: { id: horseId },
+      where: { id: horseId, deletedAt: null },
     });
     if (!horse) {
       throw new NotFoundException('Không tìm thấy chiến mã');
@@ -197,7 +197,7 @@ export class MedicalService {
     this.assertVet(actor, 'log injuries');
 
     const horse = await this.prisma.horse.findUnique({
-      where: { id: dto.horseId },
+      where: { id: dto.horseId, deletedAt: null },
       include: {
         medicalLocks: { where: { isLocked: true } },
       },
@@ -474,7 +474,7 @@ export class MedicalService {
     this.assertVet(actor, 'create medical records');
 
     const horse = await this.prisma.horse.findUnique({
-      where: { id: dto.horseId },
+      where: { id: dto.horseId, deletedAt: null },
     });
     if (!horse) {
       throw new NotFoundException('Không tìm thấy chiến mã');
@@ -1089,7 +1089,7 @@ export class MedicalService {
 
     const { lock, horse } = await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT "id" FROM "Horse" WHERE "id" = ${dto.horseId} FOR UPDATE`;
-      const horse = await tx.horse.findUnique({ where: { id: dto.horseId } });
+      const horse = await tx.horse.findUnique({ where: { id: dto.horseId, deletedAt: null } });
       if (!horse) throw new NotFoundException('Không tìm thấy chiến mã');
 
       const existingLock = await tx.medicalLock.findFirst({
@@ -1492,7 +1492,7 @@ export class MedicalService {
     await this.checkHorseAccess(horseId, currentUser);
 
     const horse = await this.prisma.horse.findUnique({
-      where: { id: horseId },
+      where: { id: horseId, deletedAt: null },
       include: {
         medicalLocks: { where: { isLocked: true } },
         stallAllocations: {
@@ -1566,6 +1566,7 @@ export class MedicalService {
 
   async getHealthBoard(query: HealthBoardQueryDto) {
     const horses = await this.prisma.horse.findMany({
+      where: { deletedAt: null },
       include: {
         medicalLocks: { where: { isLocked: true } },
         stallAllocations: {
@@ -1701,7 +1702,7 @@ export class MedicalService {
 
     if (catalog.applyToNewHorses) {
       const activeHorses = await this.prisma.horse.findMany({
-        where: { status: { not: HorseStatus.RETIRED } },
+        where: { status: { not: HorseStatus.RETIRED }, deletedAt: null },
         select: { id: true, createdAt: true },
       });
 
@@ -2021,7 +2022,7 @@ export class MedicalService {
       dto.performedByMode === 'EXTERNAL' ? dto.performedByName! : actor.fullName;
 
     for (const horseId of horseIds) {
-      const horse = await this.prisma.horse.findUnique({ where: { id: horseId } });
+      const horse = await this.prisma.horse.findUnique({ where: { id: horseId, deletedAt: null } });
       if (!horse) continue;
 
       const schedule = await this.prisma.preventiveSchedule.findFirst({
@@ -2110,7 +2111,9 @@ export class MedicalService {
   async setupHorsePreventive(actor: CurrentUserPayload, dto: SetupHorsePreventiveDto) {
     this.assertVet(actor, 'set up preventive schedules');
 
-    const horse = await this.prisma.horse.findUnique({ where: { id: dto.horseId } });
+    const horse = await this.prisma.horse.findUnique({
+      where: { id: dto.horseId, deletedAt: null },
+    });
     if (!horse) throw new NotFoundException('Không tìm thấy chiến mã');
 
     const now = new Date();

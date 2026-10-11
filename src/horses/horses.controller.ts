@@ -21,6 +21,9 @@ import { UpdateHorseDto } from './dto/update-horse.dto';
 import { QueryHorseDto } from './dto/query-horse.dto';
 import { ChangeHorseStatusDto } from './dto/change-status.dto';
 import { TransferHorseOwnerDto } from './dto/transfer-owner.dto';
+import { DeleteHorseDto } from './dto/delete-horse.dto';
+import { RestoreHorseDto } from './dto/restore-horse.dto';
+import { QueryDeletedHorseDto } from './dto/query-deleted-horse.dto';
 
 @ApiTags('Horses')
 @ApiBearerAuth('JWT-auth')
@@ -32,6 +35,14 @@ export class HorsesController {
   @ApiOperation({ summary: 'Lấy danh sách ngựa theo phân quyền vai trò (FR-1.03)' })
   async findAll(@Query() query: QueryHorseDto, @CurrentUser() user: CurrentUserPayload) {
     return this.horsesService.findAll(query, user);
+  }
+
+  // Phải khai báo TRƯỚC ':id', nếu không Nest hiểu "deleted" là một id.
+  @Get('deleted')
+  @Roles(UserRole.CLUB_MANAGER)
+  @ApiOperation({ summary: 'Danh sách hồ sơ ngựa đã xóa (SC-1.05) - Chỉ Club Manager' })
+  async findDeleted(@Query() query: QueryDeletedHorseDto) {
+    return this.horsesService.findDeleted(query);
   }
 
   @Get(':id')
@@ -81,9 +92,29 @@ export class HorsesController {
 
   @Delete(':id')
   @Roles(UserRole.CLUB_MANAGER)
-  @ApiOperation({ summary: 'Xóa hồ sơ ngựa (chưa có dữ liệu phụ thuộc) - Chỉ Club Manager' })
-  async remove(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
-    return this.horsesService.remove(id, user);
+  @ApiOperation({
+    summary: 'Xóa mềm hồ sơ ngựa tạo nhầm (DL-1.10, chưa có dữ liệu phụ thuộc) - Chỉ Club Manager',
+  })
+  async remove(
+    @Param('id') id: string,
+    @Body() dto: DeleteHorseDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.horsesService.remove(id, dto, user);
+  }
+
+  @Post(':id/restore')
+  @Roles(UserRole.CLUB_MANAGER)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Khôi phục hồ sơ đã xóa hoặc Hoàn tác xóa (DL-1.11) - Chỉ Club Manager',
+  })
+  async restore(
+    @Param('id') id: string,
+    @Body() dto: RestoreHorseDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.horsesService.restore(id, dto, user);
   }
 
   @Patch(':id/status')
