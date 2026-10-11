@@ -58,6 +58,14 @@ enum HorseStatus {
   RETIRED
 }
 
+// Lý do Ngừng quản lý (status = RETIRED). DECEASED không được kích hoạt lại.
+enum RetireReason {
+  RETIRED
+  SOLD
+  DECEASED
+  TRANSFERRED
+}
+
 enum StallStatus {
   AVAILABLE
   OCCUPIED
@@ -190,6 +198,7 @@ model User {
   notify               Json?
 
   horsesOwned           Horse[]                 @relation("OwnerHorses")
+  horsesDeleted         Horse[]                 @relation("HorseDeletedBy")
   stallAllocations      StallAllocation[]       @relation("GroomStalls")
   trainingPlansCreated  TrainingPlan[]          @relation("TrainerPlans")
   workoutSessionsStaff  WorkoutSession[]        @relation("StaffWorkouts")
@@ -291,6 +300,11 @@ model Horse {
   isMedicalLocked Boolean     @default(false)
   ownerId         String?
   owner           User?       @relation("OwnerHorses", fields: [ownerId], references: [id], onDelete: SetNull)
+  retireReason    RetireReason?
+  deletedAt       DateTime?
+  deletedById     String?
+  deletedBy       User?       @relation("HorseDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  deleteReason    String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
@@ -314,6 +328,7 @@ model Horse {
   @@index([ownerId])
   @@index([status])
   @@index([isMedicalLocked])
+  @@index([deletedAt])
 }
 
 model Stall {

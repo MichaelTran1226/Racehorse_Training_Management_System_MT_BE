@@ -136,6 +136,9 @@ export class StallsService {
 
   async assignHorse(stallId: string, dto: AssignHorseDto, user: CurrentUserPayload) {
     return this.prisma.$transaction(async (prisma) => {
+      // Khóa dòng ô và dòng ngựa: 2 người gán cùng lúc thì người sau chờ và thấy ô đã có ngựa.
+      await prisma.$queryRaw`SELECT "id" FROM "Stall" WHERE "id" = ${stallId} FOR UPDATE`;
+      await prisma.$queryRaw`SELECT "id" FROM "Horse" WHERE "id" = ${dto.horseId} FOR UPDATE`;
       const stall = await prisma.stall.findUnique({
         where: { id: stallId },
         include: { allocations: { where: { isActive: true } } },
@@ -145,7 +148,7 @@ export class StallsService {
       if (stall.allocations.length > 0) throw new BadRequestException('Ô chuồng đã có ngựa');
 
       const horse = await prisma.horse.findUnique({
-        where: { id: dto.horseId },
+        where: { id: dto.horseId, deletedAt: null },
         include: { stallAllocations: { where: { isActive: true } } },
       });
       if (!horse) throw new NotFoundException('Không tìm thấy ngựa');
@@ -188,6 +191,7 @@ export class StallsService {
       if (!oldAllocation || !oldAllocation.isActive)
         throw new NotFoundException('Không tìm thấy bản ghi phân bổ đang hoạt động');
 
+      await prisma.$queryRaw`SELECT "id" FROM "Stall" WHERE "id" = ${dto.newStallId} FOR UPDATE`;
       const newStall = await prisma.stall.findUnique({
         where: { id: dto.newStallId },
         include: { allocations: { where: { isActive: true } } },

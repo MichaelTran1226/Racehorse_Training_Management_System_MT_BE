@@ -25,7 +25,7 @@ export class TrainingService {
     horseId: string,
   ): Promise<{ isLocked: boolean; reason?: string; lockCode?: string }> {
     const horse = await this.prisma.horse.findUnique({
-      where: { id: horseId },
+      where: { id: horseId, deletedAt: null },
       include: {
         medicalLocks: {
           where: { isLocked: true },
@@ -266,7 +266,9 @@ export class TrainingService {
     });
 
     // 4. Update Horse status to IN_TRAINING if horse is ACTIVE or RESTING
-    const horse = await this.prisma.horse.findUnique({ where: { id: dto.horseId } });
+    const horse = await this.prisma.horse.findUnique({
+      where: { id: dto.horseId, deletedAt: null },
+    });
     if (horse && (horse.status === HorseStatus.ACTIVE || horse.status === HorseStatus.RESTING)) {
       await this.prisma.horse.update({
         where: { id: dto.horseId },
@@ -625,7 +627,7 @@ export class TrainingService {
    */
   async getFitnessMetrics(horseId: string, user: CurrentUserPayload) {
     const horse = await this.prisma.horse.findUnique({
-      where: { id: horseId },
+      where: { id: horseId, deletedAt: null },
     });
 
     if (!horse) {

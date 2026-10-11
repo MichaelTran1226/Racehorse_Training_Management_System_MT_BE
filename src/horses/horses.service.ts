@@ -1,5 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { HorseStatus, Prisma, Role, UserStatus } from '@prisma/client';
+import { HorseStatus, Prisma, RetireReason, Role, StallStatus, UserStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { apiError } from '../common/exceptions/api-error';
@@ -10,6 +10,13 @@ import { UpdateHorseDto } from './dto/update-horse.dto';
 import { QueryHorseDto } from './dto/query-horse.dto';
 import { ChangeHorseStatusDto } from './dto/change-status.dto';
 import { TransferHorseOwnerDto } from './dto/transfer-owner.dto';
+import { DeleteHorseDto } from './dto/delete-horse.dto';
+import { RestoreHorseDto } from './dto/restore-horse.dto';
+import { QueryDeletedHorseDto } from './dto/query-deleted-horse.dto';
+import { assertStatusTransition } from './horse-rules';
+
+/** Thời gian (ms) cho phép bấm Hoàn tác sau khi xóa. FE hiện nút 10 giây; BE nới 60 giây cho mạng chậm. */
+const UNDO_WINDOW_MS = 60 * 1000;
 
 @Injectable()
 export class HorsesService {
@@ -75,6 +82,44 @@ export class HorsesService {
     return cloned;
   }
 
+  /** Ô chuồng phải tồn tại, không bảo trì và chưa có ngựa. Gọi sau khi đã khóa dòng Stall. */
+  private async assertStallFree(tx: Prisma.TransactionClient, stallId: string): Promise<void> {
+    const stall = await tx.stall.findUnique({
+      where: { id: stallId },
+      include: { allocations: { where: { isActive: true }, take: 1 } },
+    });
+    if (!stall) {
+      throw apiError(HttpStatus.NOT_FOUND, 'STALL_NOT_FOUND', 'Không tìm thấy ô chuồng.');
+    }
+    if (stall.status === StallStatus.MAINTENANCE) {
+      throw apiError(HttpStatus.BAD_REQUEST, 'STALL_MAINTENANCE', 'Ô chuồng đang bảo trì.');
+    }
+    if (stall.allocations.length > 0) {
+      throw apiError(HttpStatus.CONFLICT, 'STALL_OCCUPIED', 'Ô chuồng đã có ngựa.');
+    }
+  }
+
+  /**
+   * Kết thúc phân bổ ô chuồng đang hiệu lực của ngựa và trả ô về AVAILABLE
+   * (dùng khi Ngừng quản lý và khi Xóa hồ sơ). Trả về mã các ô đã trả.
+   */
+  private async releaseStalls(tx: Prisma.TransactionClient, horseId: string): Promise<string[]> {
+    const active = await tx.stallAllocation.findMany({
+      where: { horseId, isActive: true },
+      include: { stall: { select: { id: true, code: true } } },
+    });
+    if (active.length === 0) return [];
+    await tx.stallAllocation.updateMany({
+      where: { horseId, isActive: true },
+      data: { isActive: false, endDate: new Date() },
+    });
+    await tx.stall.updateMany({
+      where: { id: { in: active.map((a) => a.stallId) } },
+      data: { status: StallStatus.AVAILABLE },
+    });
+    return active.map((a) => a.stall.code);
+  }
+
   /**
    * Tạo hồ sơ ngựa mới (FR-1.01).
    */
@@ -101,7 +146,7 @@ export class HorsesService {
 
     // Kiểm tra trùng tên (không phân biệt chữ hoa/thường)
     const existingName = await this.prisma.horse.findFirst({
-      where: { name: { equals: dto.name.trim(), mode: 'insensitive' } },
+      where: { name: { equals: dto.name.trim(), mode: 'insensitive' }, deletedAt: null },
     });
     if (existingName) {
       throw apiError(HttpStatus.CONFLICT, 'DUPLICATE_NAME', 'Tên ngựa đã tồn tại trong hệ thống.');
@@ -117,7 +162,9 @@ export class HorsesService {
       throw apiError(
         HttpStatus.CONFLICT,
         'DUPLICATE_MICROCHIP',
-        'Số microchip đã được gán cho ngựa khác.',
+        existingChip.deletedAt
+          ? 'Số microchip thuộc một hồ sơ trong mục Hồ sơ đã xóa. Hãy khôi phục hồ sơ đó thay vì tạo mới.'
+          : 'Số microchip đã được gán cho ngựa khác.',
       );
     }
 
@@ -132,49 +179,67 @@ export class HorsesService {
         throw apiError(
           HttpStatus.CONFLICT,
           'DUPLICATE_RFID',
-          'Mã thẻ RFID đã được gán cho ngựa khác.',
+          existingRfid.deletedAt
+            ? 'Mã thẻ RFID thuộc một hồ sơ trong mục Hồ sơ đã xóa.'
+            : 'Mã thẻ RFID đã được gán cho ngựa khác.',
         );
       }
     }
 
     const horseCode = await this.generateHorseCode();
-    const initialStatus = dto.status || HorseStatus.RESTING;
     const microchipRfid = dto.microchip;
 
-    const horse = await this.prisma.horse.create({
-      data: {
-        horseCode,
-        name: dto.name.trim(),
-        breed: dto.breed.trim(),
-        dob,
-        gender: dto.gender,
-        color: dto.color.trim(),
-        microchip: dto.microchip,
-        rfid: dto.rfid ? dto.rfid.toUpperCase() : null,
-        microchipRfid,
-        status: initialStatus,
-        isMedicalLocked: false,
-        ownerId: dto.ownerId || null,
-        avatarUrl: dto.avatarUrl || null,
-        ...(dto.stallId
-          ? {
-              stallAllocations: {
-                create: {
-                  stallId: dto.stallId,
-                  startDate: now,
-                  isActive: true,
+    // Hồ sơ mới luôn ở Nghỉ ngơi. Nếu chọn ô chuồng ngay khi tạo: khóa dòng ô (FOR UPDATE),
+    // kiểm ô còn trống rồi đặt OCCUPIED, tất cả trong một transaction -> 2 người không gán trùng 1 ô.
+    const horse = await this.prisma.$transaction(async (tx) => {
+      if (dto.stallId) {
+        await tx.$queryRaw`SELECT "id" FROM "Stall" WHERE "id" = ${dto.stallId} FOR UPDATE`;
+        await this.assertStallFree(tx, dto.stallId);
+      }
+
+      const created = await tx.horse.create({
+        data: {
+          horseCode,
+          name: dto.name.trim(),
+          breed: dto.breed.trim(),
+          dob,
+          gender: dto.gender,
+          color: dto.color.trim(),
+          microchip: dto.microchip,
+          rfid: dto.rfid ? dto.rfid.toUpperCase() : null,
+          microchipRfid,
+          status: HorseStatus.RESTING,
+          isMedicalLocked: false,
+          ownerId: dto.ownerId || null,
+          avatarUrl: dto.avatarUrl || null,
+          ...(dto.stallId
+            ? {
+                stallAllocations: {
+                  create: {
+                    stallId: dto.stallId,
+                    startDate: now,
+                    isActive: true,
+                  },
                 },
-              },
-            }
-          : {}),
-      },
-      include: {
-        owner: { select: { id: true, fullName: true, email: true } },
-        stallAllocations: {
-          where: { isActive: true },
-          include: { stall: true, assignedGroom: { select: { id: true, fullName: true } } },
+              }
+            : {}),
         },
-      },
+        include: {
+          owner: { select: { id: true, fullName: true, email: true } },
+          stallAllocations: {
+            where: { isActive: true },
+            include: { stall: true, assignedGroom: { select: { id: true, fullName: true } } },
+          },
+        },
+      });
+
+      if (dto.stallId) {
+        await tx.stall.update({
+          where: { id: dto.stallId },
+          data: { status: StallStatus.OCCUPIED },
+        });
+      }
+      return created;
     });
 
     await this.auditService.record(
@@ -182,7 +247,10 @@ export class HorsesService {
       'HORSE_CREATED',
       `Tạo mới hồ sơ ngựa ${horse.name} (${horse.horseCode})`,
       horse.id,
-      { newValues: { name: horse.name, horseCode: horse.horseCode, status: horse.status } },
+      {
+        entityName: 'Horse',
+        newValues: { name: horse.name, horseCode: horse.horseCode, status: horse.status },
+      },
     );
 
     return this.applyRolePolicy(horse, user);
@@ -193,7 +261,7 @@ export class HorsesService {
    */
   async update(id: string, dto: UpdateHorseDto, user: CurrentUserPayload) {
     const horse = await this.prisma.horse.findUnique({
-      where: { id },
+      where: { id, deletedAt: null },
       include: {
         stallAllocations: { where: { isActive: true } },
       },
@@ -238,6 +306,7 @@ export class HorsesService {
         where: {
           name: { equals: dto.name.trim(), mode: 'insensitive' },
           id: { not: id },
+          deletedAt: null,
         },
       });
       if (existingName) {
@@ -307,7 +376,6 @@ export class HorsesService {
             }
           : {}),
         ...(dto.rfid !== undefined ? { rfid: dto.rfid ? dto.rfid.toUpperCase() : null } : {}),
-        ...(dto.status ? { status: dto.status } : {}),
         ...(dto.ownerId !== undefined ? { ownerId: dto.ownerId || null } : {}),
         ...(dto.avatarUrl !== undefined ? { avatarUrl: dto.avatarUrl } : {}),
       },
@@ -326,6 +394,7 @@ export class HorsesService {
       `Updated identification record for horse ${updated.name} (${updated.horseCode || updated.id})`,
       updated.id,
       {
+        entityName: 'Horse',
         oldValues: { name: horse.name, status: horse.status, microchip: horse.microchip },
         newValues: { name: updated.name, status: updated.status, microchip: updated.microchip },
       },
@@ -340,7 +409,7 @@ export class HorsesService {
    */
   async transferOwner(id: string, dto: TransferHorseOwnerDto, user: CurrentUserPayload) {
     const horse = await this.prisma.horse.findUnique({
-      where: { id },
+      where: { id, deletedAt: null },
       include: {
         owner: { select: { id: true, fullName: true, email: true } },
       },
@@ -409,6 +478,7 @@ export class HorsesService {
       `Transferred ownership of horse ${horse.name} (${horse.horseCode || horse.id}) from ${previousOwnerName} to ${newOwner.fullName}. Reason: ${dto.reason || 'None specified'}`,
       horse.id,
       {
+        entityName: 'Horse',
         oldValues: { ownerId: horse.ownerId, ownerName: previousOwnerName },
         newValues: { ownerId: newOwner.id, ownerName: newOwner.fullName, reason: dto.reason },
       },
@@ -433,7 +503,8 @@ export class HorsesService {
       limit = 20,
     } = query;
 
-    const where: Prisma.HorseWhereInput = {};
+    // Hồ sơ đã xóa mềm chỉ xem ở GET /horses/deleted.
+    const where: Prisma.HorseWhereInput = { deletedAt: null };
 
     // Phân quyền phạm vi dữ liệu:
     if (user.role === UserRole.HORSE_OWNER) {
@@ -539,7 +610,7 @@ export class HorsesService {
    */
   async findOne(id: string, user: CurrentUserPayload) {
     const horse = await this.prisma.horse.findUnique({
-      where: { id },
+      where: { id, deletedAt: null },
       include: {
         owner: { select: { id: true, fullName: true, email: true } },
         stallAllocations: {
@@ -593,7 +664,7 @@ export class HorsesService {
    */
   async getHistory(id: string, user: CurrentUserPayload) {
     const horse = await this.prisma.horse.findUnique({
-      where: { id },
+      where: { id, deletedAt: null },
       include: {
         owner: { select: { id: true, fullName: true, email: true } },
         stallAllocations: {
@@ -888,149 +959,301 @@ export class HorsesService {
   }
 
   /**
-   * Xóa hồ sơ ngựa (chỉ khi chưa có dữ liệu phụ thuộc ở Flow 2-5).
+   * Xóa mềm hồ sơ ngựa (DL-1.10). Chỉ dùng khi hồ sơ tạo nhầm: ngựa chưa có dữ liệu ở Flow 2-5
+   * và không đang Khóa huấn luyện. Hồ sơ không mất mà chuyển sang mục Hồ sơ đã xóa (SC-1.05).
    */
-  async remove(id: string, user: CurrentUserPayload) {
-    const horse = await this.prisma.horse.findUnique({
-      where: { id },
-      include: {
-        workoutSessions: { take: 1 },
-        trainingPlans: { take: 1 },
-        medicalRecords: { take: 1 },
-        injuryLogs: { take: 1 },
-        medicalLocks: { take: 1 },
-        preventiveSchedules: { take: 1 },
-        tournamentRegistrations: { take: 1 },
-        financialInvoices: { take: 1 },
-      },
-    });
+  async remove(id: string, dto: DeleteHorseDto, user: CurrentUserPayload) {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "Horse" WHERE "id" = ${id} FOR UPDATE`;
+      const horse = await tx.horse.findUnique({
+        where: { id, deletedAt: null },
+        include: {
+          workoutSessions: { take: 1 },
+          trainingPlans: { take: 1 },
+          medicalRecords: { take: 1 },
+          injuryLogs: { take: 1 },
+          medicalLocks: { take: 1 },
+          preventiveSchedules: { take: 1 },
+          nutritionPlans: { take: 1 },
+          dailyGroomingLogs: { take: 1 },
+          tournamentRegistrations: { take: 1 },
+          financialInvoices: { take: 1 },
+        },
+      });
 
-    if (!horse) {
-      throw apiError(HttpStatus.NOT_FOUND, 'HORSE_NOT_FOUND', 'Horse profile not found.');
-    }
+      if (!horse) {
+        throw apiError(HttpStatus.NOT_FOUND, 'HORSE_NOT_FOUND', 'Horse profile not found.');
+      }
 
-    if (horse.isMedicalLocked) {
-      throw apiError(
-        HttpStatus.BAD_REQUEST,
-        'HORSE_LOCKED',
-        'Cannot delete horse profile while an active Medical Lock is in effect.',
-      );
-    }
+      const typed = dto.confirmName.trim().replace(/\s+/g, ' ').toLowerCase();
+      if (typed !== horse.name.toLowerCase()) {
+        throw apiError(HttpStatus.BAD_REQUEST, 'CONFIRM_NAME_MISMATCH', 'Tên nhập vào không khớp.');
+      }
 
-    if (
-      horse.workoutSessions.length > 0 ||
-      horse.trainingPlans.length > 0 ||
-      horse.medicalRecords.length > 0 ||
-      horse.injuryLogs.length > 0 ||
-      horse.medicalLocks.length > 0 ||
-      horse.preventiveSchedules.length > 0 ||
-      horse.tournamentRegistrations.length > 0 ||
-      horse.financialInvoices.length > 0
-    ) {
-      throw apiError(
-        HttpStatus.BAD_REQUEST,
-        'HAS_DEPENDENT_DATA',
-        'Horse has linked historical data (training, medical records, or invoices). Deletion is prohibited to preserve integrity; use Retire instead.',
-      );
-    }
-
-    // Release any stall allocation before deletion
-    await this.prisma.stallAllocation.updateMany({
-      where: { horseId: id, isActive: true },
-      data: { isActive: false, endDate: new Date() },
-    });
-
-    await this.prisma.horse.delete({ where: { id } });
-
-    await this.auditService.record(
-      { id: user.userId, name: user.fullName || user.email },
-      'HORSE_DELETED',
-      `Deleted horse profile ${horse.name} (${horse.horseCode || horse.id})`,
-      horse.id,
-    );
-
-    return { success: true, message: `Successfully deleted horse ${horse.name}.` };
-  }
-
-  async changeStatus(id: string, dto: ChangeHorseStatusDto, user: CurrentUserPayload) {
-    const horse = await this.prisma.horse.findUnique({ where: { id } });
-    if (!horse) {
-      throw apiError(HttpStatus.NOT_FOUND, 'HORSE_NOT_FOUND', 'Horse profile not found.');
-    }
-
-    if (horse.status === dto.status) {
-      throw apiError(
-        HttpStatus.BAD_REQUEST,
-        'SAME_STATUS',
-        `Horse is already in status ${dto.status}.`,
-      );
-    }
-
-    if (horse.isMedicalLocked) {
-      if (user.role === UserRole.VETERINARIAN) {
-        if (!['INJURED', 'ISOLATED', 'UNDER_OBSERVATION'].includes(dto.status)) {
-          throw apiError(
-            HttpStatus.FORBIDDEN,
-            'MEDICAL_LOCK_ACTIVE',
-            'Horse is currently under protective Medical Lock. Cannot transition to operational status.',
-          );
-        }
-      } else if (user.role === UserRole.CLUB_MANAGER && dto.status === 'RETIRED') {
-        // allow CM to retire
-      } else {
+      if (horse.isMedicalLocked) {
         throw apiError(
-          HttpStatus.FORBIDDEN,
-          'MEDICAL_LOCK_ACTIVE',
-          'Horse is currently under protective Medical Lock. Only a Veterinarian can release the lock before operational status change.',
+          HttpStatus.BAD_REQUEST,
+          'HORSE_LOCKED',
+          'Cannot delete horse profile while an active Medical Lock is in effect.',
         );
       }
-    }
 
-    if (user.role === UserRole.HEAD_TRAINER) {
-      if (!['RESTING', 'IN_TRAINING', 'ACTIVE'].includes(dto.status as string)) {
-        throw apiError(
-          HttpStatus.FORBIDDEN,
-          'ROLE_RESTRICTION',
-          'Head Trainer is only authorized to transition operational statuses (RESTING, IN_TRAINING, ACTIVE).',
-        );
-      }
-    } else if (user.role === UserRole.VETERINARIAN) {
       if (
-        !['INJURED', 'ISOLATED', 'UNDER_OBSERVATION', 'RESTING', 'IN_TRAINING'].includes(
-          dto.status as string,
-        )
+        horse.workoutSessions.length > 0 ||
+        horse.trainingPlans.length > 0 ||
+        horse.medicalRecords.length > 0 ||
+        horse.injuryLogs.length > 0 ||
+        horse.medicalLocks.length > 0 ||
+        horse.preventiveSchedules.length > 0 ||
+        horse.nutritionPlans.length > 0 ||
+        horse.dailyGroomingLogs.length > 0 ||
+        horse.tournamentRegistrations.length > 0 ||
+        horse.financialInvoices.length > 0
       ) {
         throw apiError(
-          HttpStatus.FORBIDDEN,
-          'ROLE_RESTRICTION',
-          'Veterinarian is only authorized to manage clinical and recuperation statuses.',
+          HttpStatus.BAD_REQUEST,
+          'HAS_DEPENDENT_DATA',
+          'Ngựa đã phát sinh dữ liệu huấn luyện, y tế, chăm sóc hoặc thi đấu nên không thể xóa. Vui lòng dùng chức năng Ngừng quản lý.',
         );
       }
-    }
 
-    // When a horse is retired, automatically deallocate active stalls
-    if (dto.status === HorseStatus.RETIRED) {
-      await this.prisma.stallAllocation.updateMany({
-        where: { horseId: id, isActive: true },
-        data: { isActive: false, endDate: new Date() },
+      const releasedStalls = await this.releaseStalls(tx, id);
+
+      const deleted = await tx.horse.update({
+        where: { id },
+        data: { deletedAt: new Date(), deletedById: user.userId, deleteReason: dto.reason.trim() },
       });
+
+      await this.auditService.record(
+        { id: user.userId, name: user.fullName || user.email },
+        'HORSE_DELETED',
+        `Soft-deleted horse profile ${horse.name} (${horse.horseCode || horse.id}). Reason: ${dto.reason.trim()}`,
+        horse.id,
+        { entityName: 'Horse', newValues: { reason: dto.reason.trim(), releasedStalls } },
+        tx,
+      );
+
+      return {
+        success: true,
+        id: deleted.id,
+        name: deleted.name,
+        deletedAt: deleted.deletedAt,
+        message: `Đã xóa hồ sơ ngựa ${deleted.name}.`,
+      };
+    });
+  }
+
+  /** Danh sách hồ sơ đã xóa mềm (SC-1.05, chỉ CM). Mới xóa nhất lên trước. */
+  async findDeleted(query: QueryDeletedHorseDto) {
+    const { search, from, to, page = 1, limit = 20 } = query;
+
+    const deletedAt: Prisma.DateTimeNullableFilter = { not: null };
+    if (from) deletedAt.gte = new Date(from);
+    // "Đến ngày" tính cả ngày đó: lấy < 0 giờ của ngày hôm sau.
+    if (to) deletedAt.lt = new Date(new Date(to).getTime() + 24 * 60 * 60 * 1000);
+
+    const where: Prisma.HorseWhereInput = { deletedAt };
+    if (search && search.trim()) {
+      const q = search.trim();
+      where.OR = [
+        { name: { contains: q, mode: 'insensitive' } },
+        { horseCode: { contains: q, mode: 'insensitive' } },
+        { microchip: { contains: q } },
+      ];
     }
 
-    const updated = await this.prisma.horse.update({
-      where: { id },
-      data: { status: dto.status },
-    });
+    const [rows, total] = await Promise.all([
+      this.prisma.horse.findMany({
+        where,
+        orderBy: { deletedAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: { deletedBy: { select: { id: true, fullName: true } } },
+      }),
+      this.prisma.horse.count({ where }),
+    ]);
 
-    await this.auditService.record(
-      { id: user.userId, name: user.fullName || user.email },
-      'HORSE_STATUS_CHANGED',
-      `Changed status of horse ${horse.name} from ${horse.status} to ${dto.status}. Reason: ${dto.reason || 'None specified'}`,
-      horse.id,
-    );
+    return {
+      items: rows.map((h) => ({
+        id: h.id,
+        horseCode: h.horseCode,
+        name: h.name,
+        microchip: h.microchip,
+        status: h.status,
+        deletedAt: h.deletedAt,
+        deletedBy: h.deletedBy ? { id: h.deletedBy.id, fullName: h.deletedBy.fullName } : null,
+        deleteReason: h.deleteReason,
+      })),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  /**
+   * Khôi phục hồ sơ đã xóa (DL-1.11) hoặc Hoàn tác ngay sau khi xóa (undo = true).
+   * Ngựa trở về trạng thái lúc bị xóa, chưa có ô chuồng.
+   * Microchip/RFID là UNIQUE trong DB nên không thể bị hồ sơ khác chiếm; chỉ Tên có thể trùng.
+   */
+  async restore(id: string, dto: RestoreHorseDto, user: CurrentUserPayload) {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "Horse" WHERE "id" = ${id} FOR UPDATE`;
+      const horse = await tx.horse.findUnique({ where: { id } });
+      if (!horse || !horse.deletedAt) {
+        throw apiError(HttpStatus.NOT_FOUND, 'HORSE_NOT_FOUND', 'Không tìm thấy hồ sơ đã xóa.');
+      }
+
+      let reason: string;
+      if (dto.undo) {
+        const expired = Date.now() - horse.deletedAt.getTime() > UNDO_WINDOW_MS;
+        if (expired || horse.deletedById !== user.userId) {
+          throw apiError(
+            HttpStatus.BAD_REQUEST,
+            'UNDO_EXPIRED',
+            'Đã hết thời gian hoàn tác. Hãy khôi phục trong mục Hồ sơ đã xóa.',
+          );
+        }
+        reason = 'Hoàn tác thao tác xóa';
+      } else {
+        if (!dto.reason) {
+          throw apiError(
+            HttpStatus.BAD_REQUEST,
+            'REASON_REQUIRED',
+            'Lý do phải từ 10 đến 500 ký tự.',
+          );
+        }
+        reason = dto.reason.trim();
+      }
+
+      const nameTaken = await tx.horse.findFirst({
+        where: {
+          id: { not: id },
+          deletedAt: null,
+          name: { equals: horse.name, mode: 'insensitive' },
+        },
+      });
+      if (nameTaken) {
+        throw apiError(
+          HttpStatus.CONFLICT,
+          'RESTORE_CONFLICT',
+          `Không thể khôi phục vì Tên ngựa ${horse.name} đã được dùng cho ngựa khác. Hãy sửa hồ sơ đang dùng giá trị trùng rồi thử lại.`,
+          { field: 'name', conflictHorseId: nameTaken.id },
+        );
+      }
+
+      const restored = await tx.horse.update({
+        where: { id },
+        data: { deletedAt: null, deletedById: null, deleteReason: null },
+      });
+
+      await this.auditService.record(
+        { id: user.userId, name: user.fullName || user.email },
+        'HORSE_RESTORED',
+        `Restored horse profile ${horse.name} (${horse.horseCode || horse.id}). Reason: ${reason}`,
+        horse.id,
+        {
+          entityName: 'Horse',
+          oldValues: { deletedAt: horse.deletedAt, deleteReason: horse.deleteReason },
+          newValues: { reason, undo: Boolean(dto.undo) },
+        },
+        tx,
+      );
+
+      return {
+        success: true,
+        data: restored,
+        message: `Đã khôi phục hồ sơ ngựa ${restored.name}.`,
+      };
+    });
+  }
+
+  /**
+   * Đổi trạng thái ngựa theo bảng §4.2 (luật nằm ở horse-rules.ts).
+   * Ngừng quản lý: trả ô chuồng; lý do Đã bán / Chuyển CLB thì kết thúc sở hữu;
+   * lý do Đã chết khi đang khóa thì tự kết thúc Khóa huấn luyện.
+   */
+  async changeStatus(id: string, dto: ChangeHorseStatusDto, user: CurrentUserPayload) {
+    const { updated, effects, oldStatus } = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "Horse" WHERE "id" = ${id} FOR UPDATE`;
+      const horse = await tx.horse.findUnique({ where: { id, deletedAt: null } });
+      if (!horse) {
+        throw apiError(HttpStatus.NOT_FOUND, 'HORSE_NOT_FOUND', 'Horse profile not found.');
+      }
+
+      assertStatusTransition({
+        role: user.role,
+        from: horse.status,
+        to: dto.status,
+        isMedicalLocked: horse.isMedicalLocked,
+        reason: dto.reason,
+        retireReason: dto.retireReason,
+        currentRetireReason: horse.retireReason,
+      });
+
+      const effects: string[] = [];
+      const data: Prisma.HorseUpdateInput = { status: dto.status };
+
+      if (dto.status === HorseStatus.RETIRED) {
+        data.retireReason = dto.retireReason;
+
+        const stalls = await this.releaseStalls(tx, id);
+        if (stalls.length > 0) effects.push(`Trả ô chuồng ${stalls.join(', ')}`);
+
+        // Chỉ lý do Đã chết mới qua được luật khi đang khóa.
+        if (horse.isMedicalLocked) {
+          await tx.medicalLock.updateMany({
+            where: { horseId: id, isLocked: true },
+            data: {
+              isLocked: false,
+              unlockedAt: new Date(),
+              unlockReason: 'Ngựa đã chết - tự kết thúc khi Ngừng quản lý',
+            },
+          });
+          data.isMedicalLocked = false;
+          effects.push('Kết thúc Khóa huấn luyện');
+        }
+
+        const ownershipEnds =
+          dto.retireReason === RetireReason.SOLD || dto.retireReason === RetireReason.TRANSFERRED;
+        if (ownershipEnds && horse.ownerId) {
+          data.owner = { disconnect: true };
+          effects.push('Kết thúc sở hữu của 1 chủ sở hữu');
+        }
+      } else if (horse.status === HorseStatus.RETIRED) {
+        // Kích hoạt lại: về Nghỉ ngơi, chưa có ô chuồng và nhân viên chăm sóc.
+        data.retireReason = null;
+      }
+
+      const updated = await tx.horse.update({ where: { id }, data });
+
+      await this.auditService.record(
+        { id: user.userId, name: user.fullName || user.email },
+        'HORSE_STATUS_CHANGED',
+        `Changed status of horse ${horse.name} from ${horse.status} to ${dto.status}. Reason: ${dto.reason || 'None specified'}`,
+        horse.id,
+        {
+          entityName: 'Horse',
+          oldValues: { oldStatus: horse.status, ownerId: horse.ownerId },
+          newValues: {
+            oldStatus: horse.status,
+            newStatus: dto.status,
+            reason: dto.reason ?? null,
+            retireReason: dto.retireReason ?? null,
+            effects,
+          },
+        },
+        tx,
+      );
+
+      return { updated, effects, oldStatus: horse.status };
+    });
 
     return {
       success: true,
       data: updated,
+      oldStatus,
+      effects,
       message: `Status successfully updated to ${dto.status}.`,
     };
   }
