@@ -17,9 +17,9 @@ import {
   InjuryStatus,
   PreventiveType,
   PreventiveStatus,
-  PlanStatus,
   WorkoutStatus,
 } from '@prisma/client';
+import { HEAVY_WORKOUT_WHERE } from '../training/training-rules';
 import { CreateMedicalRecordDto } from './dto/create-medical-record.dto';
 import { UpdateMedicalRecordDto } from './dto/update-medical-record.dto';
 import { MedicalRecordQueryDto } from './dto/medical-record-query.dto';
@@ -1128,18 +1128,13 @@ export class MedicalService {
         data: { isMedicalLocked: true, status: appliedStatus },
       });
 
-      // RULE-MED-01: tạm dừng giáo án đang áp dụng / đã duyệt của ngựa.
-      await tx.trainingPlan.updateMany({
-        where: { horseId: dto.horseId, status: { in: [PlanStatus.ACTIVE, PlanStatus.APPROVED] } },
-        data: { status: PlanStatus.SUSPENDED },
-      });
-
-      // RULE-MED-01: chặn các buổi tập đã lên lịch.
+      // RULE-MED-01 (Flow 2 §4.2, Q-2.01): giáo án giữ nguyên; chỉ buổi tập NẶNG đã lên lịch
+      // chuyển sang Bị chặn (HT khôi phục được sau khi gỡ khóa). Bài nhẹ / trung bình vẫn tập.
       await tx.workoutSession.updateMany({
-        where: { horseId: dto.horseId, status: WorkoutStatus.SCHEDULED },
+        where: { horseId: dto.horseId, status: WorkoutStatus.SCHEDULED, ...HEAVY_WORKOUT_WHERE },
         data: {
-          status: WorkoutStatus.CANCELLED_MEDICAL_LOCK,
-          trainerNotes: `Tự động hủy do Khóa huấn luyện thú y ${lockCode}: ${dto.lockReason}`,
+          status: WorkoutStatus.BLOCKED,
+          statusReason: `Khóa huấn luyện thú y ${lockCode}: ${dto.lockReason}`,
         },
       });
 

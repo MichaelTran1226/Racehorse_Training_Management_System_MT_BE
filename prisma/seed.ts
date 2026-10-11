@@ -358,7 +358,7 @@ async function main() {
       id: `w1-${horse1.id}`,
       trainingPlanId: plan1.id,
       horseId: horse1.id,
-      assignedStaffUserId: trainer.id,
+      assignedStaffUserId: groom.id,
       scheduledDate: new Date(now.getTime() - 14 * 86400000),
       distanceMeters: 1200,
       actualTimeSeconds: 72.0,
@@ -366,8 +366,8 @@ async function main() {
       heartRateRecovery: 108,
       performanceScore: 8.9,
       status: WorkoutStatus.COMPLETED,
-      workoutType: 'REGULAR',
-      intensity: 'MODERATE',
+      workoutType: 'CANTER',
+      intensity: 'MEDIUM',
       trackSurface: 'TURF',
       averageSpeedKmh: 60.0,
       topSpeedKmh: 64.2,
@@ -385,7 +385,7 @@ async function main() {
       id: `w2-${horse1.id}`,
       trainingPlanId: plan1.id,
       horseId: horse1.id,
-      assignedStaffUserId: trainer.id,
+      assignedStaffUserId: groom.id,
       scheduledDate: new Date(now.getTime() - 7 * 86400000),
       distanceMeters: 1600,
       actualTimeSeconds: 98.5,
@@ -393,7 +393,7 @@ async function main() {
       heartRateRecovery: 114,
       performanceScore: 8.6,
       status: WorkoutStatus.COMPLETED,
-      workoutType: 'TIME_TRIAL',
+      workoutType: 'TRIAL',
       intensity: 'HEAVY',
       trackSurface: 'DIRT',
       averageSpeedKmh: 58.5,
@@ -412,19 +412,19 @@ async function main() {
       id: `w3-${horse1.id}`,
       trainingPlanId: plan1.id,
       horseId: horse1.id,
-      assignedStaffUserId: trainer.id,
+      assignedStaffUserId: groom.id,
       scheduledDate: new Date(now.getTime() + 2 * 86400000),
       distanceMeters: 1400,
       targetDurationSeconds: 84,
       status: WorkoutStatus.SCHEDULED,
-      workoutType: 'REGULAR',
-      intensity: 'MODERATE',
+      workoutType: 'CANTER',
+      intensity: 'MEDIUM',
       trackSurface: 'TURF',
       trainerNotes: 'Targeting smooth splits and controlled deceleration.',
     },
   });
 
-  // Suspended plan and cancelled workout for Horse 2 (Medical Lock)
+  // Horse 2 đang Khóa y tế: giáo án giữ Đang áp dụng, chỉ còn bài nhẹ
   const plan2 = await prisma.trainingPlan.upsert({
     where: { id: `plan-${horse2.id}` },
     update: {},
@@ -438,7 +438,7 @@ async function main() {
       trackSurface: TrackSurface.TURF,
       startDate: new Date(now.getTime() - 5 * 86400000),
       endDate: new Date(now.getTime() + 25 * 86400000),
-      status: PlanStatus.SUSPENDED,
+      status: PlanStatus.ACTIVE,
       phases: [
         {
           order: 1,
@@ -459,14 +459,15 @@ async function main() {
       id: `w1-${horse2.id}`,
       trainingPlanId: plan2.id,
       horseId: horse2.id,
-      assignedStaffUserId: trainer.id,
+      assignedStaffUserId: groom.id,
       scheduledDate: new Date(now.getTime() + 1 * 86400000),
       distanceMeters: 800,
-      status: WorkoutStatus.CANCELLED_MEDICAL_LOCK,
-      workoutType: 'RECOVERY',
+      // Khóa y tế chỉ chặn bài nặng: đi bộ nhẹ phục hồi vẫn được xếp (Flow 2 Q-2.01).
+      status: WorkoutStatus.SCHEDULED,
+      workoutType: 'WALK',
       intensity: 'LIGHT',
-      trainerNotes:
-        'Tự động hủy do Khóa huấn luyện thú y: Khám lâm sàng phát hiện sưng gân chi trước',
+      trackSurface: 'TURF',
+      trainerNotes: 'Đi bộ phục hồi 20 phút, theo dõi chi trước.',
     },
   });
 
