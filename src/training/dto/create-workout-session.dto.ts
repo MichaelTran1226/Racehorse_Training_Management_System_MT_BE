@@ -1,5 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
   IsBoolean,
   IsIn,
   IsISO8601,
@@ -24,6 +27,11 @@ export class CreateWorkoutSessionDto {
   @IsNotEmpty({ message: 'Ngày tập là bắt buộc.' })
   @IsISO8601({}, { message: 'Ngày tập không hợp lệ.' })
   scheduledDate: string;
+
+  @ApiProperty({ description: 'Giai đoạn của giáo án (id trong TrainingPlan.phases)' })
+  @IsNotEmpty({ message: 'Vui lòng chọn giai đoạn.' })
+  @IsString()
+  phaseId: string;
 
   @ApiProperty({ enum: WORKOUT_TYPES, description: 'Loại bài tập' })
   @IsIn([...WORKOUT_TYPES], { message: 'Vui lòng chọn loại bài tập.' })
@@ -81,4 +89,30 @@ export class CreateWorkoutSessionDto {
   @IsOptional()
   @IsBoolean()
   vetConsulted?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Bấm Lưu lần 2 sau khi đã xem cảnh báo (vượt định mức, nặng < 48h, trùng giờ)',
+  })
+  @IsOptional()
+  @IsBoolean()
+  acknowledgeWarnings?: boolean;
+}
+
+/** DL-2.01 "Lặp lại hằng tuần": tạo nhiều buổi cùng giờ, tối đa 60 buổi mỗi lần. */
+export class RepeatWorkoutDto extends CreateWorkoutSessionDto {
+  @ApiProperty({
+    description: 'Các thứ trong tuần: 1 = Thứ Hai ... 7 = Chủ nhật',
+    example: [1, 3, 5],
+  })
+  @IsArray()
+  @ArrayMinSize(1, { message: 'Vui lòng chọn ít nhất 1 thứ trong tuần.' })
+  @ArrayMaxSize(7)
+  @IsInt({ each: true })
+  @Min(1, { each: true })
+  @Max(7, { each: true })
+  weekdays: number[];
+
+  @ApiProperty({ description: 'Lặp đến ngày (YYYY-MM-DD, ≤ ngày kết thúc giai đoạn)' })
+  @IsISO8601({}, { message: 'Ngày không hợp lệ.' })
+  until: string;
 }

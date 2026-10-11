@@ -20,7 +20,7 @@ import { TrainingService } from './training.service';
 import { CreateTrainingPlanDto } from './dto/create-training-plan.dto';
 import { UpdateTrainingPlanDto } from './dto/update-training-plan.dto';
 import { QueryTrainingPlanDto } from './dto/query-training-plan.dto';
-import { CreateWorkoutSessionDto } from './dto/create-workout-session.dto';
+import { CreateWorkoutSessionDto, RepeatWorkoutDto } from './dto/create-workout-session.dto';
 import { UpdateWorkoutSessionDto } from './dto/update-workout-session.dto';
 import { RecordWorkoutResultDto } from './dto/record-result.dto';
 import {
@@ -40,6 +40,13 @@ import {
 @Controller('training')
 export class TrainingController {
   constructor(private readonly trainingService: TrainingService) {}
+
+  @Get('overview')
+  @Roles(UserRole.CLUB_MANAGER, UserRole.HEAD_TRAINER, UserRole.VETERINARIAN)
+  @ApiOperation({ summary: 'SC-2.01 Tổng quan huấn luyện: 4 thẻ chỉ số + bảng ngựa' })
+  async getOverview() {
+    return this.trainingService.getOverview();
+  }
 
   // ------------------------------------------------------------ Giáo án
 
@@ -155,6 +162,18 @@ export class TrainingController {
     return this.trainingService.createWorkout(planId, dto, user);
   }
 
+  @Post('plans/:id/workouts/repeat')
+  @Roles(UserRole.HEAD_TRAINER)
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'DL-2.01 Lặp lại hằng tuần (tối đa 60 buổi, bỏ qua ngày bị chặn) - HT' })
+  async createRepeatWorkouts(
+    @Param('id') planId: string,
+    @Body() dto: RepeatWorkoutDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.trainingService.createRepeatWorkouts(planId, dto, user);
+  }
+
   @Get('workouts/:id')
   @ApiOperation({ summary: 'Chi tiết buổi tập (theo phạm vi vai trò)' })
   async findWorkoutById(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
@@ -234,7 +253,10 @@ export class TrainingController {
   async getFitnessMetrics(
     @Param('horseId') horseId: string,
     @CurrentUser() user: CurrentUserPayload,
+    @Query('weeks') weeks?: string,
   ) {
-    return this.trainingService.getFitnessMetrics(horseId, user);
+    // BTN-2.34: 4 / 12 / 26 tuần, mặc định 12.
+    const w = [4, 12, 26].includes(Number(weeks)) ? Number(weeks) : 12;
+    return this.trainingService.getFitnessMetrics(horseId, user, w);
   }
 }
