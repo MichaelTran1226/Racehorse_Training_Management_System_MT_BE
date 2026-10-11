@@ -63,6 +63,8 @@ describe('AuthService', () => {
 
   const mockJwtService = {
     signAsync: jest.fn().mockResolvedValue('mock-access-token-jwt'),
+    // Token giả sống 900 giây (exp - iat) => expiresIn = 900.
+    decode: jest.fn().mockReturnValue({ iat: 1000, exp: 1900 }),
   };
 
   const otpRecord = {
@@ -202,6 +204,7 @@ describe('AuthService', () => {
       tokenHash: 'hashed-token',
       userId: 'user-uuid-1',
       revoked: false,
+      rotatedAt: null as Date | null,
       expiresAt: new Date(Date.now() + 100000),
       user: mockUser,
     };
@@ -218,8 +221,12 @@ describe('AuthService', () => {
 
       expect(result.accessToken).toBe('mock-access-token-jwt');
       expect(result.refreshToken).toBeDefined();
+      expect(result.expiresIn).toBe(900);
       expect(mockPrismaService.refreshToken.update).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id: 'token-uuid-1' }, data: { revoked: true } }),
+        expect.objectContaining({
+          where: { id: 'token-uuid-1' },
+          data: { revoked: true, rotatedAt: expect.any(Date) },
+        }),
       );
       expect(mockPrismaService.refreshToken.create).toHaveBeenCalled();
     });
@@ -233,6 +240,42 @@ describe('AuthService', () => {
       await expect(service.refreshToken({ refreshToken: 'revoked-token' })).rejects.toThrow(
         UnauthorizedException,
       );
+      // Thu hồi do đăng xuất (rotatedAt = null) không phải dấu hiệu bị đánh cắp.
+      expect(mockPrismaService.refreshToken.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('should sign out every session when a rotated token is reused after the grace period', async () => {
+      mockPrismaService.refreshToken.findUnique.mockResolvedValue({
+        ...validStoredToken,
+        revoked: true,
+        rotatedAt: new Date(Date.now() - 60_000),
+      });
+
+      await expect(service.refreshToken({ refreshToken: 'stolen-token' })).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(mockPrismaService.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: { userId: 'user-uuid-1', revoked: false },
+        data: { revoked: true },
+      });
+      expect(mockAuditService.record).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'user-uuid-1' }),
+        'REFRESH_TOKEN_REUSED',
+        expect.any(String),
+      );
+    });
+
+    it('should not revoke every session when two tabs refresh within the grace period', async () => {
+      mockPrismaService.refreshToken.findUnique.mockResolvedValue({
+        ...validStoredToken,
+        revoked: true,
+        rotatedAt: new Date(Date.now() - 5_000),
+      });
+
+      await expect(service.refreshToken({ refreshToken: 'same-token' })).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(mockPrismaService.refreshToken.updateMany).not.toHaveBeenCalled();
     });
 
     it('should throw UnauthorizedException if refresh token is expired', async () => {
@@ -259,18 +302,34 @@ describe('AuthService', () => {
   });
 
   describe('logout', () => {
-    it('should revoke token and record audit log', async () => {
-      mockPrismaService.refreshToken.updateMany.mockResolvedValue({ count: 1 });
+    it('should revoke the token and log AUTH_LOGOUT for the token owner', async () => {
+      mockPrismaService.refreshToken.findUnique.mockResolvedValue({
+        id: 'token-uuid-1',
+        userId: 'user-uuid-1',
+        revoked: false,
+      });
 
-      const result = await service.logout('user-uuid-1', 'raw-token');
+      const result = await service.logout('raw-token', '127.0.0.1', 'Jest');
 
       expect(result.success).toBe(true);
-      expect(mockPrismaService.refreshToken.updateMany).toHaveBeenCalled();
+      expect(mockPrismaService.refreshToken.update).toHaveBeenCalledWith({
+        where: { id: 'token-uuid-1' },
+        data: { revoked: true },
+      });
       expect(mockPrismaService.auditLog.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({ userId: 'user-uuid-1', action: 'AUTH_LOGOUT' }),
         }),
       );
+    });
+
+    it('should still succeed without logging when the token is unknown', async () => {
+      mockPrismaService.refreshToken.findUnique.mockResolvedValue(null);
+
+      const result = await service.logout('unknown-token');
+
+      expect(result.success).toBe(true);
+      expect(mockPrismaService.auditLog.create).not.toHaveBeenCalled();
     });
   });
 
@@ -371,6 +430,29 @@ describe('AuthService', () => {
         .catch((e: HttpException) => e)) as HttpException;
       expect(error).toBeInstanceOf(ForbiddenException);
       expect(error.getResponse()).toEqual(expect.objectContaining({ code: 'ROLE_NOT_ALLOWED' }));
+    });
+
+    it('should let a declined Horse Owner apply again with a new request code', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        ...mockUser,
+        id: 'u-rejected',
+        role: Role.HORSE_OWNER,
+        status: UserStatus.REJECTED,
+        requestCode: 'REQ-2609-001',
+        statusReason: 'Wrong name',
+      });
+
+      await service.register(dto);
+
+      expect(mockPrismaService.user.update).toHaveBeenCalledWith({
+        where: { id: 'u-rejected' },
+        data: expect.objectContaining({
+          status: UserStatus.PENDING_EMAIL,
+          statusReason: null,
+          requestCode: expect.stringMatching(/^REQ-\d{4}-015$/),
+        }),
+      });
+      expect(mockOtpService.issue).toHaveBeenCalledWith('anh.nguyen@gmail.com', 'SIGNUP', true);
     });
 
     it('should reject an email that already has an account with EMAIL_TAKEN', async () => {

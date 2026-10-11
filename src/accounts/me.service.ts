@@ -69,9 +69,25 @@ export class MeService {
     const user = await this.current(userId);
     const currentPw = raw(dto.current);
     const next = raw(dto.next);
+    // Dùng chung bộ đếm sai mật khẩu với đăng nhập: sai 5 lần => khóa 15 phút.
+    await this.auth.assertNotLockedOut(user.email);
     if (!(await verifyPassword(currentPw, user.passwordHash))) {
-      throw apiError(HttpStatus.BAD_REQUEST, 'WRONG_PASSWORD', 'Current password is wrong');
+      const { attemptsLeft, lockedUntil } = await this.auth.recordFailedAttempt(user.email);
+      if (lockedUntil) {
+        await this.audit.record(
+          { id: user.id, name: user.fullName },
+          'LOGIN_LOCKED_OUT',
+          'Too many wrong current passwords while changing password',
+        );
+        throw apiError(HttpStatus.TOO_MANY_REQUESTS, 'ATTEMPTS_EXCEEDED', 'Too many attempts', {
+          retryAt: lockedUntil.toISOString(),
+        });
+      }
+      throw apiError(HttpStatus.BAD_REQUEST, 'WRONG_PASSWORD', 'Current password is wrong', {
+        attemptsLeft,
+      });
     }
+    await this.auth.clearFailedAttempts(user.email);
     if (next === currentPw)
       throw apiError(HttpStatus.BAD_REQUEST, 'SAME_PASSWORD', 'Same password');
     const weak = passwordError(next);

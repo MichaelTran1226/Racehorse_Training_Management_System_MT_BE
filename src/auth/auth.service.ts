@@ -32,13 +32,15 @@ const LOGIN_MAX_FAILS = 5;
 const LOGIN_LOCK = 15 * 60 * 1000;
 const REFRESH_TTL = 7 * 24 * 60 * 60 * 1000;
 const REMEMBER_TTL = 30 * 24 * 60 * 60 * 1000; // "Remember me": giữ đăng nhập 30 ngày
+// Refresh token đã đổi sang token mới mà bị dùng lại sau khoảng này => coi là bị đánh cắp.
+// 30 giây đầu bỏ qua: 2 tab trình duyệt có thể cùng làm mới một lúc.
+const REUSE_GRACE = 30 * 1000;
 
 // Trạng thái không được đăng nhập => [mã HTTP, code FE đọc].
 const BLOCKED: Partial<Record<UserStatus, [HttpStatus, string]>> = {
   LOCKED: [HttpStatus.LOCKED, 'ACCOUNT_LOCKED'],
   PENDING_APPROVAL: [HttpStatus.FORBIDDEN, 'ACCOUNT_PENDING'],
   PENDING_EMAIL: [HttpStatus.FORBIDDEN, 'EMAIL_NOT_VERIFIED'],
-  PENDING_INTAKE: [HttpStatus.FORBIDDEN, 'PENDING_INTAKE'],
   INVITED: [HttpStatus.FORBIDDEN, 'ACCOUNT_INVITED'],
   INACTIVE: [HttpStatus.FORBIDDEN, 'ACCOUNT_INACTIVE'],
   REJECTED: [HttpStatus.FORBIDDEN, 'ACCOUNT_REJECTED'],
@@ -92,8 +94,11 @@ export class AuthService {
     };
   }
 
-  /** Cấp cặp access token (15 phút) + refresh token (7 ngày, hoặc 30 ngày khi "Remember me"). */
-  async issueTokens(user: User, remember = false) {
+  /**
+   * Cấp cặp access token (hạn theo JWT_EXPIRES_IN, mặc định 15 phút) + refresh token
+   * (7 ngày, 30 ngày khi "Remember me", hoặc đúng `refreshExpiresAt` khi xoay vòng).
+   */
+  async issueTokens(user: User, remember = false, refreshExpiresAt?: Date) {
     const jwtPayload = {
       sub: user.id,
       email: user.email,
@@ -101,17 +106,25 @@ export class AuthService {
       fullName: user.fullName,
     };
     const accessToken = await this.jwtService.signAsync(jwtPayload);
+    // Số giây sống thật của access token, đọc từ chính token (không viết cứng 900).
+    const { iat, exp } = this.jwtService.decode<{ iat: number; exp: number }>(accessToken);
 
     const rawRefreshToken = crypto.randomBytes(32).toString('hex');
     await this.prisma.refreshToken.create({
       data: {
         tokenHash: this.hashToken(rawRefreshToken),
         userId: user.id,
-        expiresAt: new Date(Date.now() + (remember ? REMEMBER_TTL : REFRESH_TTL)),
+        expiresAt:
+          refreshExpiresAt ?? new Date(Date.now() + (remember ? REMEMBER_TTL : REFRESH_TTL)),
       },
     });
 
-    return { accessToken, refreshToken: rawRefreshToken, expiresIn: 900, tokenType: 'Bearer' };
+    return {
+      accessToken,
+      refreshToken: rawRefreshToken,
+      expiresIn: exp - iat,
+      tokenType: 'Bearer',
+    };
   }
 
   /** Đăng xuất mọi thiết bị: thu hồi mọi refresh token còn hiệu lực của tài khoản. */
@@ -120,6 +133,45 @@ export class AuthService {
       where: { userId, revoked: false },
       data: { revoked: true },
     });
+  }
+
+  /** Email đang bị khóa tạm (sai mật khẩu 5 lần) => 429 ATTEMPTS_EXCEEDED kèm thời điểm mở khóa. */
+  async assertNotLockedOut(email: string): Promise<void> {
+    const attempt = await this.prisma.loginAttempt.findUnique({ where: { email } });
+    if (attempt?.lockedUntil && attempt.lockedUntil.getTime() > Date.now()) {
+      throw apiError(HttpStatus.TOO_MANY_REQUESTS, 'ATTEMPTS_EXCEEDED', 'Too many attempts', {
+        retryAt: attempt.lockedUntil.toISOString(),
+      });
+    }
+  }
+
+  /**
+   * Ghi một lần nhập sai mật khẩu (đăng nhập hoặc đổi mật khẩu dùng chung bộ đếm theo email).
+   * Đủ 5 lần => khóa 15 phút và trả `lockedUntil`; chưa đủ => trả số lần còn lại.
+   * Hết khóa 15 phút thì đếm lại từ đầu.
+   */
+  async recordFailedAttempt(email: string): Promise<{ attemptsLeft: number; lockedUntil?: Date }> {
+    const attempt = await this.prisma.loginAttempt.findUnique({ where: { email } });
+    const fails = (attempt && !attempt.lockedUntil ? attempt.fails : 0) + 1;
+    if (fails >= LOGIN_MAX_FAILS) {
+      const lockedUntil = new Date(Date.now() + LOGIN_LOCK);
+      await this.prisma.loginAttempt.upsert({
+        where: { email },
+        create: { email, fails: 0, lockedUntil },
+        update: { fails: 0, lockedUntil },
+      });
+      return { attemptsLeft: 0, lockedUntil };
+    }
+    await this.prisma.loginAttempt.upsert({
+      where: { email },
+      create: { email, fails },
+      update: { fails, lockedUntil: null },
+    });
+    return { attemptsLeft: LOGIN_MAX_FAILS - fails };
+  }
+
+  async clearFailedAttempts(email: string): Promise<void> {
+    await this.prisma.loginAttempt.deleteMany({ where: { email } });
   }
 
   /**
@@ -132,31 +184,15 @@ export class AuthService {
     userAgent?: string,
   ): Promise<AuthResponseDto> {
     const normalizedEmail = normEmail(loginDto.email);
-    const now = Date.now();
-
-    const attempt = await this.prisma.loginAttempt.findUnique({
-      where: { email: normalizedEmail },
-    });
-    if (attempt?.lockedUntil && attempt.lockedUntil.getTime() > now) {
-      throw apiError(HttpStatus.TOO_MANY_REQUESTS, 'ATTEMPTS_EXCEEDED', 'Too many attempts', {
-        retryAt: attempt.lockedUntil.toISOString(),
-      });
-    }
+    await this.assertNotLockedOut(normalizedEmail);
 
     const found = await this.prisma.user.findUnique({
       where: { email: normalizedEmail },
     });
 
     if (!(await verifyPassword(loginDto.password, found?.passwordHash))) {
-      // Hết khóa 15 phút thì đếm lại từ đầu.
-      const fails = (attempt && !attempt.lockedUntil ? attempt.fails : 0) + 1;
-      if (fails >= LOGIN_MAX_FAILS) {
-        const lockedUntil = new Date(now + LOGIN_LOCK);
-        await this.prisma.loginAttempt.upsert({
-          where: { email: normalizedEmail },
-          create: { email: normalizedEmail, fails: 0, lockedUntil },
-          update: { fails: 0, lockedUntil },
-        });
+      const { attemptsLeft, lockedUntil } = await this.recordFailedAttempt(normalizedEmail);
+      if (lockedUntil) {
         await this.audit.record(
           { id: found?.id, name: normalizedEmail || 'anonymous' },
           'LOGIN_LOCKED_OUT',
@@ -166,23 +202,18 @@ export class AuthService {
           retryAt: lockedUntil.toISOString(),
         });
       }
-      await this.prisma.loginAttempt.upsert({
-        where: { email: normalizedEmail },
-        create: { email: normalizedEmail, fails },
-        update: { fails, lockedUntil: null },
-      });
       await this.audit.record(
         { id: found?.id, name: normalizedEmail || 'anonymous' },
         'LOGIN_FAILED',
         'Wrong email or password',
       );
       throw apiError(HttpStatus.UNAUTHORIZED, 'INVALID_CREDENTIALS', 'Invalid email or password', {
-        attemptsLeft: LOGIN_MAX_FAILS - fails,
+        attemptsLeft,
       });
     }
     // Đến đây mật khẩu đúng nên chắc chắn có tài khoản.
     const user = found as User;
-    await this.prisma.loginAttempt.deleteMany({ where: { email: normalizedEmail } });
+    await this.clearFailedAttempts(normalizedEmail);
 
     // Lifecycle status checks
     const block = BLOCKED[user.status];
@@ -237,7 +268,28 @@ export class AuthService {
       include: { user: true },
     });
 
-    if (!storedToken || storedToken.revoked || storedToken.expiresAt < new Date()) {
+    if (!storedToken) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
+    if (storedToken.revoked) {
+      // Token đã được đổi sang token mới mà vẫn bị dùng lại => có thể đã bị đánh cắp:
+      // thu hồi mọi phiên của tài khoản. Token bị thu hồi do đăng xuất (rotatedAt = null) không tính.
+      const reused =
+        storedToken.rotatedAt !== null &&
+        Date.now() - storedToken.rotatedAt.getTime() > REUSE_GRACE;
+      if (reused) {
+        await this.revokeAllTokens(storedToken.userId);
+        await this.audit.record(
+          { id: storedToken.userId, name: storedToken.user.fullName },
+          'REFRESH_TOKEN_REUSED',
+          'A rotated refresh token was used again; every session was signed out',
+        );
+      }
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
+    if (storedToken.expiresAt < new Date()) {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
@@ -245,69 +297,46 @@ export class AuthService {
       throw new ForbiddenException('User account is not active');
     }
 
-    // Token rotation: Revoke current refresh token
+    // Xoay vòng: thu hồi token hiện tại và đánh dấu "đã đổi sang token mới".
     await this.prisma.refreshToken.update({
       where: { id: storedToken.id },
-      data: { revoked: true },
+      data: { revoked: true, rotatedAt: new Date() },
     });
 
-    // Generate new Access and Refresh tokens
-    const jwtPayload = {
-      sub: storedToken.user.id,
-      email: storedToken.user.email,
-      role: storedToken.user.role,
-      fullName: storedToken.user.fullName,
-    };
-    const newAccessToken = await this.jwtService.signAsync(jwtPayload);
-
-    const newRawRefreshToken = crypto.randomBytes(32).toString('hex');
-    const newTokenHash = this.hashToken(newRawRefreshToken);
     // Giữ nguyên hạn dài của token "Remember me" khi xoay vòng.
     const newExpiresAt = new Date(
       Math.max(Date.now() + REFRESH_TTL, storedToken.expiresAt.getTime()),
     );
-
-    await this.prisma.refreshToken.create({
-      data: {
-        tokenHash: newTokenHash,
-        userId: storedToken.user.id,
-        expiresAt: newExpiresAt,
-      },
-    });
-
-    return {
-      accessToken: newAccessToken,
-      refreshToken: newRawRefreshToken,
-      expiresIn: 900,
-      tokenType: 'Bearer',
-    };
+    return this.issueTokens(storedToken.user, false, newExpiresAt);
   }
 
   /**
-   * Logs out user and revokes refresh token
+   * Đăng xuất: thu hồi refresh token gửi kèm và ghi nhật ký AUTH_LOGOUT.
+   * API này công khai (@Public) nên người đăng xuất được xác định qua chính refresh token.
    */
   async logout(
-    userId?: string,
     refreshToken?: string,
     ipAddress?: string,
     userAgent?: string,
   ): Promise<{ success: boolean; message: string }> {
-    if (refreshToken) {
-      const tokenHash = this.hashToken(refreshToken);
-      await this.prisma.refreshToken.updateMany({
-        where: { tokenHash, revoked: false },
+    const stored = refreshToken
+      ? await this.prisma.refreshToken.findUnique({
+          where: { tokenHash: this.hashToken(refreshToken) },
+        })
+      : null;
+
+    if (stored && !stored.revoked) {
+      await this.prisma.refreshToken.update({
+        where: { id: stored.id },
         data: { revoked: true },
       });
-    }
-
-    if (userId) {
       try {
         await this.prisma.auditLog.create({
           data: {
-            userId,
+            userId: stored.userId,
             action: 'AUTH_LOGOUT',
             entityName: 'User',
-            entityId: userId,
+            entityId: stored.userId,
             ipAddress: ipAddress || null,
             userAgent: userAgent || null,
           },
@@ -344,7 +373,10 @@ export class AuthService {
     return `REQ-${yymm()}-${String(await this.counter.next('request_code')).padStart(3, '0')}`;
   }
 
-  /** Chỉ Horse Owner tự đăng ký; đăng ký dở (PENDING_EMAIL) thì cho đăng ký lại. */
+  /**
+   * Chỉ Horse Owner tự đăng ký. Cho đăng ký lại cùng email khi: đăng ký dở (PENDING_EMAIL, giữ mã
+   * yêu cầu cũ) hoặc đã bị Club Manager từ chối (REJECTED, cấp mã yêu cầu mới).
+   */
   async register(dto: RegisterDto) {
     const email = normEmail(dto.email);
     const fullName = str(dto.fullName);
@@ -361,7 +393,9 @@ export class AuthService {
     }
 
     const existing = await this.prisma.user.findUnique({ where: { email } });
-    if (existing && existing.status !== UserStatus.PENDING_EMAIL) {
+    const canReapply =
+      existing?.status === UserStatus.PENDING_EMAIL || existing?.status === UserStatus.REJECTED;
+    if (existing && !canReapply) {
       throw apiError(HttpStatus.CONFLICT, 'EMAIL_TAKEN', 'Email taken');
     }
 
@@ -372,7 +406,14 @@ export class AuthService {
           data: {
             fullName,
             passwordHash,
-            requestCode: existing.requestCode ?? (await this.newRequestCode()),
+            status: UserStatus.PENDING_EMAIL,
+            statusReason: null,
+            requestedAt: null,
+            // Yêu cầu bị từ chối là yêu cầu cũ đã đóng => yêu cầu mới có mã mới.
+            requestCode:
+              existing.status === UserStatus.REJECTED || !existing.requestCode
+                ? await this.newRequestCode()
+                : existing.requestCode,
           },
         })
       : await this.prisma.user.create({

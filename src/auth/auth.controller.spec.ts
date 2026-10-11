@@ -96,12 +96,7 @@ describe('AuthController', () => {
       const result = await controller.logout({ refreshToken: 'some-token' }, req);
 
       expect(result.success).toBe(true);
-      expect(service.logout).toHaveBeenCalledWith(
-        'user-uuid-1',
-        'some-token',
-        '127.0.0.1',
-        'Jest-Agent',
-      );
+      expect(service.logout).toHaveBeenCalledWith('some-token', '127.0.0.1', 'Jest-Agent');
     });
   });
 
