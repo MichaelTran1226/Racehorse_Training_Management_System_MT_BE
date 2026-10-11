@@ -29,7 +29,6 @@ enum Role {
 enum UserStatus {
   PENDING_EMAIL
   PENDING_APPROVAL
-  PENDING_INTAKE
   INVITED
   ACTIVE
   INACTIVE
@@ -47,13 +46,6 @@ enum PermissionRequestStatus {
   OPEN
   GRANTED
   DISMISSED
-}
-
-enum InviteStatus {
-  PENDING
-  ACCEPTED
-  EXPIRED
-  REVOKED
 }
 
 enum HorseStatus {
@@ -179,9 +171,6 @@ model User {
   phoneNumber          String?
   role                 Role
   status               UserStatus @default(PENDING_EMAIL)
-  verificationCode     String?
-  verificationExpiry   DateTime?
-  verificationAttempts Int        @default(0)
   createdAt            DateTime   @default(now())
   updatedAt            DateTime   @updatedAt
   lastActive           DateTime?
@@ -213,7 +202,6 @@ model User {
   invoicesBilled        FinancialInvoice[]      @relation("OwnerInvoices")
   auditLogs             AuditLog[]              @relation("UserAuditLogs")
   refreshTokens         RefreshToken[]
-  invitationsSent       StaffInvitation[]       @relation("InvitedByUser")
   permissionRequests    PermissionRequest[]
 
   @@index([email])
@@ -278,26 +266,13 @@ model RefreshToken {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   revoked   Boolean  @default(false)
+  // Thời điểm token được đổi sang token mới (xoay vòng). NULL = chưa đổi, hoặc bị thu hồi vì
+  // đăng xuất / đổi mật khẩu. Dùng để phát hiện token đã đổi mà bị dùng lại (có thể bị đánh cắp).
+  rotatedAt DateTime?
   expiresAt DateTime
   createdAt DateTime @default(now())
 
   @@index([userId])
-}
-
-model StaffInvitation {
-  id          String       @id @default(uuid())
-  email       String
-  role        Role
-  inviteToken String       @unique
-  invitedById String
-  invitedBy   User         @relation("InvitedByUser", fields: [invitedById], references: [id], onDelete: Restrict)
-  status      InviteStatus @default(PENDING)
-  expiresAt   DateTime
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-
-  @@index([email])
-  @@index([inviteToken])
 }
 
 model Horse {

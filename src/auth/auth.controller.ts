@@ -168,11 +168,9 @@ export class AuthController {
     @Body() logoutDto: LogoutDto,
     @Req() req: Request,
   ): Promise<{ success: boolean; message: string }> {
-    const user = (req as any).user;
-    const userId = user?.userId || user?.id;
     const ipAddress = req.ip || (req.headers['x-forwarded-for'] as string);
     const userAgent = req.headers['user-agent'];
-    return this.authService.logout(userId, logoutDto.refreshToken, ipAddress, userAgent);
+    return this.authService.logout(logoutDto.refreshToken, ipAddress, userAgent);
   }
 
   @Get('me')

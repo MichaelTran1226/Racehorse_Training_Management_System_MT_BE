@@ -6,6 +6,7 @@ import { Role, UserStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { apiError } from '../../common/exceptions/api-error';
 import { permissionsOf } from '../../users/public-user';
+import { requireJwtSecret } from '../jwt-secret';
 
 export interface JwtPayload {
   sub: string;
@@ -22,9 +23,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     configService: ConfigService,
     private readonly prisma: PrismaService,
   ) {
-    const jwtSecret =
-      configService.get<string>('JWT_SECRET') ||
-      'equiflow-secure-jwt-secret-replace-in-production-2026';
+    const jwtSecret = requireJwtSecret(configService);
 
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),

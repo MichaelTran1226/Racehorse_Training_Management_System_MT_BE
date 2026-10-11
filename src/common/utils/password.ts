@@ -13,10 +13,13 @@ export function scorePassword(pw: string): number {
 }
 
 // Trả về câu lỗi, hoặc "" nếu hợp lệ.
+// Luật: ≥ 8 ký tự, có ít nhất 1 chữ in hoa, 1 chữ số và 1 ký tự đặc biệt.
 export function passwordError(pw: string): string {
   if (!pw) return 'New password is required.';
   if (pw.length < 8) return 'Password must be at least 8 characters.';
-  if (scorePassword(pw) < 2) return 'Add an uppercase letter, a digit or a symbol.';
+  if (!/[A-Z]/.test(pw)) return 'Add at least one uppercase letter.';
+  if (!/[0-9]/.test(pw)) return 'Add at least one digit.';
+  if (!/[^A-Za-z0-9]/.test(pw)) return 'Add at least one special character.';
   return '';
 }
 
