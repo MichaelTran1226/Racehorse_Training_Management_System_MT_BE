@@ -3,9 +3,11 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  HttpStatus,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { apiError } from '../common/exceptions/api-error';
 import { CurrentUserPayload } from '../common/decorators/current-user.decorator';
 import {
   Role,
@@ -57,6 +59,13 @@ export class MedicalService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
   ) {}
+
+  /** Chỉ Bác sĩ thú y được ghi dữ liệu y tế (đã chốt: Club Manager chỉ xem). */
+  private assertVet(actor: CurrentUserPayload, action: string): void {
+    if (actor.role !== Role.VETERINARIAN) {
+      throw apiError(HttpStatus.FORBIDDEN, 'VET_ONLY', `Only a Veterinarian can ${action}.`);
+    }
+  }
 
   /**
    * Helper: verify horse access permissions based on role
@@ -185,9 +194,7 @@ export class MedicalService {
   }
 
   async createInjury(actor: CurrentUserPayload, dto: CreateInjuryDto) {
-    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
-      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền thực hiện');
-    }
+    this.assertVet(actor, 'log injuries');
 
     const horse = await this.prisma.horse.findUnique({
       where: { id: dto.horseId },
@@ -252,6 +259,7 @@ export class MedicalService {
       'CREATE_INJURY_LOG',
       `Injury logged for horse ${dto.horseId} at zone ${dto.anatomicalZone}`,
       injury.id,
+      { entityName: 'InjuryLog' },
     );
 
     const isLocked = horse.medicalLocks.length > 0 || horse.isMedicalLocked;
@@ -290,9 +298,7 @@ export class MedicalService {
   }
 
   async updateInjury(id: string, actor: CurrentUserPayload, dto: UpdateInjuryDto) {
-    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
-      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền chỉnh sửa điểm chấn thương');
-    }
+    this.assertVet(actor, 'edit injury points');
 
     const injury = await this.prisma.injuryLog.findUnique({ where: { id } });
     if (!injury) {
@@ -341,15 +347,14 @@ export class MedicalService {
       'UPDATE_INJURY_LOG',
       `Injury point ${id} updated`,
       id,
+      { entityName: 'InjuryLog' },
     );
 
     return updated;
   }
 
   async deleteInjury(id: string, actor: CurrentUserPayload) {
-    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
-      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền xóa điểm chấn thương');
-    }
+    this.assertVet(actor, 'delete injury points');
 
     const injury = await this.prisma.injuryLog.findUnique({ where: { id } });
     if (!injury) {
@@ -386,6 +391,7 @@ export class MedicalService {
       'DELETE_INJURY_LOG',
       `Injury point ${id} deleted`,
       id,
+      { entityName: 'InjuryLog' },
     );
 
     return { message: 'Đã xóa điểm chấn thương thành công' };
@@ -396,9 +402,7 @@ export class MedicalService {
     actor: CurrentUserPayload,
     dto: UpdateRecoveryProgressDto,
   ) {
-    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
-      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền cập nhật tiến trình hồi phục');
-    }
+    this.assertVet(actor, 'update recovery progress');
 
     const injury = await this.prisma.injuryLog.findUnique({ where: { id } });
     if (!injury) {
@@ -456,6 +460,7 @@ export class MedicalService {
       'UPDATE_INJURY_RECOVERY_PROGRESS',
       `Injury ${id} recovery updated to ${dto.stage}`,
       id,
+      { entityName: 'InjuryLog' },
     );
 
     return updated;
@@ -466,9 +471,7 @@ export class MedicalService {
   // ---------------------------------------------------------------------------
 
   async createMedicalRecord(actor: CurrentUserPayload, dto: CreateMedicalRecordDto) {
-    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
-      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền tạo bệnh án');
-    }
+    this.assertVet(actor, 'create medical records');
 
     const horse = await this.prisma.horse.findUnique({
       where: { id: dto.horseId },
@@ -520,6 +523,7 @@ export class MedicalService {
       isDraft ? 'CREATE_MEDICAL_RECORD_DRAFT' : 'CREATE_MEDICAL_RECORD',
       `Medical record created for horse ${dto.horseId}`,
       record.id,
+      { entityName: 'MedicalRecord' },
     );
 
     return record;
@@ -649,9 +653,7 @@ export class MedicalService {
   }
 
   async updateMedicalRecord(id: string, actor: CurrentUserPayload, dto: UpdateMedicalRecordDto) {
-    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
-      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền chỉnh sửa bệnh án');
-    }
+    this.assertVet(actor, 'edit medical records');
 
     const record = await this.prisma.medicalRecord.findUnique({
       where: { id },
@@ -685,15 +687,14 @@ export class MedicalService {
       'UPDATE_MEDICAL_RECORD',
       `Medical record ${id} updated`,
       id,
+      { entityName: 'MedicalRecord' },
     );
 
     return updated;
   }
 
   async deleteMedicalRecord(id: string, actor: CurrentUserPayload) {
-    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
-      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền xóa bệnh án');
-    }
+    this.assertVet(actor, 'delete medical records');
 
     const record = await this.prisma.medicalRecord.findUnique({
       where: { id },
@@ -709,15 +710,14 @@ export class MedicalService {
       'DELETE_MEDICAL_RECORD',
       `Medical record ${id} deleted`,
       id,
+      { entityName: 'MedicalRecord' },
     );
 
     return { message: 'Đã xóa bệnh án thành công' };
   }
 
   async finalizeMedicalRecord(recordId: string, actor: CurrentUserPayload, dto: FinalizeRecordDto) {
-    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
-      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền chốt bệnh án');
-    }
+    this.assertVet(actor, 'finalize medical records');
 
     const record = await this.prisma.medicalRecord.findUnique({
       where: { id: recordId },
@@ -762,15 +762,14 @@ export class MedicalService {
       'FINALIZE_MEDICAL_RECORD',
       `Medical record ${recordId} finalized`,
       recordId,
+      { entityName: 'MedicalRecord' },
     );
 
     return { record: updated };
   }
 
   async closeMedicalRecord(id: string, actor: CurrentUserPayload, dto: CloseMedicalRecordDto) {
-    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
-      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền kết thúc bệnh án');
-    }
+    this.assertVet(actor, 'close medical records');
 
     const record = await this.prisma.medicalRecord.findUnique({ where: { id } });
     if (!record) {
@@ -790,15 +789,14 @@ export class MedicalService {
       'CLOSE_MEDICAL_RECORD',
       `Medical record ${id} closed with conclusion: ${dto.conclusion}`,
       id,
+      { entityName: 'MedicalRecord' },
     );
 
     return updated;
   }
 
   async reopenMedicalRecord(id: string, actor: CurrentUserPayload, dto: ReopenMedicalRecordDto) {
-    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
-      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền mở lại bệnh án');
-    }
+    this.assertVet(actor, 'reopen medical records');
 
     const record = await this.prisma.medicalRecord.findUnique({ where: { id } });
     if (!record) {
@@ -817,6 +815,7 @@ export class MedicalService {
       'REOPEN_MEDICAL_RECORD',
       `Medical record ${id} reopened with reason: ${dto.reason}`,
       id,
+      { entityName: 'MedicalRecord' },
     );
 
     return updated;
@@ -831,9 +830,7 @@ export class MedicalService {
     actor: CurrentUserPayload,
     dto: CreateTreatmentPhaseDto,
   ) {
-    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
-      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền thêm phác đồ');
-    }
+    this.assertVet(actor, 'add treatment phases');
 
     const record = await this.prisma.medicalRecord.findUnique({ where: { id: recordId } });
     if (!record) throw new NotFoundException('Không tìm thấy bệnh án');
@@ -869,9 +866,7 @@ export class MedicalService {
     actor: CurrentUserPayload,
     dto: UpdateTreatmentPhaseDto,
   ) {
-    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
-      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền cập nhật phác đồ');
-    }
+    this.assertVet(actor, 'update treatment phases');
 
     const record = await this.prisma.medicalRecord.findUnique({ where: { id: recordId } });
     if (!record) throw new NotFoundException('Không tìm thấy bệnh án');
@@ -891,6 +886,7 @@ export class MedicalService {
       'UPDATE_TREATMENT_PHASE',
       `Updated treatment phase ${phaseId} for medical record ${recordId}`,
       recordId,
+      { entityName: 'MedicalRecord' },
     );
 
     return { message: 'Đã cập nhật phác đồ điều trị thành công', dto, record: updated };
@@ -901,9 +897,7 @@ export class MedicalService {
   // ---------------------------------------------------------------------------
 
   async addPrescription(recordId: string, actor: CurrentUserPayload, dto: CreatePrescriptionDto) {
-    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
-      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền kê đơn thuốc');
-    }
+    this.assertVet(actor, 'prescribe medication');
 
     const record = await this.prisma.medicalRecord.findUnique({ where: { id: recordId } });
     if (!record) throw new NotFoundException('Không tìm thấy bệnh án');
@@ -955,9 +949,7 @@ export class MedicalService {
     actor: CurrentUserPayload,
     dto: UpdatePrescriptionDto,
   ) {
-    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
-      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền sửa đơn thuốc');
-    }
+    this.assertVet(actor, 'edit prescriptions');
 
     const record = await this.prisma.medicalRecord.findUnique({ where: { id: recordId } });
     if (!record) throw new NotFoundException('Không tìm thấy bệnh án');
@@ -992,9 +984,7 @@ export class MedicalService {
     actor: CurrentUserPayload,
     dto: StopPrescriptionDto,
   ) {
-    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
-      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền dừng thuốc');
-    }
+    this.assertVet(actor, 'stop medication');
 
     const record = await this.prisma.medicalRecord.findUnique({ where: { id: recordId } });
     if (!record) throw new NotFoundException('Không tìm thấy bệnh án');
@@ -1030,9 +1020,7 @@ export class MedicalService {
   // ---------------------------------------------------------------------------
 
   async addFollowUp(recordId: string, actor: CurrentUserPayload, dto: CreateFollowUpDto) {
-    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
-      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền ghi nhận tái khám');
-    }
+    this.assertVet(actor, 'record follow-up visits');
 
     const record = await this.prisma.medicalRecord.findUnique({ where: { id: recordId } });
     if (!record) throw new NotFoundException('Không tìm thấy bệnh án');
@@ -1067,28 +1055,13 @@ export class MedicalService {
   // MEDICAL LOCKS (KHÓA HUẤN LUYỆN - TASK P2-04)
   // ---------------------------------------------------------------------------
 
+  /**
+   * Đặt Khóa huấn luyện. Mọi lệnh ghi (khóa, trạng thái ngựa, giáo án, buổi tập, nhật ký) nằm trong
+   * MỘT transaction: lỗi giữa chừng thì không ghi gì. Dòng Horse bị khóa (FOR UPDATE) trước khi kiểm
+   * "đã có khóa chưa", nên 2 bác sĩ bấm cùng lúc thì người sau phải chờ và thấy khóa của người trước.
+   */
   async createMedicalLock(actor: CurrentUserPayload, dto: CreateMedicalLockDto) {
-    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
-      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền đặt Khóa huấn luyện');
-    }
-
-    const horse = await this.prisma.horse.findUnique({
-      where: { id: dto.horseId },
-      include: {
-        medicalLocks: { where: { isLocked: true } },
-        stallAllocations: { where: { isActive: true }, include: { stall: true } },
-      },
-    });
-    if (!horse) throw new NotFoundException('Không tìm thấy chiến mã');
-
-    const existingLock =
-      horse.medicalLocks[0] ||
-      (await this.prisma.medicalLock.findFirst({
-        where: { horseId: dto.horseId, isLocked: true },
-      }));
-    if (existingLock) {
-      throw new BadRequestException('Chiến mã này đã có Khóa huấn luyện đang hiệu lực');
-    }
+    this.assertVet(actor, 'place a training lock');
 
     const appliedStatus = dto.appliedMedicalStatus || dto.medicalStatus || HorseStatus.INJURED;
 
@@ -1114,69 +1087,73 @@ export class MedicalService {
       (recheckDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000),
     );
 
-    const lockCount = await this.prisma.medicalLock.count();
-    const lockCode = `KH-${String(lockCount + 1).padStart(6, '0')}`;
+    const { lock, horse } = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "Horse" WHERE "id" = ${dto.horseId} FOR UPDATE`;
+      const horse = await tx.horse.findUnique({ where: { id: dto.horseId } });
+      if (!horse) throw new NotFoundException('Không tìm thấy chiến mã');
 
-    const lock = await this.prisma.medicalLock.create({
-      data: {
-        lockCode,
-        horseId: dto.horseId,
-        medicalRecordId: dto.medicalRecordId || null,
-        veterinarianUserId: actor.userId,
-        expectedRestDays: restDaysCalculated,
-        recheckDate,
-        appliedMedicalStatus: appliedStatus,
-        lockReason: dto.lockReason,
-        unlockConditions:
-          dto.unlockConditions || 'Hết triệu chứng chấn thương và được Bác sĩ thú y khám lại',
-        isLocked: true,
-      },
-      include: {
-        horse: { select: { id: true, name: true, microchipRfid: true } },
-        veterinarian: { select: { id: true, fullName: true, email: true } },
-        medicalRecord: { select: { id: true, examinationDate: true, clinicalDiagnosis: true } },
-      },
+      const existingLock = await tx.medicalLock.findFirst({
+        where: { horseId: dto.horseId, isLocked: true },
+      });
+      if (existingLock) {
+        throw new BadRequestException('Chiến mã này đã có Khóa huấn luyện đang hiệu lực');
+      }
+
+      const lockCount = await tx.medicalLock.count();
+      const lockCode = `KH-${String(lockCount + 1).padStart(6, '0')}`;
+
+      const lock = await tx.medicalLock.create({
+        data: {
+          lockCode,
+          horseId: dto.horseId,
+          medicalRecordId: dto.medicalRecordId || null,
+          veterinarianUserId: actor.userId,
+          expectedRestDays: restDaysCalculated,
+          recheckDate,
+          appliedMedicalStatus: appliedStatus,
+          lockReason: dto.lockReason,
+          unlockConditions:
+            dto.unlockConditions || 'Hết triệu chứng chấn thương và được Bác sĩ thú y khám lại',
+          isLocked: true,
+        },
+        include: {
+          horse: { select: { id: true, name: true, microchipRfid: true } },
+          veterinarian: { select: { id: true, fullName: true, email: true } },
+          medicalRecord: { select: { id: true, examinationDate: true, clinicalDiagnosis: true } },
+        },
+      });
+
+      await tx.horse.update({
+        where: { id: dto.horseId },
+        data: { isMedicalLocked: true, status: appliedStatus },
+      });
+
+      // RULE-MED-01: tạm dừng giáo án đang áp dụng / đã duyệt của ngựa.
+      await tx.trainingPlan.updateMany({
+        where: { horseId: dto.horseId, status: { in: [PlanStatus.ACTIVE, PlanStatus.APPROVED] } },
+        data: { status: PlanStatus.SUSPENDED },
+      });
+
+      // RULE-MED-01: chặn các buổi tập đã lên lịch.
+      await tx.workoutSession.updateMany({
+        where: { horseId: dto.horseId, status: WorkoutStatus.SCHEDULED },
+        data: {
+          status: WorkoutStatus.CANCELLED_MEDICAL_LOCK,
+          trainerNotes: `Tự động hủy do Khóa huấn luyện thú y ${lockCode}: ${dto.lockReason}`,
+        },
+      });
+
+      await this.audit.record(
+        { id: actor.userId, name: actor.fullName },
+        'CREATE_MEDICAL_LOCK',
+        `Medical lock ${lockCode} created for horse ${dto.horseId}`,
+        lock.id,
+        { entityName: 'MedicalLock' },
+        tx,
+      );
+
+      return { lock, horse };
     });
-
-    // Update horse medical lock status & health status
-    await this.prisma.horse.update({
-      where: { id: dto.horseId },
-      data: {
-        isMedicalLocked: true,
-        status: appliedStatus,
-      },
-    });
-
-    // Cascading RULE-MED-01 enforcement:
-    // 1. Suspend active/approved training plans for this horse
-    await this.prisma.trainingPlan.updateMany({
-      where: {
-        horseId: dto.horseId,
-        status: { in: [PlanStatus.ACTIVE, PlanStatus.APPROVED] },
-      },
-      data: {
-        status: PlanStatus.SUSPENDED,
-      },
-    });
-
-    // 2. Automatically cancel scheduled workouts with CANCELLED_MEDICAL_LOCK
-    await this.prisma.workoutSession.updateMany({
-      where: {
-        horseId: dto.horseId,
-        status: WorkoutStatus.SCHEDULED,
-      },
-      data: {
-        status: WorkoutStatus.CANCELLED_MEDICAL_LOCK,
-        trainerNotes: `Tự động hủy do Khóa huấn luyện thú y ${lockCode}: ${dto.lockReason}`,
-      },
-    });
-
-    await this.audit.record(
-      { id: actor.userId, name: actor.fullName },
-      'CREATE_MEDICAL_LOCK',
-      `Medical lock ${lockCode} created for horse ${dto.horseId}`,
-      lock.id,
-    );
 
     const impactAssessment = {
       horseId: horse.id,
@@ -1200,57 +1177,54 @@ export class MedicalService {
     };
   }
 
+  /** Gỡ khóa: cập nhật khóa + trạng thái ngựa + nhật ký trong một transaction (khóa dòng MedicalLock). */
   async releaseMedicalLock(lockId: string, actor: CurrentUserPayload, dto: ReleaseMedicalLockDto) {
-    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
-      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền gỡ Khóa huấn luyện');
-    }
-
-    const lock = await this.prisma.medicalLock.findUnique({
-      where: { id: lockId },
-      include: {
-        horse: {
-          include: {
-            injuryLogs: { where: { stage: 'ACUTE' } },
-          },
-        },
-      },
-    });
-    if (!lock || !lock.isLocked) {
-      throw new BadRequestException('Không tìm thấy Khóa huấn luyện hoặc khóa đã được gỡ');
-    }
+    this.assertVet(actor, 'lift a training lock');
 
     const newHorseStatus = dto.newHorseStatus || HorseStatus.RESTING;
 
-    const unlocked = await this.prisma.medicalLock.update({
-      where: { id: lockId },
-      data: {
-        isLocked: false,
-        unlockedAt: new Date(),
-        unlockVetUserId: actor.userId,
-        unlockReason: dto.unlockReason,
-        recheckNotes: dto.unlockReason,
-      },
-      include: {
-        horse: { select: { id: true, name: true, microchipRfid: true } },
-        veterinarian: { select: { id: true, fullName: true } },
-        unlockVet: { select: { id: true, fullName: true } },
-      },
-    });
+    const { lock, unlocked } = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "MedicalLock" WHERE "id" = ${lockId} FOR UPDATE`;
+      const lock = await tx.medicalLock.findUnique({
+        where: { id: lockId },
+        include: { horse: { include: { injuryLogs: { where: { stage: 'ACUTE' } } } } },
+      });
+      if (!lock || !lock.isLocked) {
+        throw new BadRequestException('Không tìm thấy Khóa huấn luyện hoặc khóa đã được gỡ');
+      }
 
-    await this.prisma.horse.update({
-      where: { id: lock.horseId },
-      data: {
-        isMedicalLocked: false,
-        status: newHorseStatus,
-      },
-    });
+      const unlocked = await tx.medicalLock.update({
+        where: { id: lockId },
+        data: {
+          isLocked: false,
+          unlockedAt: new Date(),
+          unlockVetUserId: actor.userId,
+          unlockReason: dto.unlockReason,
+          recheckNotes: dto.unlockReason,
+        },
+        include: {
+          horse: { select: { id: true, name: true, microchipRfid: true } },
+          veterinarian: { select: { id: true, fullName: true } },
+          unlockVet: { select: { id: true, fullName: true } },
+        },
+      });
 
-    await this.audit.record(
-      { id: actor.userId, name: actor.fullName },
-      'RELEASE_MEDICAL_LOCK',
-      `Medical lock ${lock.lockCode || lockId} released for horse ${lock.horseId}`,
-      lockId,
-    );
+      await tx.horse.update({
+        where: { id: lock.horseId },
+        data: { isMedicalLocked: false, status: newHorseStatus },
+      });
+
+      await this.audit.record(
+        { id: actor.userId, name: actor.fullName },
+        'RELEASE_MEDICAL_LOCK',
+        `Medical lock ${lock.lockCode || lockId} released for horse ${lock.horseId}`,
+        lockId,
+        { entityName: 'MedicalLock' },
+        tx,
+      );
+
+      return { lock, unlocked };
+    });
 
     const warnings: string[] = [];
     if (lock.horse?.injuryLogs && lock.horse.injuryLogs.length > 0) {
@@ -1265,98 +1239,100 @@ export class MedicalService {
     };
   }
 
+  /** Gia hạn: đọc - kiểm - ghi lịch sử gia hạn trong một transaction (khóa dòng MedicalLock). */
   async extendMedicalLock(lockId: string, actor: CurrentUserPayload, dto: ExtendMedicalLockDto) {
-    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
-      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền gia hạn Khóa huấn luyện');
-    }
+    this.assertVet(actor, 'extend a training lock');
 
-    const lock = await this.prisma.medicalLock.findUnique({ where: { id: lockId } });
-    if (!lock || !lock.isLocked) {
-      throw new BadRequestException('Không tìm thấy Khóa huấn luyện đang hiệu lực');
-    }
-
-    const now = new Date();
-    let newRecheckDate: Date;
-
-    if (dto.recheckDate) {
-      newRecheckDate = new Date(dto.recheckDate);
-    } else if (dto.additionalDays) {
-      const baseDate = lock.recheckDate && lock.recheckDate > now ? lock.recheckDate : now;
-      newRecheckDate = new Date(baseDate.getTime() + dto.additionalDays * 24 * 60 * 60 * 1000);
-    } else {
-      throw new BadRequestException('Vui lòng chọn ngày xem xét mới hoặc số ngày gia hạn');
-    }
-
-    if (newRecheckDate <= now) {
-      throw new BadRequestException('Ngày xem xét mới phải sau ngày hiện tại');
-    }
-
-    if (lock.recheckDate && newRecheckDate <= lock.recheckDate) {
-      throw new BadRequestException(
-        `Ngày xem xét mới phải sau ngày xem xét cũ (${lock.recheckDate.toLocaleDateString()})`,
-      );
-    }
-
-    const maxRecheck = new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000);
-    if (newRecheckDate > maxRecheck) {
-      throw new BadRequestException('Ngày xem xét mới tối đa 180 ngày kể từ hôm nay');
-    }
-
-    let history: any[] = [];
-    if (lock.extensionHistory) {
-      try {
-        history =
-          typeof lock.extensionHistory === 'string'
-            ? JSON.parse(lock.extensionHistory)
-            : (lock.extensionHistory as any[]);
-      } catch {
-        history = [];
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "MedicalLock" WHERE "id" = ${lockId} FOR UPDATE`;
+      const lock = await tx.medicalLock.findUnique({ where: { id: lockId } });
+      if (!lock || !lock.isLocked) {
+        throw new BadRequestException('Không tìm thấy Khóa huấn luyện đang hiệu lực');
       }
-    }
 
-    const extensionReason = dto.recheckNotes || dto.extendReason || 'Gia hạn ngày xem xét lại';
+      const now = new Date();
+      let newRecheckDate: Date;
 
-    const historyEntry = {
-      id: `ext-${Date.now()}`,
-      oldRecheckDate: lock.recheckDate ? lock.recheckDate.toISOString() : null,
-      newRecheckDate: newRecheckDate.toISOString(),
-      reason: extensionReason,
-      updatedByUserId: actor.userId,
-      updatedByName: actor.fullName,
-      createdAt: now.toISOString(),
-    };
+      if (dto.recheckDate) {
+        newRecheckDate = new Date(dto.recheckDate);
+      } else if (dto.additionalDays) {
+        const baseDate = lock.recheckDate && lock.recheckDate > now ? lock.recheckDate : now;
+        newRecheckDate = new Date(baseDate.getTime() + dto.additionalDays * 24 * 60 * 60 * 1000);
+      } else {
+        throw new BadRequestException('Vui lòng chọn ngày xem xét mới hoặc số ngày gia hạn');
+      }
 
-    history.push(historyEntry);
+      if (newRecheckDate <= now) {
+        throw new BadRequestException('Ngày xem xét mới phải sau ngày hiện tại');
+      }
 
-    const newRestDays = Math.ceil(
-      (newRecheckDate.getTime() - new Date(lock.lockedAt).getTime()) / (24 * 60 * 60 * 1000),
-    );
+      if (lock.recheckDate && newRecheckDate <= lock.recheckDate) {
+        throw new BadRequestException(
+          `Ngày xem xét mới phải sau ngày xem xét cũ (${lock.recheckDate.toLocaleDateString()})`,
+        );
+      }
 
-    const extended = await this.prisma.medicalLock.update({
-      where: { id: lockId },
-      data: {
-        recheckDate: newRecheckDate,
-        expectedRestDays: newRestDays,
-        recheckNotes: extensionReason,
-        extensionHistory: history,
-      },
-      include: {
-        horse: { select: { id: true, name: true, microchipRfid: true } },
-        veterinarian: { select: { id: true, fullName: true } },
-      },
+      const maxRecheck = new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000);
+      if (newRecheckDate > maxRecheck) {
+        throw new BadRequestException('Ngày xem xét mới tối đa 180 ngày kể từ hôm nay');
+      }
+
+      let history: any[] = [];
+      if (lock.extensionHistory) {
+        try {
+          history =
+            typeof lock.extensionHistory === 'string'
+              ? JSON.parse(lock.extensionHistory)
+              : (lock.extensionHistory as any[]);
+        } catch {
+          history = [];
+        }
+      }
+
+      const extensionReason = dto.recheckNotes || dto.extendReason || 'Gia hạn ngày xem xét lại';
+
+      history.push({
+        id: `ext-${Date.now()}`,
+        oldRecheckDate: lock.recheckDate ? lock.recheckDate.toISOString() : null,
+        newRecheckDate: newRecheckDate.toISOString(),
+        reason: extensionReason,
+        updatedByUserId: actor.userId,
+        updatedByName: actor.fullName,
+        createdAt: now.toISOString(),
+      });
+
+      const newRestDays = Math.ceil(
+        (newRecheckDate.getTime() - new Date(lock.lockedAt).getTime()) / (24 * 60 * 60 * 1000),
+      );
+
+      const extended = await tx.medicalLock.update({
+        where: { id: lockId },
+        data: {
+          recheckDate: newRecheckDate,
+          expectedRestDays: newRestDays,
+          recheckNotes: extensionReason,
+          extensionHistory: history,
+        },
+        include: {
+          horse: { select: { id: true, name: true, microchipRfid: true } },
+          veterinarian: { select: { id: true, fullName: true } },
+        },
+      });
+
+      await this.audit.record(
+        { id: actor.userId, name: actor.fullName },
+        'EXTEND_MEDICAL_LOCK',
+        `Medical lock ${lock.lockCode || lockId} extended to ${newRecheckDate.toLocaleDateString()}`,
+        lockId,
+        { entityName: 'MedicalLock' },
+        tx,
+      );
+
+      return {
+        ...extended,
+        message: `Đã gia hạn ngày xem xét lại đến ${newRecheckDate.toLocaleDateString()}`,
+      };
     });
-
-    await this.audit.record(
-      { id: actor.userId, name: actor.fullName },
-      'EXTEND_MEDICAL_LOCK',
-      `Medical lock ${lock.lockCode || lockId} extended to ${newRecheckDate.toLocaleDateString()}`,
-      lockId,
-    );
-
-    return {
-      ...extended,
-      message: `Đã gia hạn ngày xem xét lại đến ${newRecheckDate.toLocaleDateString()}`,
-    };
   }
 
   async getMedicalLocks(currentUser: CurrentUserPayload, query: MedicalLockQueryDto) {
@@ -1688,9 +1664,7 @@ export class MedicalService {
   }
 
   async createPreventiveCatalog(actor: CurrentUserPayload, dto: CreatePreventiveTypeCatalogDto) {
-    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
-      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền tạo loại chăm sóc định kỳ');
-    }
+    this.assertVet(actor, 'create preventive care types');
 
     const codeUpper = dto.code.toUpperCase();
     const existingCode = await this.prisma.preventiveTypeCatalog.findUnique({
@@ -1755,6 +1729,7 @@ export class MedicalService {
       'CREATE_PREVENTIVE_CATALOG',
       `Preventive catalog ${codeUpper} created`,
       catalog.id,
+      { entityName: 'PreventiveTypeCatalog' },
     );
 
     return catalog;
@@ -1765,9 +1740,7 @@ export class MedicalService {
     actor: CurrentUserPayload,
     dto: UpdatePreventiveTypeCatalogDto,
   ) {
-    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
-      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền sửa loại chăm sóc định kỳ');
-    }
+    this.assertVet(actor, 'edit preventive care types');
 
     const catalog = await this.prisma.preventiveTypeCatalog.findUnique({ where: { id } });
     if (!catalog) throw new NotFoundException('Không tìm thấy loại chăm sóc định kỳ');
@@ -1802,15 +1775,14 @@ export class MedicalService {
       'UPDATE_PREVENTIVE_CATALOG',
       `Preventive catalog ${catalog.code} updated`,
       id,
+      { entityName: 'PreventiveTypeCatalog' },
     );
 
     return updated;
   }
 
   async togglePreventiveCatalogStatus(id: string, actor: CurrentUserPayload) {
-    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
-      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền đổi trạng thái loại chăm sóc');
-    }
+    this.assertVet(actor, 'change preventive care type status');
 
     const catalog = await this.prisma.preventiveTypeCatalog.findUnique({ where: { id } });
     if (!catalog) throw new NotFoundException('Không tìm thấy loại chăm sóc định kỳ');
@@ -1825,6 +1797,7 @@ export class MedicalService {
       'TOGGLE_PREVENTIVE_CATALOG_STATUS',
       `Preventive catalog ${catalog.code} active status changed to ${updated.isActive}`,
       id,
+      { entityName: 'PreventiveTypeCatalog' },
     );
 
     return {
@@ -1992,9 +1965,7 @@ export class MedicalService {
   }
 
   async recordPreventiveCare(actor: CurrentUserPayload, dto: RecordPreventiveCareDto) {
-    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
-      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền ghi nhận thực hiện định kỳ');
-    }
+    this.assertVet(actor, 'record preventive care');
 
     const catalog = await this.prisma.preventiveTypeCatalog.findUnique({
       where: { id: dto.typeCatalogId },
@@ -2126,6 +2097,7 @@ export class MedicalService {
       'RECORD_PREVENTIVE_CARE',
       `Recorded ${catalog.name} for ${horseIds.length} horse(s)`,
       catalog.id,
+      { entityName: 'PreventiveTypeCatalog' },
     );
 
     return {
@@ -2136,9 +2108,7 @@ export class MedicalService {
   }
 
   async setupHorsePreventive(actor: CurrentUserPayload, dto: SetupHorsePreventiveDto) {
-    if (actor.role !== Role.VETERINARIAN && actor.role !== Role.CLUB_MANAGER) {
-      throw new ForbiddenException('Chỉ Bác sĩ thú y mới có quyền thiết lập lịch định kỳ');
-    }
+    this.assertVet(actor, 'set up preventive schedules');
 
     const horse = await this.prisma.horse.findUnique({ where: { id: dto.horseId } });
     if (!horse) throw new NotFoundException('Không tìm thấy chiến mã');
@@ -2188,6 +2158,7 @@ export class MedicalService {
       'SETUP_HORSE_PREVENTIVE',
       `Setup preventive schedules for horse ${dto.horseId}`,
       dto.horseId,
+      { entityName: 'Horse' },
     );
 
     return { message: 'Đã thiết lập lịch chăm sóc định kỳ cho chiến mã thành công' };
