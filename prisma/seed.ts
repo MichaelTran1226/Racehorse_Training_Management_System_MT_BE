@@ -307,46 +307,63 @@ async function main() {
 
   // 6. Seed Training Plans and Workout Sessions
   const now = new Date();
+  // YYYY-MM-DD theo giờ câu lạc bộ (UTC+7) của ngày hôm nay + offset
+  const clubDay = (offset: number) =>
+    new Date(now.getTime() + 7 * 3600000 + offset * 86400000).toISOString().slice(0, 10);
+  const plan1Phases = [
+    {
+      id: 'ph-1',
+      name: 'Volume building & aerobic base',
+      type: 'BASE',
+      startDate: clubDay(-20),
+      endDate: clubDay(-6),
+      goal: 'Aerobic base before speed work',
+      sessionsPerWeek: 5,
+      maxWeeklyDistance: 9000,
+      surface: 'TURF',
+      targetSpeedKmh: 38,
+    },
+    {
+      id: 'ph-2',
+      name: 'Speed work & sprint conditioning',
+      type: 'SPEED',
+      startDate: clubDay(-5),
+      endDate: clubDay(20),
+      goal: 'Race-pace breezes',
+      sessionsPerWeek: 5,
+      maxWeeklyDistance: 12000,
+      surface: 'TURF',
+      targetSpeedKmh: 58,
+    },
+    {
+      id: 'ph-3',
+      name: 'Tapering & gate rehearsal',
+      type: 'PRE_RACE',
+      startDate: clubDay(21),
+      endDate: clubDay(40),
+      sessionsPerWeek: 4,
+      maxWeeklyDistance: 8000,
+      surface: 'TURF',
+      targetSpeedKmh: 45,
+    },
+  ];
   const plan1 = await prisma.trainingPlan.upsert({
     where: { id: `plan-${horse1.id}` },
     update: {},
     create: {
       id: `plan-${horse1.id}`,
+      planCode: 'GA-000001',
       horseId: horse1.id,
       trainerUserId: trainer.id,
       phaseName: 'Derby Speed & Stamina Conditioning 2026',
+      objective: 'Peak for the autumn Derby over 2000 m with a strong final 400 m.',
       targetSpeed: 58.0,
       targetDistance: 2000,
       trackSurface: TrackSurface.TURF,
       startDate: new Date(now.getTime() - 20 * 86400000),
       endDate: new Date(now.getTime() + 40 * 86400000),
       status: PlanStatus.ACTIVE,
-      phases: [
-        {
-          order: 1,
-          name: 'Phase 1: Volume Building & Aerobic Base',
-          weeks: 'Weeks 1-2',
-          targetDistanceMeters: 1600,
-          targetSpeedKmh: 38,
-          intensity: 'MODERATE',
-        },
-        {
-          order: 2,
-          name: 'Phase 2: Speed Work & Sprint Conditioning',
-          weeks: 'Weeks 3-4',
-          targetDistanceMeters: 2000,
-          targetSpeedKmh: 58,
-          intensity: 'HEAVY',
-        },
-        {
-          order: 3,
-          name: 'Phase 3: Tapering & Gate Rehearsal',
-          weeks: 'Weeks 5-6',
-          targetDistanceMeters: 1200,
-          targetSpeedKmh: 45,
-          intensity: 'LIGHT',
-        },
-      ],
+      phases: plan1Phases,
     },
   });
 
@@ -356,6 +373,7 @@ async function main() {
     update: {},
     create: {
       id: `w1-${horse1.id}`,
+      phaseId: 'ph-1',
       trainingPlanId: plan1.id,
       horseId: horse1.id,
       assignedStaffUserId: groom.id,
@@ -383,6 +401,7 @@ async function main() {
     update: {},
     create: {
       id: `w2-${horse1.id}`,
+      phaseId: 'ph-1',
       trainingPlanId: plan1.id,
       horseId: horse1.id,
       assignedStaffUserId: groom.id,
@@ -410,6 +429,7 @@ async function main() {
     update: {},
     create: {
       id: `w3-${horse1.id}`,
+      phaseId: 'ph-2',
       trainingPlanId: plan1.id,
       horseId: horse1.id,
       assignedStaffUserId: groom.id,
@@ -430,9 +450,11 @@ async function main() {
     update: {},
     create: {
       id: `plan-${horse2.id}`,
+      planCode: 'GA-000002',
       horseId: horse2.id,
       trainerUserId: trainer.id,
       phaseName: 'Rehabilitation & Low-Impact Conditioning',
+      objective: 'Return to light work safely while the fore tendon heals.',
       targetSpeed: 25.0,
       targetDistance: 800,
       trackSurface: TrackSurface.TURF,
@@ -441,15 +463,23 @@ async function main() {
       status: PlanStatus.ACTIVE,
       phases: [
         {
-          order: 1,
-          name: 'Phase 1: Hand Walking & Gentle Trot',
-          weeks: 'Weeks 1-2',
-          targetDistanceMeters: 800,
-          targetSpeedKmh: 20,
-          intensity: 'LIGHT',
+          id: 'ph-r1',
+          name: 'Hand walking & gentle trot',
+          type: 'RECOVERY',
+          startDate: clubDay(-5),
+          endDate: clubDay(25),
+          sessionsPerWeek: 5,
+          maxWeeklyDistance: 5000,
+          surface: 'TURF',
         },
       ],
     },
+  });
+  // Bộ đếm mã giáo án: 2 giáo án seed đã dùng GA-000001, GA-000002.
+  await prisma.counter.upsert({
+    where: { name: 'training_plan' },
+    update: {},
+    create: { name: 'training_plan', value: 2 },
   });
 
   await prisma.workoutSession.upsert({
@@ -457,6 +487,7 @@ async function main() {
     update: {},
     create: {
       id: `w1-${horse2.id}`,
+      phaseId: 'ph-r1',
       trainingPlanId: plan2.id,
       horseId: horse2.id,
       assignedStaffUserId: groom.id,

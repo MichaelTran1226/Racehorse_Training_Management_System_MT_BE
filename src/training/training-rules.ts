@@ -86,3 +86,145 @@ export function withinTrainingHours(d: Date): boolean {
   if (hour > LAST_HOUR) return false;
   return !(hour === LAST_HOUR && minute > 0);
 }
+
+// ---------------------------------------------------------------- Giai đoạn (SC-2.03)
+
+export const PHASE_TYPES = ['BASE', 'BUILD', 'SPEED', 'PRE_RACE', 'RECOVERY'] as const;
+export const PHASE_SURFACES = ['TURF', 'DIRT', 'SYNTHETIC'] as const;
+export const MAX_PHASES = 12;
+export const MAX_PLAN_WEEKS = 52;
+
+/** Một giai đoạn lưu trong TrainingPlan.phases (JSON). Ngày dạng YYYY-MM-DD theo giờ câu lạc bộ. */
+export interface PlanPhase {
+  id: string;
+  name: string;
+  type: string;
+  startDate: string;
+  endDate: string;
+  goal?: string;
+  sessionsPerWeek: number;
+  maxWeeklyDistance: number;
+  surface: string;
+  targetSpeedKmh?: number;
+}
+
+/** YYYY-MM-DD (giờ câu lạc bộ) của một thời điểm. */
+export function clubDate(d: Date): string {
+  return new Date(d.getTime() + OFFSET_MS).toISOString().slice(0, 10);
+}
+
+/**
+ * Kiểm danh sách giai đoạn: 1-12 giai đoạn, đủ ô bắt buộc, nằm trong thời gian giáo án,
+ * không chồng nhau. Trả về danh sách đã chuẩn hóa và sắp theo Từ ngày, hoặc chuỗi lỗi (mã + câu).
+ */
+export function validatePhases(
+  raw: unknown,
+  planStart: string,
+  planEnd: string,
+): { phases: PlanPhase[] } | { code: string; message: string } {
+  if (!Array.isArray(raw) || raw.length === 0) {
+    return { code: 'PHASES_REQUIRED', message: 'Giáo án phải có ít nhất 1 giai đoạn.' };
+  }
+  if (raw.length > MAX_PHASES) {
+    return { code: 'TOO_MANY_PHASES', message: 'Giáo án tối đa 12 giai đoạn.' };
+  }
+  const bad = (message: string) => ({ code: 'INVALID_PHASE', message });
+  const phases: PlanPhase[] = [];
+  for (const [i, p] of (raw as Record<string, unknown>[]).entries()) {
+    const name = String(p?.name ?? '').trim();
+    if (name.length < 2 || name.length > 100) {
+      return bad('Tên giai đoạn phải từ 2 đến 100 ký tự.');
+    }
+    if (!PHASE_TYPES.includes(p.type as never)) return bad('Vui lòng chọn loại giai đoạn.');
+    const start = String(p.startDate ?? '').slice(0, 10);
+    const end = String(p.endDate ?? '').slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end) || end < start) {
+      return bad(`Giai đoạn ${name}: Đến ngày phải sau hoặc bằng Từ ngày.`);
+    }
+    if (start < planStart || end > planEnd) {
+      return bad(`Giai đoạn ${name} phải nằm trong thời gian của giáo án.`);
+    }
+    const perWeek = Number(p.sessionsPerWeek);
+    if (!Number.isInteger(perWeek) || perWeek < 1 || perWeek > 14) {
+      return bad('Số buổi mỗi tuần phải từ 1 đến 14.');
+    }
+    const maxDist = Number(p.maxWeeklyDistance);
+    if (!Number.isInteger(maxDist) || maxDist < 500 || maxDist > 60000) {
+      return bad('Cự ly tối đa mỗi tuần phải từ 500 đến 60 000 m.');
+    }
+    if (!PHASE_SURFACES.includes(p.surface as never)) return bad('Vui lòng chọn mặt sân.');
+    const speed =
+      p.targetSpeedKmh == null || p.targetSpeedKmh === '' ? undefined : Number(p.targetSpeedKmh);
+    if (speed !== undefined && (Number.isNaN(speed) || speed < 10 || speed > 70)) {
+      return bad('Tốc độ mục tiêu phải từ 10 đến 70 km/h.');
+    }
+    const goal = p.goal == null ? undefined : String(p.goal).trim();
+    if (goal && goal.length > 500) return bad('Mục tiêu tối đa 500 ký tự.');
+    phases.push({
+      id: typeof p.id === 'string' && p.id ? p.id : `ph-${Date.now()}-${i}`,
+      name,
+      type: String(p.type),
+      startDate: start,
+      endDate: end,
+      goal: goal || undefined,
+      sessionsPerWeek: perWeek,
+      maxWeeklyDistance: maxDist,
+      surface: String(p.surface),
+      targetSpeedKmh: speed,
+    });
+  }
+  phases.sort((a, b) => a.startDate.localeCompare(b.startDate));
+  for (let i = 1; i < phases.length; i++) {
+    if (phases[i].startDate <= phases[i - 1].endDate) {
+      return {
+        code: 'PHASE_OVERLAP',
+        message: `Giai đoạn bị trùng thời gian với giai đoạn ${phases[i - 1].name}.`,
+      };
+    }
+  }
+  return { phases };
+}
+
+// ---------------------------------------------------------------- Điểm tải (SC-2.01, SC-2.07)
+
+const INTENSITY_FACTOR: Record<string, number> = { LIGHT: 1, MEDIUM: 2, HEAVY: 3 };
+
+/** Điểm tải một buổi = Cự ly (km) × Số hiệp × Hệ số cường độ (1/2/3). */
+export function workoutLoad(w: {
+  distanceMeters: number;
+  actualDistanceMeters?: number | null;
+  repetitions?: number | null;
+  intensity?: string | null;
+}): number {
+  // Có cự ly thực tế (đã gồm các hiệp) thì dùng nó, không thì lấy kế hoạch × số hiệp.
+  const km = w.actualDistanceMeters
+    ? w.actualDistanceMeters / 1000
+    : (w.distanceMeters * (w.repetitions ?? 1)) / 1000;
+  return Math.round(km * (INTENSITY_FACTOR[w.intensity ?? 'MEDIUM'] ?? 2) * 10) / 10;
+}
+
+export const LOAD_SPIKE_RATIO = 1.3; // Q-2.10: 130% trung bình tuần của 4 tuần trước
+
+/** 0 giờ thứ Hai (giờ câu lạc bộ) của tuần chứa d, dạng UTC. */
+export function startOfClubWeek(d: Date): Date {
+  const day = startOfClubDay(d);
+  const weekday = new Date(day.getTime() + OFFSET_MS).getUTCDay(); // 0 = Chủ nhật
+  return addDays(day, -((weekday + 6) % 7));
+}
+
+// ---------------------------------------------------------------- Kết quả buổi tập (SC-2.06)
+
+/** Không bắt buộc nhập thời gian chạy với các loại này. */
+export const NO_TIME_TYPES: string[] = ['WALK', 'SWIM', 'TREADMILL'];
+/** Tốc độ trung bình chỉ tính cho các buổi chạy (SC-2.07). */
+export const SPEED_TYPES: string[] = ['CANTER', 'BREEZE', 'TRIAL'];
+export const COMPLETION_LEVELS = ['ACHIEVED', 'PARTIAL', 'NOT_ACHIEVED'] as const;
+export const TRACK_CONDITIONS = ['GOOD', 'SOFT', 'HEAVY', 'FIRM'] as const;
+export const ABNORMAL_SIGNS = [
+  'LAMENESS',
+  'PROLONGED_BREATHING',
+  'NOSEBLEED',
+  'LEG_SWELLING',
+  'OFF_FEED',
+  'OTHER',
+] as const;

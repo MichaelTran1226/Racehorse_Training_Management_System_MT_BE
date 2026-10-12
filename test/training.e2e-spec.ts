@@ -110,6 +110,36 @@ describe('Flow 2 training HTTP contract (mock database, real JWT/guards)', () =>
     expect(prisma.workoutSession.findUnique).not.toHaveBeenCalled();
   });
 
+  it.each([Role.GROOM, Role.HORSE_OWNER])(
+    'the training overview is not shown to %s',
+    async (role) => {
+      user.role = role;
+      await request(app.getHttpServer())
+        .get('/api/training/overview')
+        .auth(token(), { type: 'bearer' })
+        .expect(403);
+    },
+  );
+
+  it('weekly repeat needs at least one weekday', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/api/training/plans/p-1/workouts/repeat')
+      .auth(token(), { type: 'bearer' })
+      .send({
+        scheduledDate: '2026-11-02T06:30:00+07:00',
+        phaseId: 'ph-1',
+        workoutType: 'WALK',
+        intensity: 'LIGHT',
+        distanceMeters: 1000,
+        trackSurface: 'TURF',
+        assignedStaffUserId: 'g-1',
+        weekdays: [],
+        until: '2026-11-30',
+      })
+      .expect(400);
+    expect(JSON.stringify(response.body)).toContain('ít nhất 1 thứ');
+  });
+
   it('a plan status change only accepts ACTIVE, COMPLETED or CANCELLED', async () => {
     await request(app.getHttpServer())
       .patch('/api/training/plans/p-1/status')

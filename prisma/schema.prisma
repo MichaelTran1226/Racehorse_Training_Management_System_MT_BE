@@ -204,6 +204,8 @@ model User {
   stallAllocations      StallAllocation[]       @relation("GroomStalls")
   trainingPlansCreated  TrainingPlan[]          @relation("TrainerPlans")
   workoutSessionsStaff  WorkoutSession[]        @relation("StaffWorkouts")
+  workoutResultsRecorded WorkoutSession[]       @relation("WorkoutResultRecorder")
+  workoutResultsEdited  WorkoutSession[]        @relation("WorkoutResultEditor")
   medicalRecordsExamined MedicalRecord[]        @relation("VetRecords")
   medicalLocksIssued    MedicalLock[]           @relation("VetLocksIssued")
   medicalLocksUnlocked  MedicalLock[]           @relation("VetLocksUnlocked")
@@ -372,7 +374,11 @@ model TrainingPlan {
   horse         Horse        @relation(fields: [horseId], references: [id], onDelete: Restrict)
   trainerUserId String
   trainer       User         @relation("TrainerPlans", fields: [trainerUserId], references: [id], onDelete: Restrict)
+  // Mã hiển thị GA-000001, sinh bằng bộ đếm Counter("training_plan")
+  planCode      String?      @unique
   phaseName     String
+  objective     String?
+  notes         String?
   phases        Json?
   targetSpeed   Float?
   targetDistance Int?
@@ -400,6 +406,8 @@ model WorkoutSession {
   assignedStaffUserId  String?
   assignedStaff        User?         @relation("StaffWorkouts", fields: [assignedStaffUserId], references: [id], onDelete: SetNull)
   scheduledDate        DateTime
+  // id của giai đoạn trong TrainingPlan.phases (JSON)
+  phaseId              String?
   distanceMeters       Int
   // Số hiệp (DL-2.01: 1-10) và tốc độ mục tiêu (km/h)
   repetitions          Int           @default(1)
@@ -426,6 +434,19 @@ model WorkoutSession {
   // HT xác nhận đã trao đổi với VET khi xếp bài nặng lúc ngựa ở trạng thái y tế (DL-2.06)
   medicalOverride      Boolean       @default(false)
   resultRecordedAt     DateTime?
+  resultRecordedById   String?
+  resultRecordedBy     User?         @relation("WorkoutResultRecorder", fields: [resultRecordedById], references: [id], onDelete: SetNull)
+  resultUpdatedAt      DateTime?
+  resultUpdatedById    String?
+  resultUpdatedBy      User?         @relation("WorkoutResultEditor", fields: [resultUpdatedById], references: [id], onDelete: SetNull)
+  // Kết quả thực tế (SC-2.06)
+  actualDistanceMeters Int?
+  actualSurface        String?
+  trackCondition       String?
+  completionLevel      String?
+  // Nhận xét chuyên môn sau buổi tập (khác trainerNotes = ghi chú chỉ dẫn trước buổi tập)
+  resultNotes          String?
+  abnormalSignTypes    String[]      @default([])
   // Dấu hiệu bất thường sau buổi tập -> cảnh báo VET (FR-2.14)
   abnormalSigns        Boolean       @default(false)
   abnormalNotes        String?
