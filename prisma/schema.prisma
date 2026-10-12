@@ -78,19 +78,21 @@ enum TrackSurface {
   SYNTHETIC
 }
 
+// Q14 = A (Flow 2 §4.1): Nháp -> Đang áp dụng -> Hoàn thành / Đã hủy.
 enum PlanStatus {
   DRAFT
-  APPROVED
   ACTIVE
   COMPLETED
-  SUSPENDED
+  CANCELLED
 }
 
+// Q14 = A (Flow 2 §4.2). BLOCKED = bị chặn do Khóa y tế (khôi phục được), MISSED = bỏ lỡ.
 enum WorkoutStatus {
   SCHEDULED
   COMPLETED
-  CANCELLED_MEDICAL_LOCK
-  SKIPPED
+  BLOCKED
+  MISSED
+  CANCELLED
 }
 
 enum BodySide {
@@ -377,7 +379,9 @@ model TrainingPlan {
   trackSurface  TrackSurface @default(TURF)
   startDate     DateTime
   endDate       DateTime
-  status        PlanStatus   @default(APPROVED)
+  status        PlanStatus   @default(DRAFT)
+  cancelReason      String?
+  completionSummary String?
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
@@ -397,6 +401,9 @@ model WorkoutSession {
   assignedStaff        User?         @relation("StaffWorkouts", fields: [assignedStaffUserId], references: [id], onDelete: SetNull)
   scheduledDate        DateTime
   distanceMeters       Int
+  // Số hiệp (DL-2.01: 1-10) và tốc độ mục tiêu (km/h)
+  repetitions          Int           @default(1)
+  targetSpeedKmh       Float?
   targetDurationSeconds Int?
   actualTimeSeconds    Float?
   heartRatePeak        Int?
@@ -414,6 +421,16 @@ model WorkoutSession {
   recoveryTimeMinutes  Float?
   staminaScore         Float?
   injuryRiskLevel      String?       @default("LOW")
+  // Lý do bị chặn (BLOCKED) hoặc bị hủy (CANCELLED)
+  statusReason         String?
+  // HT xác nhận đã trao đổi với VET khi xếp bài nặng lúc ngựa ở trạng thái y tế (DL-2.06)
+  medicalOverride      Boolean       @default(false)
+  resultRecordedAt     DateTime?
+  // Dấu hiệu bất thường sau buổi tập -> cảnh báo VET (FR-2.14)
+  abnormalSigns        Boolean       @default(false)
+  abnormalNotes        String?
+  vetAcknowledgedAt    DateTime?
+  vetNotes             String?
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt
 

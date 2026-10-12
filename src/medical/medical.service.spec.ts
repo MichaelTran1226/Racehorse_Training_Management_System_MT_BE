@@ -252,6 +252,16 @@ describe('MedicalService', () => {
         where: { id: 'horse-1' },
         data: expect.objectContaining({ isMedicalLocked: true, status: 'INJURED' }),
       });
+      // Flow 2 Q-2.01: giáo án giữ nguyên, chỉ buổi tập nặng đã lên lịch bị chặn.
+      expect(mockPrismaService.trainingPlan.updateMany).not.toHaveBeenCalled();
+      expect(mockPrismaService.workoutSession.updateMany).toHaveBeenCalledWith({
+        where: {
+          horseId: 'horse-1',
+          status: 'SCHEDULED',
+          OR: [{ intensity: 'HEAVY' }, { workoutType: { in: ['BREEZE', 'TRIAL'] } }],
+        },
+        data: expect.objectContaining({ status: 'BLOCKED' }),
+      });
       // Mọi lệnh ghi chạy trong một transaction, dòng Horse bị khóa trước khi kiểm khóa trùng.
       expect(mockPrismaService.$transaction).toHaveBeenCalledTimes(1);
       expect(mockPrismaService.$queryRaw).toHaveBeenCalled();

@@ -1,5 +1,14 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { HorseStatus, Prisma, RetireReason, Role, StallStatus, UserStatus } from '@prisma/client';
+import {
+  HorseStatus,
+  PlanStatus,
+  Prisma,
+  RetireReason,
+  Role,
+  StallStatus,
+  UserStatus,
+  WorkoutStatus,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { apiError } from '../common/exceptions/api-error';
@@ -14,6 +23,7 @@ import { DeleteHorseDto } from './dto/delete-horse.dto';
 import { RestoreHorseDto } from './dto/restore-horse.dto';
 import { QueryDeletedHorseDto } from './dto/query-deleted-horse.dto';
 import { assertStatusTransition } from './horse-rules';
+import { PENDING_WORKOUT_STATUSES } from '../training/training-rules';
 
 /** Thời gian (ms) cho phép bấm Hoàn tác sau khi xóa. FE hiện nút 10 giây; BE nới 60 giây cho mạng chậm. */
 const UNDO_WINDOW_MS = 60 * 1000;
@@ -1213,6 +1223,18 @@ export class HorsesService {
           data.isMedicalLocked = false;
           effects.push('Kết thúc Khóa huấn luyện');
         }
+
+        // Flow 2 §4.1: giáo án Nháp / Đang áp dụng tự hủy, buổi tập chưa diễn ra -> Đã hủy.
+        const plans = await tx.trainingPlan.updateMany({
+          where: { horseId: id, status: { in: [PlanStatus.DRAFT, PlanStatus.ACTIVE] } },
+          data: { status: PlanStatus.CANCELLED, cancelReason: 'Ngựa ngừng quản lý' },
+        });
+        await tx.workoutSession.updateMany({
+          where: { horseId: id, status: { in: PENDING_WORKOUT_STATUSES } },
+          data: { status: WorkoutStatus.CANCELLED, statusReason: 'Ngựa ngừng quản lý' },
+        });
+        if (plans.count > 0)
+          effects.push(`Hủy ${plans.count} giáo án và các buổi tập chưa diễn ra`);
 
         const ownershipEnds =
           dto.retireReason === RetireReason.SOLD || dto.retireReason === RetireReason.TRANSFERRED;

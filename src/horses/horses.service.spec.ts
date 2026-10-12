@@ -62,6 +62,12 @@ describe('HorsesService', () => {
       medicalLock: {
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
+      trainingPlan: {
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+      workoutSession: {
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
       auditLog: {
         findMany: jest.fn().mockResolvedValue([]),
       },
@@ -659,6 +665,28 @@ describe('HorsesService', () => {
       });
       expect(prisma.stall.updateMany).toHaveBeenCalled();
       expect(res.effects).toEqual(['Trả ô chuồng A-01', 'Kết thúc sở hữu của 1 chủ sở hữu']);
+    });
+
+    it('retiring cancels draft / active training plans and pending workouts (Flow 2)', async () => {
+      prisma.horse.findUnique.mockResolvedValue(base);
+      prisma.trainingPlan.updateMany.mockResolvedValue({ count: 1 });
+      prisma.horse.update.mockResolvedValue({ ...base, status: HorseStatus.RETIRED });
+
+      const res = await service.changeStatus(
+        'h-1',
+        { status: HorseStatus.RETIRED, retireReason: 'RETIRED', reason: 'Giải nghệ sau mùa giải' },
+        mockManager,
+      );
+
+      expect(prisma.trainingPlan.updateMany).toHaveBeenCalledWith({
+        where: { horseId: 'h-1', status: { in: ['DRAFT', 'ACTIVE'] } },
+        data: { status: 'CANCELLED', cancelReason: 'Ngựa ngừng quản lý' },
+      });
+      expect(prisma.workoutSession.updateMany).toHaveBeenCalledWith({
+        where: { horseId: 'h-1', status: { in: ['SCHEDULED', 'BLOCKED', 'MISSED'] } },
+        data: { status: 'CANCELLED', statusReason: 'Ngựa ngừng quản lý' },
+      });
+      expect(res.effects).toContain('Hủy 1 giáo án và các buổi tập chưa diễn ra');
     });
 
     it('CM retiring a locked horse as DECEASED also ends the training lock', async () => {

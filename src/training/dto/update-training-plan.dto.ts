@@ -9,7 +9,7 @@ import {
   Length,
   Min,
 } from 'class-validator';
-import { PlanStatus, TrackSurface } from '@prisma/client';
+import { TrackSurface } from '@prisma/client';
 
 export class UpdateTrainingPlanDto {
   @ApiPropertyOptional({ description: 'Training phase title / name' })
@@ -44,11 +44,6 @@ export class UpdateTrainingPlanDto {
   @IsOptional()
   @IsISO8601()
   endDate?: string;
-
-  @ApiPropertyOptional({ description: 'Plan status', enum: PlanStatus })
-  @IsOptional()
-  @IsEnum(PlanStatus)
-  status?: PlanStatus;
 
   @ApiPropertyOptional({ description: 'Multi-phase structured training plan breakdown' })
   @IsOptional()

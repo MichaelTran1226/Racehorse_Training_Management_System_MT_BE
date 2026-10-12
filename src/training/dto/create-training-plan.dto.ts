@@ -1,6 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
-  IsArray,
   IsEnum,
   IsISO8601,
   IsInt,
@@ -10,11 +9,8 @@ import {
   IsString,
   Length,
   Min,
-  ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
-import { PlanStatus, TrackSurface } from '@prisma/client';
-import { CreateWorkoutSessionDto } from './create-workout-session.dto';
+import { TrackSurface } from '@prisma/client';
 
 export class CreateTrainingPlanDto {
   @ApiProperty({
@@ -63,27 +59,8 @@ export class CreateTrainingPlanDto {
   endDate: string;
 
   @ApiPropertyOptional({
-    description: 'Plan status',
-    enum: PlanStatus,
-    default: PlanStatus.APPROVED,
-  })
-  @IsOptional()
-  @IsEnum(PlanStatus)
-  status?: PlanStatus;
-
-  @ApiPropertyOptional({
     description: 'Multi-phase structured training plan breakdown (e.g., Conditioning, Speed, Peak)',
   })
   @IsOptional()
   phases?: any;
-
-  @ApiPropertyOptional({
-    description: 'Optional initial workout sessions',
-    type: [CreateWorkoutSessionDto],
-  })
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CreateWorkoutSessionDto)
-  workouts?: CreateWorkoutSessionDto[];
 }
