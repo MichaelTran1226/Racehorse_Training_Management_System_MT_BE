@@ -1143,10 +1143,14 @@ export class TrainingService {
       ];
       const created: string[] = [];
       const skipped: { date: string; reason: string }[] = [];
+      const allWarnings: { date: string; warnings: string[] }[] = [];
       for (const date of dates) {
         const draft = this.draftFrom(dto, date);
         try {
-          const { medicalOverride } = await this.assertWorkoutAllowed(tx, plan, draft);
+          const { medicalOverride, warnings } = await this.assertWorkoutAllowed(tx, plan, draft);
+          if (warnings && warnings.length > 0) {
+            allWarnings.push({ date: clubDate(date), warnings });
+          }
           const row = await tx.workoutSession.create({
             data: this.createData(plan, draft, dto, medicalOverride),
           });
@@ -1163,10 +1167,13 @@ export class TrainingService {
         'CREATE_WORKOUT_SERIES',
         `Scheduled ${created.length} weekly workouts for plan "${plan.phaseName}" (${skipped.length} skipped)`,
         plan.id,
-        { entityName: 'TrainingPlan', newValues: { created: created.length, skipped } },
+        {
+          entityName: 'TrainingPlan',
+          newValues: { created: created.length, skipped, warnings: allWarnings },
+        },
         tx,
       );
-      return { created: created.length, workoutIds: created, skipped };
+      return { created: created.length, workoutIds: created, skipped, warnings: allWarnings };
     });
   }
 
@@ -1250,115 +1257,121 @@ export class TrainingService {
    * hoặc sửa kết quả trong 48 giờ sau lần lưu đầu. Có dấu hiệu bất thường -> cảnh báo cho VET.
    */
   async recordResult(workoutId: string, dto: RecordWorkoutResultDto, user: CurrentUserPayload) {
-    const existing = await this.prisma.workoutSession.findUnique({ where: { id: workoutId } });
-    if (!existing) {
-      throw apiError(HttpStatus.NOT_FOUND, 'WORKOUT_NOT_FOUND', 'Workout session not found.');
-    }
-    const now = new Date();
-    const editing = existing.status === WorkoutStatus.COMPLETED;
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.workoutSession.findUnique({ where: { id: workoutId } });
+      if (!existing) {
+        throw apiError(HttpStatus.NOT_FOUND, 'WORKOUT_NOT_FOUND', 'Workout session not found.');
+      }
+      await tx.$queryRaw`SELECT "id" FROM "WorkoutSession" WHERE "id" = ${workoutId} FOR UPDATE`;
+      const now = new Date();
+      const editing = existing.status === WorkoutStatus.COMPLETED;
 
-    if (existing.status === WorkoutStatus.SCHEDULED) {
-      if (existing.scheduledDate > now) {
+      if (existing.status === WorkoutStatus.SCHEDULED) {
+        if (existing.scheduledDate > now) {
+          throw apiError(
+            HttpStatus.BAD_REQUEST,
+            'WORKOUT_NOT_STARTED',
+            'Buổi tập chưa đến giờ bắt đầu.',
+          );
+        }
+      } else if (existing.status === WorkoutStatus.MISSED) {
+        const deadline = addDays(startOfClubDay(existing.scheduledDate), LATE_RESULT_DAYS + 1);
+        if (now >= deadline) {
+          throw apiError(
+            HttpStatus.BAD_REQUEST,
+            'LATE_RESULT_EXPIRED',
+            'Đã quá 7 ngày, không thể ghi kết quả cho buổi tập bỏ lỡ.',
+          );
+        }
+      } else if (editing) {
+        const first = existing.resultRecordedAt ?? existing.updatedAt;
+        if (now.getTime() - first.getTime() > RESULT_EDIT_HOURS * 60 * 60 * 1000) {
+          throw apiError(
+            HttpStatus.BAD_REQUEST,
+            'RESULT_EDIT_EXPIRED',
+            'Chỉ sửa được kết quả trong 48 giờ sau khi ghi.',
+          );
+        }
+      } else {
         throw apiError(
           HttpStatus.BAD_REQUEST,
-          'WORKOUT_NOT_STARTED',
-          'Buổi tập chưa đến giờ bắt đầu.',
+          'WORKOUT_NOT_RECORDABLE',
+          'Buổi tập bị chặn hoặc đã hủy nên không ghi kết quả.',
         );
       }
-    } else if (existing.status === WorkoutStatus.MISSED) {
-      const deadline = addDays(startOfClubDay(existing.scheduledDate), LATE_RESULT_DAYS + 1);
-      if (now >= deadline) {
+
+      if (dto.actualTimeSeconds == null && !NO_TIME_TYPES.includes(existing.workoutType ?? '')) {
+        throw apiError(HttpStatus.BAD_REQUEST, 'TIME_REQUIRED', 'Thời gian chạy là bắt buộc.');
+      }
+      if (
+        dto.heartRatePeak != null &&
+        dto.heartRateRecovery != null &&
+        dto.heartRateRecovery > dto.heartRatePeak
+      ) {
         throw apiError(
           HttpStatus.BAD_REQUEST,
-          'LATE_RESULT_EXPIRED',
-          'Đã quá 7 ngày, không thể ghi kết quả cho buổi tập bỏ lỡ.',
+          'RECOVERY_ABOVE_PEAK',
+          'Nhịp tim sau 10 phút không được lớn hơn nhịp tim tối đa.',
         );
       }
-    } else if (editing) {
-      const first = existing.resultRecordedAt ?? existing.updatedAt;
-      if (now.getTime() - first.getTime() > RESULT_EDIT_HOURS * 60 * 60 * 1000) {
+      const signs = [...new Set(dto.abnormalSignTypes ?? [])];
+      if (signs.length > 0 && !dto.abnormalNotes) {
         throw apiError(
           HttpStatus.BAD_REQUEST,
-          'RESULT_EDIT_EXPIRED',
-          'Chỉ sửa được kết quả trong 48 giờ sau khi ghi.',
+          'ABNORMAL_NOTES_REQUIRED',
+          'Vui lòng mô tả dấu hiệu bất thường.',
         );
       }
-    } else {
-      throw apiError(
-        HttpStatus.BAD_REQUEST,
-        'WORKOUT_NOT_RECORDABLE',
-        'Buổi tập bị chặn hoặc đã hủy nên không ghi kết quả.',
-      );
-    }
+      const averageSpeedKmh = dto.actualTimeSeconds
+        ? Math.round((dto.actualDistanceMeters / dto.actualTimeSeconds) * 3.6 * 10) / 10
+        : null;
+      const abnormal = signs.length > 0;
 
-    if (dto.actualTimeSeconds == null && !NO_TIME_TYPES.includes(existing.workoutType ?? '')) {
-      throw apiError(HttpStatus.BAD_REQUEST, 'TIME_REQUIRED', 'Thời gian chạy là bắt buộc.');
-    }
-    if (
-      dto.heartRatePeak != null &&
-      dto.heartRateRecovery != null &&
-      dto.heartRateRecovery > dto.heartRatePeak
-    ) {
-      throw apiError(
-        HttpStatus.BAD_REQUEST,
-        'RECOVERY_ABOVE_PEAK',
-        'Nhịp tim sau 10 phút không được lớn hơn nhịp tim tối đa.',
-      );
-    }
-    const signs = [...new Set(dto.abnormalSignTypes ?? [])];
-    if (signs.length > 0 && !dto.abnormalNotes) {
-      throw apiError(
-        HttpStatus.BAD_REQUEST,
-        'ABNORMAL_NOTES_REQUIRED',
-        'Vui lòng mô tả dấu hiệu bất thường.',
-      );
-    }
-    const averageSpeedKmh = dto.actualTimeSeconds
-      ? Math.round((dto.actualDistanceMeters / dto.actualTimeSeconds) * 3.6 * 10) / 10
-      : null;
-    const abnormal = signs.length > 0;
+      const updated = await tx.workoutSession.update({
+        where: { id: workoutId },
+        data: {
+          status: WorkoutStatus.COMPLETED,
+          actualDistanceMeters: dto.actualDistanceMeters,
+          actualTimeSeconds: dto.actualTimeSeconds ?? null,
+          averageSpeedKmh,
+          actualSurface: dto.actualSurface ?? existing.trackSurface,
+          trackCondition: dto.trackCondition ?? null,
+          heartRatePeak: dto.heartRatePeak ?? null,
+          heartRateRecovery: dto.heartRateRecovery ?? null,
+          topSpeedKmh: dto.topSpeedKmh ?? null,
+          performanceScore: dto.performanceScore,
+          completionLevel: dto.completionLevel,
+          resultNotes: dto.trainerNotes.trim(),
+          abnormalSignTypes: signs,
+          abnormalSigns: abnormal,
+          abnormalNotes: abnormal ? dto.abnormalNotes : null,
+          // Dấu hiệu mới xuất hiện hoặc thay đổi khi sửa -> VET phải xem lại (Bug #60).
+          ...(abnormal &&
+            (!existing.abnormalSigns ||
+              JSON.stringify(signs.slice().sort()) !==
+                JSON.stringify(
+                  ((existing.abnormalSignTypes as string[]) || []).slice().sort(),
+                )) && {
+              vetAcknowledgedAt: null,
+              vetNotes: null,
+            }),
+          ...(editing
+            ? { resultUpdatedAt: now, resultUpdatedById: user.userId }
+            : { resultRecordedAt: now, resultRecordedById: user.userId }),
+        },
+        include: WORKOUT_INCLUDE,
+      });
 
-    const updated = await this.prisma.workoutSession.update({
-      where: { id: workoutId },
-      data: {
-        status: WorkoutStatus.COMPLETED,
-        actualDistanceMeters: dto.actualDistanceMeters,
-        actualTimeSeconds: dto.actualTimeSeconds ?? null,
-        averageSpeedKmh,
-        actualSurface: dto.actualSurface ?? existing.trackSurface,
-        trackCondition: dto.trackCondition ?? null,
-        heartRatePeak: dto.heartRatePeak ?? null,
-        heartRateRecovery: dto.heartRateRecovery ?? null,
-        topSpeedKmh: dto.topSpeedKmh ?? null,
-        performanceScore: dto.performanceScore,
-        completionLevel: dto.completionLevel,
-        resultNotes: dto.trainerNotes.trim(),
-        abnormalSignTypes: signs,
-        abnormalSigns: abnormal,
-        abnormalNotes: abnormal ? dto.abnormalNotes : null,
-        // Dấu hiệu mới xuất hiện hoặc thay đổi khi sửa -> VET phải xem lại (Bug #60).
-        ...(abnormal &&
-          (!existing.abnormalSigns ||
-            JSON.stringify(signs.slice().sort()) !==
-              JSON.stringify(((existing.abnormalSignTypes as string[]) || []).slice().sort())) && {
-            vetAcknowledgedAt: null,
-            vetNotes: null,
-          }),
-        ...(editing
-          ? { resultUpdatedAt: now, resultUpdatedById: user.userId }
-          : { resultRecordedAt: now, resultRecordedById: user.userId }),
-      },
-      include: WORKOUT_INCLUDE,
+      await this.auditService.record(
+        { id: user.userId, name: user.fullName || user.email },
+        editing ? 'UPDATE_WORKOUT_RESULT' : 'RECORD_WORKOUT_RESULT',
+        `${editing ? 'Edited' : 'Recorded'} result for workout ${workoutId}${abnormal ? ' (abnormal signs reported)' : ''}`,
+        workoutId,
+        { entityName: 'WorkoutSession', newValues: { abnormalSigns: abnormal, signs } },
+        tx,
+      );
+      return updated;
     });
-
-    await this.auditService.record(
-      { id: user.userId, name: user.fullName || user.email },
-      editing ? 'UPDATE_WORKOUT_RESULT' : 'RECORD_WORKOUT_RESULT',
-      `${editing ? 'Edited' : 'Recorded'} result for workout ${workoutId}${abnormal ? ' (abnormal signs reported)' : ''}`,
-      workoutId,
-      { entityName: 'WorkoutSession', newValues: { abnormalSigns: abnormal, signs } },
-    );
-    return updated;
   }
 
   /** DL-2.05 Hủy buổi tập Đã lên lịch / Bị chặn / Bỏ lỡ (HT). */
