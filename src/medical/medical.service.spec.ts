@@ -260,6 +260,7 @@ describe('MedicalService', () => {
         where: {
           horseId: 'horse-1',
           status: 'SCHEDULED',
+          scheduledDate: { gte: expect.any(Date) },
           OR: [{ intensity: 'HEAVY' }, { workoutType: { in: ['BREEZE', 'TRIAL'] } }],
         },
         data: expect.objectContaining({ status: 'BLOCKED' }),
