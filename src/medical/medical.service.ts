@@ -1659,10 +1659,15 @@ export class MedicalService {
         data: { isMedicalLocked: true, status: appliedStatus },
       });
 
-      // RULE-MED-01 (Flow 2 §4.2, Q-2.01): giáo án giữ nguyên; chỉ buổi tập NẶNG đã lên lịch
-      // chuyển sang Bị chặn (HT khôi phục được sau khi gỡ khóa). Bài nhẹ / trung bình vẫn tập.
+      // RULE-MED-01 (Flow 2 §4.2, Q-2.01, Bug #54): giáo án giữ nguyên; chỉ buổi tập NẶNG đã lên lịch
+      // sau thời điểm đặt khóa chuyển sang Bị chặn. Các buổi đã tập trước đó giữ nguyên để ghi kết quả.
       await tx.workoutSession.updateMany({
-        where: { horseId: dto.horseId, status: WorkoutStatus.SCHEDULED, ...HEAVY_WORKOUT_WHERE },
+        where: {
+          horseId: dto.horseId,
+          status: WorkoutStatus.SCHEDULED,
+          scheduledDate: { gte: new Date() },
+          ...HEAVY_WORKOUT_WHERE,
+        },
         data: {
           status: WorkoutStatus.BLOCKED,
           statusReason: `Khóa huấn luyện thú y ${lockCode}: ${dto.lockReason}`,

@@ -424,6 +424,13 @@ export class TrainingService {
     }
     const startDate = dto.startDate ? new Date(dto.startDate) : existing.startDate;
     const endDate = dto.endDate ? new Date(dto.endDate) : existing.endDate;
+    if (startDate < addDays(startOfClubDay(new Date()), -7)) {
+      throw apiError(
+        HttpStatus.BAD_REQUEST,
+        'START_DATE_TOO_EARLY',
+        'Ngày bắt đầu không được sớm hơn 7 ngày trước.',
+      );
+    }
     this.assertPlanDates(startDate, endDate);
     const phases = this.checkedPhases(dto.phases ?? existing.phases, startDate, endDate);
 
@@ -1056,6 +1063,7 @@ export class TrainingService {
       if (!plan) {
         throw apiError(HttpStatus.NOT_FOUND, 'PLAN_NOT_FOUND', 'Training plan not found.');
       }
+      await tx.$queryRaw`SELECT "id" FROM "TrainingPlan" WHERE "id" = ${planId} FOR UPDATE`;
       await tx.$queryRaw`SELECT "id" FROM "Horse" WHERE "id" = ${plan.horseId} FOR UPDATE`;
 
       const draft = this.draftFrom(dto);
@@ -1089,6 +1097,7 @@ export class TrainingService {
       if (!plan) {
         throw apiError(HttpStatus.NOT_FOUND, 'PLAN_NOT_FOUND', 'Training plan not found.');
       }
+      await tx.$queryRaw`SELECT "id" FROM "TrainingPlan" WHERE "id" = ${planId} FOR UPDATE`;
       await tx.$queryRaw`SELECT "id" FROM "Horse" WHERE "id" = ${plan.horseId} FOR UPDATE`;
 
       const first = new Date(dto.scheduledDate);
@@ -1327,8 +1336,14 @@ export class TrainingService {
         abnormalSignTypes: signs,
         abnormalSigns: abnormal,
         abnormalNotes: abnormal ? dto.abnormalNotes : null,
-        // Dấu hiệu mới xuất hiện khi sửa -> VET phải xem lại.
-        ...(abnormal && !existing.abnormalSigns && { vetAcknowledgedAt: null, vetNotes: null }),
+        // Dấu hiệu mới xuất hiện hoặc thay đổi khi sửa -> VET phải xem lại (Bug #60).
+        ...(abnormal &&
+          (!existing.abnormalSigns ||
+            JSON.stringify(signs.slice().sort()) !==
+              JSON.stringify(((existing.abnormalSignTypes as string[]) || []).slice().sort())) && {
+            vetAcknowledgedAt: null,
+            vetNotes: null,
+          }),
         ...(editing
           ? { resultUpdatedAt: now, resultUpdatedById: user.userId }
           : { resultRecordedAt: now, resultRecordedById: user.userId }),
@@ -1458,13 +1473,13 @@ export class TrainingService {
     if (query.horseId) where.horseId = query.horseId;
     if (query.status) where.status = query.status;
     if (query.workoutType) where.workoutType = query.workoutType;
-    if (query.date) {
+    if (query.date && !isNaN(new Date(query.date).getTime())) {
       const start = startOfClubDay(new Date(query.date));
       where.scheduledDate = { gte: start, lt: addDays(start, 1) };
     } else if (query.from || query.to) {
       where.scheduledDate = {
-        ...(query.from && { gte: startOfClubDay(new Date(query.from)) }),
-        ...(query.to && { lt: addDays(startOfClubDay(new Date(query.to)), 1) }),
+        ...(query.from && !isNaN(new Date(query.from).getTime()) && { gte: startOfClubDay(new Date(query.from)) }),
+        ...(query.to && !isNaN(new Date(query.to).getTime()) && { lt: addDays(startOfClubDay(new Date(query.to)), 1) }),
       };
     }
 
@@ -1477,6 +1492,7 @@ export class TrainingService {
     const rows = await this.prisma.workoutSession.findMany({
       where,
       orderBy: { scheduledDate: 'asc' },
+      take: 200,
       include: WORKOUT_INCLUDE,
     });
     return rows.map((r) => hideScoreForGroom(r, user));
