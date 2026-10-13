@@ -1146,6 +1146,24 @@ export class MedicalService {
         { entityName: 'MedicalLock' },
         tx,
       );
+      // Ghi thêm vào nhật ký của ngựa để Tab Lịch sử trạng thái (Flow 1) có lần đổi này (CL-1.08).
+      await this.audit.record(
+        { id: actor.userId, name: actor.fullName },
+        'HORSE_STATUS_CHANGED',
+        `Changed status of horse ${horse.name} from ${horse.status} to ${appliedStatus} (training lock ${lockCode})`,
+        horse.id,
+        {
+          entityName: 'Horse',
+          newValues: {
+            oldStatus: horse.status,
+            newStatus: appliedStatus,
+            reason: dto.lockReason,
+            source: 'MEDICAL_LOCK',
+            lockCode,
+          },
+        },
+        tx,
+      );
 
       return { lock, horse };
     });
@@ -1215,6 +1233,23 @@ export class MedicalService {
         `Medical lock ${lock.lockCode || lockId} released for horse ${lock.horseId}`,
         lockId,
         { entityName: 'MedicalLock' },
+        tx,
+      );
+      await this.audit.record(
+        { id: actor.userId, name: actor.fullName },
+        'HORSE_STATUS_CHANGED',
+        `Changed status of horse ${lock.horse.name} from ${lock.horse.status} to ${newHorseStatus} (training lock lifted)`,
+        lock.horseId,
+        {
+          entityName: 'Horse',
+          newValues: {
+            oldStatus: lock.horse.status,
+            newStatus: newHorseStatus,
+            reason: dto.unlockReason,
+            source: 'MEDICAL_LOCK',
+            lockCode: lock.lockCode,
+          },
+        },
         tx,
       );
 
@@ -1559,78 +1594,136 @@ export class MedicalService {
     };
   }
 
+  /**
+   * SC-3.01 Sơ đồ sức khỏe đàn ngựa (P1-14): 4 nhóm màu theo trạng thái ngựa, không gồm ngựa Ngừng
+   * quản lý. Mỗi ngựa kèm đủ dữ liệu cho thẻ, sơ đồ theo chuồng và panel chi tiết. Thẻ đếm tính trên
+   * toàn đàn, danh sách trả về đã áp bộ lọc.
+   */
   async getHealthBoard(query: HealthBoardQueryDto) {
+    const now = new Date();
+    const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const horses = await this.prisma.horse.findMany({
-      where: { deletedAt: null },
+      where: { deletedAt: null, status: { not: HorseStatus.RETIRED } },
+      orderBy: { name: 'asc' },
       include: {
-        medicalLocks: { where: { isLocked: true } },
-        stallAllocations: {
-          where: { isActive: true },
-          include: { stall: true },
+        medicalLocks: {
+          where: { isLocked: true },
+          take: 1,
+          include: { veterinarian: { select: { fullName: true } } },
+        },
+        stallAllocations: { where: { isActive: true }, include: { stall: true } },
+        injuryLogs: {
+          where: { stage: { not: 'HEALED' }, status: { not: 'RESOLVED' } },
+          select: { id: true, anatomicalZone: true, stage: true },
+        },
+        medicalRecords: {
+          orderBy: { examinationDate: 'desc' },
+          take: 1,
+          select: { id: true, examinationDate: true, clinicalDiagnosis: true },
+        },
+        preventiveSchedules: {
+          where: { dueDate: { lte: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) } },
+          orderBy: { dueDate: 'asc' },
+          include: { typeCatalog: { select: { name: true } } },
+        },
+        dailyGroomingLogs: {
+          where: { healthObservations: { not: null }, createdAt: { gte: dayAgo } },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          include: { groom: { select: { fullName: true } } },
         },
       },
     });
 
-    let qualifiedCount = 0;
-    let observationCount = 0;
-    let injuredCount = 0;
-    let isolatedCount = 0;
-    let lockedCount = 0;
-
-    const mappedHorses = horses.map((horse) => {
-      const isLocked = horse.medicalLocks.length > 0 || horse.isMedicalLocked;
-      if (isLocked) lockedCount++;
-
-      let healthGroup = 'QUALIFIED';
-      if (horse.status === HorseStatus.UNDER_OBSERVATION) {
-        healthGroup = 'OBSERVATION';
-        observationCount++;
-      } else if (horse.status === HorseStatus.INJURED) {
-        healthGroup = 'INJURED';
-        injuredCount++;
-      } else if (horse.status === HorseStatus.ISOLATED) {
-        healthGroup = 'ISOLATED';
-        isolatedCount++;
-      } else {
-        qualifiedCount++;
-      }
-
+    const GROUP: Partial<Record<HorseStatus, string>> = {
+      [HorseStatus.UNDER_OBSERVATION]: 'OBSERVATION',
+      [HorseStatus.INJURED]: 'INJURED',
+      [HorseStatus.ISOLATED]: 'ISOLATED',
+    };
+    const mapped = horses.map((horse) => {
+      const lock = horse.medicalLocks[0];
+      const alloc = horse.stallAllocations[0];
+      const preventiveDue = horse.preventiveSchedules.map((p) => ({
+        name: p.typeCatalog?.name || p.scheduleType,
+        dueDate: p.dueDate,
+        overdue: p.dueDate < now,
+      }));
+      const observation = horse.dailyGroomingLogs[0];
       return {
         id: horse.id,
         name: horse.name,
+        horseCode: horse.horseCode,
         microchipRfid: horse.microchipRfid,
         status: horse.status,
-        healthGroup,
-        isMedicalLocked: isLocked,
-        stallCode: horse.stallAllocations[0]?.stall?.code || null,
-        zone: horse.stallAllocations[0]?.stall?.zone || null,
+        healthGroup: GROUP[horse.status] ?? 'QUALIFIED',
+        isMedicalLocked: horse.isMedicalLocked || !!lock,
+        lock: lock
+          ? {
+              lockCode: lock.lockCode,
+              lockedAt: lock.lockedAt,
+              recheckDate: lock.recheckDate,
+              veterinarianName: lock.veterinarian?.fullName ?? null,
+            }
+          : null,
+        stallId: alloc?.stall.id ?? null,
+        stallCode: alloc?.stall.code ?? null,
+        zone: alloc?.stall.zone ?? null,
+        zoneId: alloc?.stall.zoneId ?? null,
+        row: alloc?.stall.row ?? null,
+        col: alloc?.stall.col ?? null,
+        openInjuries: horse.injuryLogs.map((i) => ({ zone: i.anatomicalZone, stage: i.stage })),
+        latestRecord: horse.medicalRecords[0]
+          ? {
+              id: horse.medicalRecords[0].id,
+              examinationDate: horse.medicalRecords[0].examinationDate,
+              diagnosis: horse.medicalRecords[0].clinicalDiagnosis,
+            }
+          : null,
+        preventiveDue,
+        hasOverduePreventive: preventiveDue.some((p) => p.overdue),
+        latestObservation: observation
+          ? {
+              text: observation.healthObservations,
+              at: observation.createdAt,
+              groomName: observation.groom?.fullName ?? null,
+            }
+          : null,
       };
     });
 
-    let filtered = mappedHorses;
-    if (query.healthGroup) {
-      filtered = filtered.filter((h) => h.healthGroup === query.healthGroup);
-    }
-    if (query.isLocked === 'true') {
-      filtered = filtered.filter((h) => h.isMedicalLocked);
-    }
-    if (query.search) {
-      const term = query.search.toLowerCase();
-      filtered = filtered.filter(
-        (h) => h.name.toLowerCase().includes(term) || h.microchipRfid.toLowerCase().includes(term),
-      );
-    }
+    const count = (fn: (h: (typeof mapped)[number]) => boolean) => mapped.filter(fn).length;
+    const groups = query.healthGroup
+      ? query.healthGroup
+          .split(',')
+          .map((g) => g.trim())
+          .filter(Boolean)
+      : [];
+    const term = query.search?.trim().toLowerCase();
+    const data = mapped.filter(
+      (h) =>
+        (groups.length === 0 || groups.includes(h.healthGroup)) &&
+        (query.isLocked !== 'true' || h.isMedicalLocked) &&
+        (query.isLocked !== 'false' || !h.isMedicalLocked) &&
+        (!query.zone || h.zone === query.zone) &&
+        (query.overdue !== 'true' || h.hasOverduePreventive) &&
+        (!term ||
+          h.name.toLowerCase().includes(term) ||
+          (h.horseCode ?? '').toLowerCase().includes(term) ||
+          h.microchipRfid.toLowerCase().includes(term)),
+    );
 
     return {
       summary: {
-        qualifiedCount,
-        observationCount,
-        injuredCount,
-        isolatedCount,
-        lockedCount,
-        total: mappedHorses.length,
+        qualifiedCount: count((h) => h.healthGroup === 'QUALIFIED'),
+        observationCount: count((h) => h.healthGroup === 'OBSERVATION'),
+        injuredCount: count((h) => h.healthGroup === 'INJURED'),
+        isolatedCount: count((h) => h.healthGroup === 'ISOLATED'),
+        lockedCount: count((h) => h.isMedicalLocked),
+        overdueCount: count((h) => h.hasOverduePreventive),
+        total: mapped.length,
       },
-      data: filtered,
+      data,
+      generatedAt: now,
     };
   }
 

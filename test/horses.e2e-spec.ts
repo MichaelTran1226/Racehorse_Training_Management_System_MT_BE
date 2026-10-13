@@ -97,4 +97,37 @@ describe('Flow 1 horse soft delete / stalls HTTP contract (mock database, real J
       .expect(403);
     expect(prisma.stall.findMany).not.toHaveBeenCalled();
   });
+
+  it('stalls cannot be hard-deleted any more (Q-1.C): use status Inactive instead', async () => {
+    await request(app.getHttpServer())
+      .delete('/api/stalls/s-1')
+      .auth(token(), { type: 'bearer' })
+      .expect(404);
+  });
+
+  it('only the manager edits the breed / colour catalogue (SC-1.06)', async () => {
+    user.role = Role.HEAD_TRAINER;
+    await request(app.getHttpServer())
+      .post('/api/horse-catalogs')
+      .auth(token(), { type: 'bearer' })
+      .send({ type: 'BREED', code: 'ARABIAN', name: 'Arabian' })
+      .expect(403);
+  });
+
+  it('a catalogue code must be upper-case letters, digits or underscore', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/api/horse-catalogs')
+      .auth(token(), { type: 'bearer' })
+      .send({ type: 'BREED', code: 'a', name: 'Arabian' })
+      .expect(400);
+    expect(JSON.stringify(response.body)).toContain('Mã chỉ gồm');
+  });
+
+  it('a zone grid is limited to 30 x 30 (DL-1.14)', async () => {
+    await request(app.getHttpServer())
+      .post('/api/stalls/zones')
+      .auth(token(), { type: 'bearer' })
+      .send({ code: 'A', name: 'Khu A', rows: 31, cols: 2 })
+      .expect(400);
+  });
 });

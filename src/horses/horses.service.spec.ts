@@ -4,6 +4,8 @@ import { HorseStatus, Role, UserStatus } from '@prisma/client';
 import { HorsesService } from './horses.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { CounterService } from '../audit/counter.service';
+import { HorseCatalogsService } from '../horse-catalogs/horse-catalogs.service';
 import { UserRole } from '../common/enums/role.enum';
 import { CurrentUserPayload } from '../common/decorators/current-user.decorator';
 
@@ -11,6 +13,8 @@ describe('HorsesService', () => {
   let service: HorsesService;
   let prisma: any;
   let audit: any;
+  let counter: { next: jest.Mock };
+  let catalogs: { resolveName: jest.Mock };
 
   const mockManager: CurrentUserPayload = {
     userId: 'manager-1',
@@ -76,12 +80,18 @@ describe('HorsesService', () => {
     audit = {
       record: jest.fn().mockResolvedValue(undefined),
     };
+    let seq = 0;
+    counter = { next: jest.fn(() => Promise.resolve(++seq)) };
+    // Danh mục Giống / Màu lông: trả lại đúng tên được gửi lên (mục đang dùng).
+    catalogs = { resolveName: jest.fn((_type: string, value: string) => Promise.resolve(value)) };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         HorsesService,
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: audit },
+        { provide: CounterService, useValue: counter },
+        { provide: HorseCatalogsService, useValue: catalogs },
       ],
     }).compile();
 
@@ -89,16 +99,16 @@ describe('HorsesService', () => {
   });
 
   describe('generateHorseCode', () => {
-    it('should generate HR-000001 when count is 0', async () => {
-      prisma.horse.count.mockResolvedValue(0);
+    it('should take the next number from the shared counter (C1-01)', async () => {
       prisma.horse.findUnique.mockResolvedValue(null);
 
       const code = await service.generateHorseCode();
       expect(code).toBe('HR-000001');
+      expect(counter.next).toHaveBeenCalledWith('horse_code');
+      expect(prisma.horse.count).not.toHaveBeenCalled();
     });
 
-    it('should increment when collision occurs', async () => {
-      prisma.horse.count.mockResolvedValue(0);
+    it('should skip numbers already used by older records', async () => {
       prisma.horse.findUnique.mockResolvedValueOnce({ id: 'exists' }).mockResolvedValueOnce(null);
 
       const code = await service.generateHorseCode();
@@ -145,6 +155,64 @@ describe('HorsesService', () => {
       expect(res.horseCode).toBe('HR-000001');
       expect(res.status).toBe(HorseStatus.RESTING);
       expect(audit.record).toHaveBeenCalled();
+    });
+
+    it('should reject horse older than 12 years (INVALID_DOB)', async () => {
+      await expect(
+        service.create(
+          {
+            name: 'Old Horse',
+            breed: 'Thoroughbred',
+            dob: '2010-01-01',
+            gender: 'Stallion',
+            color: 'Bay',
+          },
+          mockManager,
+        ),
+      ).rejects.toMatchObject({
+        response: expect.objectContaining({ code: 'INVALID_DOB' }),
+      });
+    });
+
+    it('should reject future date of birth (INVALID_DOB)', async () => {
+      await expect(
+        service.create(
+          {
+            name: 'Future Horse',
+            breed: 'Thoroughbred',
+            dob: '2099-01-01',
+            gender: 'Stallion',
+            color: 'Bay',
+          },
+          mockManager,
+        ),
+      ).rejects.toMatchObject({
+        response: expect.objectContaining({ code: 'INVALID_DOB' }),
+      });
+    });
+
+    it('should auto-generate 15-digit microchip and RFID if not provided', async () => {
+      prisma.horse.findFirst.mockResolvedValue(null);
+      prisma.horse.findUnique.mockResolvedValue(null);
+      prisma.horse.count.mockResolvedValue(0);
+
+      prisma.horse.create.mockImplementation(({ data }) =>
+        Promise.resolve({ id: 'h-auto', ...data }),
+      );
+
+      const res = await service.create(
+        {
+          name: 'Auto Generated Codes',
+          breed: 'Thoroughbred',
+          dob: '2023-01-01',
+          gender: 'Stallion',
+          color: 'Bay',
+        },
+        mockManager,
+      );
+
+      expect(res.microchip).toMatch(/^\d{15}$/);
+      expect(res.rfid).toMatch(/^RFID-[A-Z0-9-]+$/);
     });
 
     it('should occupy the chosen stall inside the same transaction', async () => {
@@ -821,16 +889,62 @@ describe('HorsesService', () => {
           user: { fullName: 'Dr. Sarah Connor' },
           newValuesJson: JSON.stringify({ oldStatus: 'ACTIVE', newStatus: 'UNDER_OBSERVATION' }),
         },
+        {
+          id: 'aud-2',
+          action: 'HORSE_STATUS_CHANGED',
+          timestamp: new Date('2026-02-10'),
+          user: { fullName: 'Dr. Sarah Connor' },
+          newValuesJson: JSON.stringify({
+            oldStatus: 'INJURED',
+            newStatus: 'RESTING',
+            reason: 'Recovered',
+            source: 'MEDICAL_LOCK',
+          }),
+        },
       ]);
 
       const result = await service.getHistory('h-1', mockManager);
       expect(result).toBeDefined();
       expect(result.horse.name).toBe('Thunderbolt Swift');
-      expect(result.statusHistory).toHaveLength(1);
+      // Lịch sử trạng thái lấy từ nhật ký của ngựa; lần đổi do Khóa huấn luyện có nguồn riêng (CL-1.08).
+      expect(result.statusHistory.map((h) => h.source)).toEqual(['MANUAL', 'MEDICAL_LOCK']);
+      expect(result.statusHistory[1]).toMatchObject({ oldStatus: 'INJURED', newStatus: 'RESTING' });
       expect(result.stallHistory).toHaveLength(1);
       expect(result.medicalHistory.records).toHaveLength(1);
       expect(result.trainingHistory).toHaveLength(1);
-      expect(result.timeline.length).toBeGreaterThanOrEqual(4);
+      const categories = new Set(result.timeline.map((t) => t.category));
+      expect([...categories]).toEqual(
+        expect.arrayContaining(['IDENTITY', 'STATUS', 'STALL', 'MEDICAL', 'TRAINING']),
+      );
+      expect(result.timeline.find((t) => t.id === 'med-mr-1')?.link).toBe('/medical/records/mr-1');
+    });
+
+    it('should hide stall events from the owner timeline', async () => {
+      prisma.horse.findUnique.mockResolvedValue({
+        id: 'h-1',
+        name: 'Thunderbolt Swift',
+        breed: 'Thoroughbred',
+        ownerId: mockOwner.userId,
+        createdAt: new Date('2026-01-01'),
+        stallAllocations: [
+          {
+            id: 'sa-1',
+            stall: { code: 'STALL-A01', zone: 'Zone A' },
+            startDate: new Date('2026-01-02'),
+            endDate: null,
+            isActive: true,
+          },
+        ],
+        medicalRecords: [],
+        injuryLogs: [],
+        medicalLocks: [],
+        trainingPlans: [],
+        tournamentRegistrations: [],
+      });
+
+      const result = await service.getHistory('h-1', mockOwner);
+      expect(result.timeline.some((t) => t.category === 'STALL')).toBe(false);
+      expect(result.stallHistory).toEqual([]);
     });
 
     it('should throw 404 HORSE_NOT_FOUND if horse does not exist', async () => {

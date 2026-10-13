@@ -14,6 +14,7 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, CurrentUserPayload } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermission } from '../common/decorators/require-permission.decorator';
 import { UserRole } from '../common/enums/role.enum';
 import { WorkoutStatus } from '@prisma/client';
 import { TrainingService } from './training.service';
@@ -34,6 +35,7 @@ import {
 /**
  * Flow 2 - phân quyền theo đặc tả §2: chỉ HT lập/sửa/kích hoạt giáo án, xếp buổi tập và ghi kết quả;
  * CM, VET xem; OWNER xem ngựa sở hữu; GROOM xem buổi được giao.
+ * Q-2.C: ngoài vai trò, BE kiểm cả công tắc quyền (createPlan, assignSchedule, recordMetrics, ackAlerts).
  */
 @ApiTags('Training')
 @ApiBearerAuth('JWT-auth')
@@ -68,6 +70,7 @@ export class TrainingController {
   }
 
   @Post('plans')
+  @RequirePermission('createPlan')
   @Roles(UserRole.HEAD_TRAINER)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'SC-2.03 Tạo giáo án (luôn ở Nháp) - HT' })
@@ -76,6 +79,7 @@ export class TrainingController {
   }
 
   @Put('plans/:id')
+  @RequirePermission('createPlan')
   @Roles(UserRole.HEAD_TRAINER)
   @ApiOperation({ summary: 'Sửa giáo án Nháp / Đang áp dụng - HT' })
   async updatePlan(
@@ -87,6 +91,7 @@ export class TrainingController {
   }
 
   @Patch('plans/:id/status')
+  @RequirePermission('createPlan')
   @Roles(UserRole.HEAD_TRAINER)
   @ApiOperation({ summary: 'DL-2.02 Kích hoạt / DL-2.04 Hoàn thành / DL-2.03 Hủy giáo án - HT' })
   async changePlanStatus(
@@ -98,6 +103,7 @@ export class TrainingController {
   }
 
   @Post('plans/:id/clone')
+  @RequirePermission('createPlan')
   @Roles(UserRole.HEAD_TRAINER)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'DL-2.08 Nhân bản giáo án sang ngựa khác - HT' })
@@ -110,6 +116,7 @@ export class TrainingController {
   }
 
   @Delete('plans/:id')
+  @RequirePermission('createPlan')
   @Roles(UserRole.HEAD_TRAINER)
   @ApiOperation({ summary: 'Xóa giáo án Nháp chưa có buổi hoàn thành - HT' })
   async deletePlan(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
@@ -151,6 +158,7 @@ export class TrainingController {
   }
 
   @Post('plans/:id/workouts')
+  @RequirePermission('assignSchedule')
   @Roles(UserRole.HEAD_TRAINER)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'DL-2.01 Thêm buổi tập (chặn bài nặng khi Khóa y tế) - HT' })
@@ -163,6 +171,7 @@ export class TrainingController {
   }
 
   @Post('plans/:id/workouts/repeat')
+  @RequirePermission('assignSchedule')
   @Roles(UserRole.HEAD_TRAINER)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'DL-2.01 Lặp lại hằng tuần (tối đa 60 buổi, bỏ qua ngày bị chặn) - HT' })
@@ -181,6 +190,7 @@ export class TrainingController {
   }
 
   @Patch('workouts/:id')
+  @RequirePermission('assignSchedule')
   @Roles(UserRole.HEAD_TRAINER)
   @ApiOperation({ summary: 'Sửa buổi tập Đã lên lịch - HT' })
   async updateWorkout(
@@ -192,6 +202,7 @@ export class TrainingController {
   }
 
   @Post('workouts/:id/result')
+  @RequirePermission('recordMetrics')
   @Roles(UserRole.HEAD_TRAINER)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'SC-2.06 Ghi / sửa kết quả buổi tập - HT' })
@@ -204,6 +215,7 @@ export class TrainingController {
   }
 
   @Post('workouts/:id/cancel')
+  @RequirePermission('assignSchedule')
   @Roles(UserRole.HEAD_TRAINER)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'DL-2.05 Hủy buổi tập - HT' })
@@ -216,6 +228,7 @@ export class TrainingController {
   }
 
   @Post('workouts/:id/restore')
+  @RequirePermission('assignSchedule')
   @Roles(UserRole.HEAD_TRAINER)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'DL-2.07 Khôi phục buổi tập bị chặn sau khi gỡ khóa - HT' })
@@ -237,6 +250,7 @@ export class TrainingController {
   }
 
   @Patch('alerts/:id')
+  @RequirePermission('ackAlerts')
   @Roles(UserRole.VETERINARIAN)
   @ApiOperation({ summary: 'Bác sĩ thú y ghi nhận cảnh báo (id = id buổi tập)' })
   async acknowledgeAlert(

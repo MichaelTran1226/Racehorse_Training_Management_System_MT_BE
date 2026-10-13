@@ -32,6 +32,17 @@ describe('permissions', () => {
     );
   });
 
+  it('only a Veterinarian acknowledges and is notified of abnormal-sign alerts (Q-0.04)', () => {
+    expect(defaultPermissions(Role.VETERINARIAN).ackAlerts).toBe(true);
+    expect(defaultPermissions(Role.HEAD_TRAINER).ackAlerts).toBe(false);
+    expect(normalizePermissions(Role.CLUB_MANAGER, { ackAlerts: true }).ackAlerts).toBe(false);
+  });
+
+  it('a permission missing from the stored map falls back to the role default', () => {
+    expect(normalizePermissions(Role.VETERINARIAN, { placeLock: true }).ackAlerts).toBe(true);
+    expect(normalizePermissions(Role.VETERINARIAN, { ackAlerts: false }).ackAlerts).toBe(false);
+  });
+
   it('should lock only the threshold alert notification', () => {
     expect(isNotifyLocked(Role.HEAD_TRAINER, 'thresholdAlert')).toBe(true);
     expect(isNotifyLocked(Role.HEAD_TRAINER, 'dailyDigest')).toBe(false);

@@ -56,6 +56,7 @@ describe('Flow 2 training HTTP contract (mock database, real JWT/guards)', () =>
   beforeEach(() => {
     jest.clearAllMocks();
     user.role = Role.HEAD_TRAINER;
+    user.permissions = null;
   });
   afterAll(async () => {
     await app.close();
@@ -146,5 +147,34 @@ describe('Flow 2 training HTTP contract (mock database, real JWT/guards)', () =>
       .auth(token(), { type: 'bearer' })
       .send({ status: 'SUSPENDED' })
       .expect(400);
+  });
+
+  // Q-2.C: tắt công tắc quyền thì BE chặn thật, không chỉ ẩn menu.
+  it('a Head Trainer whose createPlan switch is off cannot create a plan', async () => {
+    user.permissions = {
+      viewHorses: true,
+      createPlan: false,
+      assignSchedule: true,
+      recordMetrics: true,
+    };
+    await request(app.getHttpServer())
+      .post('/api/training/plans')
+      .auth(token(), { type: 'bearer' })
+      .send({})
+      .expect(403);
+  });
+
+  it('a Head Trainer whose recordMetrics switch is off cannot record a result', async () => {
+    user.permissions = {
+      viewHorses: true,
+      createPlan: true,
+      assignSchedule: true,
+      recordMetrics: false,
+    };
+    await request(app.getHttpServer())
+      .post('/api/training/workouts/w-1/result')
+      .auth(token(), { type: 'bearer' })
+      .send({})
+      .expect(403);
   });
 });

@@ -9,6 +9,7 @@ import {
   TrackSurface,
   PreventiveType,
   PreventiveStatus,
+  HorseCatalogType,
 } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
@@ -92,19 +93,61 @@ async function main() {
   console.log(`- Groom: ${groom.email}`);
   console.log(`- Owner: ${owner.email}`);
 
-  // 2. Create Stalls
+  // 2. Khu chuồng (SC-1.07) và ô chuồng có vị trí trên lưới
+  const zones = [
+    { code: 'ZONE-A', name: 'Zone A - Barn 1', rows: 2, cols: 4, sortOrder: 1 },
+    { code: 'ZONE-B', name: 'Zone B - Barn 2', rows: 1, cols: 4, sortOrder: 2 },
+  ];
+  const zoneIds: Record<string, string> = {};
+  for (const z of zones) {
+    const zone = await prisma.stallZone.upsert({ where: { code: z.code }, update: {}, create: z });
+    zoneIds[z.name] = zone.id;
+  }
+
   const stalls = [
-    { code: 'STALL-A01', zone: 'Zone A - Barn 1', status: StallStatus.AVAILABLE },
-    { code: 'STALL-A02', zone: 'Zone A - Barn 1', status: StallStatus.AVAILABLE },
-    { code: 'STALL-B01', zone: 'Zone B - Barn 2', status: StallStatus.AVAILABLE },
+    { code: 'STALL-A01', zone: 'Zone A - Barn 1', row: 1, col: 1, status: StallStatus.AVAILABLE },
+    { code: 'STALL-A02', zone: 'Zone A - Barn 1', row: 1, col: 2, status: StallStatus.AVAILABLE },
+    { code: 'STALL-B01', zone: 'Zone B - Barn 2', row: 1, col: 1, status: StallStatus.AVAILABLE },
   ];
 
   for (const s of stalls) {
+    const place = { zoneId: zoneIds[s.zone], row: s.row, col: s.col };
     await prisma.stall.upsert({
       where: { code: s.code },
-      update: {},
-      create: s,
+      update: place,
+      create: { ...s, ...place },
     });
+  }
+
+  // 2b. Danh mục Giống & Màu lông (SC-1.06). Tên phải khớp Horse.breed / Horse.color đang có.
+  const catalog: Array<{ type: HorseCatalogType; names: string[] }> = [
+    {
+      type: HorseCatalogType.BREED,
+      names: [
+        'Thoroughbred',
+        'Arabian',
+        'Arabian Cross',
+        'Quarter Horse',
+        'Warmblood',
+        'Standardbred',
+        'Appaloosa',
+        'Paint',
+      ],
+    },
+    {
+      type: HorseCatalogType.COLOR,
+      names: ['Bay', 'Bay Dark', 'Chestnut', 'Black', 'Grey', 'Gray Roaming', 'Roan', 'Palomino'],
+    },
+  ];
+  for (const { type, names } of catalog) {
+    for (const [i, name] of names.entries()) {
+      const code = name.toUpperCase().replace(/[^A-Z0-9]+/g, '_');
+      await prisma.horseCatalogItem.upsert({
+        where: { type_code: { type, code } },
+        update: {},
+        create: { type, code, name, sortOrder: i + 1 },
+      });
+    }
   }
 
   // 3. Create 3 Canonical Horses

@@ -16,4 +16,9 @@ export class HealthBoardQueryDto {
   @IsOptional()
   @IsString()
   zone?: string;
+
+  /** 'true' = chỉ ngựa có lịch định kỳ quá hạn. */
+  @IsOptional()
+  @IsString()
+  overdue?: string;
 }

@@ -14,6 +14,8 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, CurrentUserPayload } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermission } from '../common/decorators/require-permission.decorator';
+import { apiError } from '../common/exceptions/api-error';
 import { UserRole } from '../common/enums/role.enum';
 import { HorsesService } from './horses.service';
 import { CreateHorseDto } from './dto/create-horse.dto';
@@ -39,6 +41,7 @@ export class HorsesController {
 
   // Phải khai báo TRƯỚC ':id', nếu không Nest hiểu "deleted" là một id.
   @Get('deleted')
+  @RequirePermission('deleteHorses')
   @Roles(UserRole.CLUB_MANAGER)
   @ApiOperation({ summary: 'Danh sách hồ sơ ngựa đã xóa (SC-1.05) - Chỉ Club Manager' })
   async findDeleted(@Query() query: QueryDeletedHorseDto) {
@@ -61,6 +64,7 @@ export class HorsesController {
   }
 
   @Post()
+  @RequirePermission('editHorses')
   @Roles(UserRole.CLUB_MANAGER)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Tạo hồ sơ ngựa mới (FR-1.01) - Chỉ Club Manager' })
@@ -69,6 +73,7 @@ export class HorsesController {
   }
 
   @Put(':id')
+  @RequirePermission('editHorses')
   @Roles(UserRole.CLUB_MANAGER)
   @ApiOperation({ summary: 'Cập nhật thông tin định danh ngựa (FR-1.02) - Chỉ Club Manager' })
   async update(
@@ -80,6 +85,7 @@ export class HorsesController {
   }
 
   @Patch(':id/transfer-owner')
+  @RequirePermission('editHorses')
   @Roles(UserRole.CLUB_MANAGER)
   @ApiOperation({ summary: 'Chuyển quyền sở hữu ngựa (FR-1.02, Flow 1) - Chỉ Club Manager' })
   async transferOwner(
@@ -91,6 +97,7 @@ export class HorsesController {
   }
 
   @Delete(':id')
+  @RequirePermission('deleteHorses')
   @Roles(UserRole.CLUB_MANAGER)
   @ApiOperation({
     summary: 'Xóa mềm hồ sơ ngựa tạo nhầm (DL-1.10, chưa có dữ liệu phụ thuộc) - Chỉ Club Manager',
@@ -104,6 +111,7 @@ export class HorsesController {
   }
 
   @Post(':id/restore')
+  @RequirePermission('deleteHorses')
   @Roles(UserRole.CLUB_MANAGER)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -125,6 +133,10 @@ export class HorsesController {
     @Body() dto: ChangeHorseStatusDto,
     @CurrentUser() user: CurrentUserPayload,
   ) {
+    // Q-2.C: CM chỉ dùng API này để Ngừng quản lý / Kích hoạt lại -> cần công tắc deleteHorses.
+    if (user.role === UserRole.CLUB_MANAGER && user.permissions && !user.permissions.deleteHorses) {
+      throw apiError(HttpStatus.FORBIDDEN, 'FORBIDDEN', 'Not allowed');
+    }
     return this.horsesService.changeStatus(id, dto, user);
   }
 }

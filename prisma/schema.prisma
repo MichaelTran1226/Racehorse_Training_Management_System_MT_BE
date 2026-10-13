@@ -70,6 +70,13 @@ enum StallStatus {
   AVAILABLE
   OCCUPIED
   MAINTENANCE
+  INACTIVE // Ngừng dùng (SC-1.07): không hiện trên sơ đồ, không gán được; thay cho xóa ô (Q-1.C)
+}
+
+// Loại danh mục của hồ sơ ngựa (SC-1.06)
+enum HorseCatalogType {
+  BREED
+  COLOR
 }
 
 enum TrackSurface {
@@ -335,10 +342,30 @@ model Horse {
   @@index([deletedAt])
 }
 
+// Khu chuồng (SC-1.07): kích thước lưới sơ đồ = rows × cols.
+model StallZone {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String   @unique
+  rows        Int      @default(1)
+  cols        Int      @default(1)
+  description String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  stalls Stall[]
+}
+
 model Stall {
   id          String      @id @default(uuid())
   code        String      @unique
-  zone        String
+  zone        String      // Tên khu (giữ cho dữ liệu cũ và bộ lọc; đồng bộ với StallZone.name)
+  zoneId      String?
+  zoneRef     StallZone?  @relation(fields: [zoneId], references: [id], onDelete: Restrict)
+  row         Int?
+  col         Int?
   status      StallStatus @default(AVAILABLE)
   notes       String?
   createdAt   DateTime    @default(now())
@@ -346,8 +373,26 @@ model Stall {
 
   allocations StallAllocation[]
 
+  @@unique([zoneId, row, col])
   @@index([zone])
   @@index([code])
+}
+
+// Danh mục Giống & Màu lông (SC-1.06). Horse.breed / Horse.color lưu Tên của mục.
+model HorseCatalogItem {
+  id          String           @id @default(uuid())
+  type        HorseCatalogType
+  code        String
+  name        String
+  description String?
+  sortOrder   Int              @default(0)
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([type, code])
+  @@unique([type, name])
+  @@index([type, isActive])
 }
 
 model StallAllocation {

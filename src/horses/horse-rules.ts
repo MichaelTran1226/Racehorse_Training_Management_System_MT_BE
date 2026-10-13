@@ -9,6 +9,9 @@ export const HORSE_NAME_RE = /^[\p{L}\p{N}\s'.-]+$/u;
 /** Mã thẻ RFID: 4-32 ký tự chữ in hoa, số, gạch nối (không bắt buộc tiền tố RFID-). */
 export const RFID_RE = /^[A-Z0-9-]{4,32}$/;
 
+/** Giới tính (SC-1.02): Ngựa đực / Ngựa cái / Ngựa đực thiến. */
+export const HORSE_GENDERS = ['Stallion', 'Mare', 'Gelding'];
+
 /** Bỏ khoảng trắng đầu/cuối và gộp nhiều khoảng trắng liền nhau thành một. */
 export function normalizeName(value: unknown): unknown {
   return typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : value;

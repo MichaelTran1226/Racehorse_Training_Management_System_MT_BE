@@ -1,7 +1,15 @@
-import { IsISO8601, IsNotEmpty, IsOptional, IsString, Length, Matches } from 'class-validator';
+import {
+  IsIn,
+  IsISO8601,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Length,
+  Matches,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { HORSE_NAME_RE, normalizeName, RFID_RE } from '../horse-rules';
+import { HORSE_GENDERS, HORSE_NAME_RE, normalizeName, RFID_RE } from '../horse-rules';
 
 export class CreateHorseDto {
   @ApiProperty({ description: 'Horse name (2-100 characters)', example: 'Thunderbolt Swift' })
@@ -24,9 +32,19 @@ export class CreateHorseDto {
   @IsISO8601({}, { message: 'Date of birth must follow YYYY-MM-DD format.' })
   dob: string;
 
-  @ApiProperty({ description: 'Gender', example: 'Colt' })
+  @ApiProperty({ description: 'Gender: Stallion, Mare, Gelding', example: 'Stallion' })
   @IsNotEmpty({ message: 'Please select a gender.' })
   @IsString({ message: 'Invalid gender string.' })
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      const v = value.trim();
+      if (v.toLowerCase() === 'colt') return 'Stallion';
+      if (v.toLowerCase() === 'filly') return 'Mare';
+      return v.charAt(0).toUpperCase() + v.slice(1).toLowerCase();
+    }
+    return value;
+  })
+  @IsIn(HORSE_GENDERS, { message: 'Please select a gender.' })
   gender: string;
 
   @ApiProperty({ description: 'Coat color', example: 'Bay Dark' })
@@ -34,11 +52,14 @@ export class CreateHorseDto {
   @IsString({ message: 'Invalid coat color string.' })
   color: string;
 
-  @ApiProperty({ description: 'Microchip number (exactly 15 digits)', example: '985141002341001' })
-  @IsNotEmpty({ message: 'Microchip number is required.' })
+  @ApiPropertyOptional({
+    description: 'Microchip number (exactly 15 digits, auto-generated if omitted)',
+    example: '985141002341001',
+  })
+  @IsOptional()
   @IsString()
   @Matches(/^\d{15}$/, { message: 'Microchip number must consist of exactly 15 digits.' })
-  microchip: string;
+  microchip?: string;
 
   @ApiPropertyOptional({
     description: 'RFID tag code (4-32 A-Z, 0-9, -)',
