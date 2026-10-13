@@ -10,6 +10,7 @@ import {
   Post,
   Put,
   Query,
+  ParseEnumPipe,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, CurrentUserPayload } from '../common/decorators/current-user.decorator';
@@ -134,7 +135,7 @@ export class TrainingController {
     @Query('date') date?: string,
     @Query('from') from?: string,
     @Query('to') to?: string,
-    @Query('status') status?: WorkoutStatus,
+    @Query('status', new ParseEnumPipe(WorkoutStatus, { optional: true })) status?: WorkoutStatus,
   ) {
     return this.trainingService.findAllWorkouts({ planId, horseId, date, from, to, status }, user);
   }
