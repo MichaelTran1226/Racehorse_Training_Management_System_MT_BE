@@ -59,9 +59,6 @@ describe('MedicalService', () => {
       update: jest.fn(),
       upsert: jest.fn(),
     },
-    $transaction: jest.fn((cb) =>
-      typeof cb === 'function' ? cb(mockPrismaService) : Promise.all(cb),
-    ),
   };
 
   const mockAuditService = {

@@ -1725,8 +1725,6 @@ export class MedicalService {
   async releaseMedicalLock(lockId: string, actor: CurrentUserPayload, dto: ReleaseMedicalLockDto) {
     this.assertVet(actor, 'lift a training lock');
 
-    const newHorseStatus = dto.newHorseStatus || lock.horse.status;
-
     const { lock, unlocked } = await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT "id" FROM "MedicalLock" WHERE "id" = ${lockId} FOR UPDATE`;
       const lock = await tx.medicalLock.findUnique({
@@ -1736,6 +1734,8 @@ export class MedicalService {
       if (!lock || !lock.isLocked) {
         throw new BadRequestException('Không tìm thấy Khóa huấn luyện hoặc khóa đã được gỡ');
       }
+
+      const newHorseStatus = dto.newHorseStatus || lock.horse.status;
 
       const unlocked = await tx.medicalLock.update({
         where: { id: lockId },
