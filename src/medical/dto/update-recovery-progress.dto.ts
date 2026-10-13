@@ -1,11 +1,22 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDateString, IsEnum, IsNotEmpty, IsOptional, IsString, Length } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsIn,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Length,
+} from 'class-validator';
 import { SeverityLevel } from '@prisma/client';
 
 export class UpdateRecoveryProgressDto {
   @ApiProperty({ description: 'Giai đoạn mới: ACUTE | SUBACUTE | RECOVERING | HEALED' })
   @IsNotEmpty({ message: 'Vui lòng chọn giai đoạn mới' })
   @IsString()
+  @IsIn(['ACUTE', 'SUBACUTE', 'RECOVERING', 'HEALED'], {
+    message: 'Giai đoạn phải là một trong: ACUTE, SUBACUTE, RECOVERING, HEALED',
+  })
   stage: string;
 
   @ApiPropertyOptional({ description: 'Ngày đánh giá (ISO date string)' })

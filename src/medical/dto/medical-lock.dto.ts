@@ -50,6 +50,13 @@ export class CreateMedicalLockDto {
   @IsDateString({}, { message: 'Ngày xem xét lại không hợp lệ' })
   recheckDate?: string;
 
+  @ApiPropertyOptional({
+    description: 'Alias cho recheckDate',
+  })
+  @IsOptional()
+  @IsDateString({}, { message: 'Ngày xem xét lại không hợp lệ' })
+  reviewDate?: string;
+
   @ApiPropertyOptional({ description: 'Số ngày nghỉ dự kiến (1 - 180 ngày)', default: 7 })
   @IsOptional()
   @IsInt()
@@ -84,6 +91,11 @@ export class ExtendMedicalLockDto {
   @IsOptional()
   @IsDateString({}, { message: 'Ngày xem xét mới không hợp lệ' })
   recheckDate?: string;
+
+  @ApiPropertyOptional({ description: 'Alias cho recheckDate' })
+  @IsOptional()
+  @IsDateString({}, { message: 'Ngày xem xét mới không hợp lệ' })
+  newReviewDate?: string;
 
   @ApiPropertyOptional({ description: 'Số ngày gia hạn thêm (1 - 180 ngày)' })
   @IsOptional()

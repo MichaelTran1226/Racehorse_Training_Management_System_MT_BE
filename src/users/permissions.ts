@@ -69,8 +69,9 @@ const DEFAULT_ON: Record<Role, PermissionKey[]> = {
     'viewMedical',
   ],
   VETERINARIAN: ['viewHorses', 'viewMedical', 'placeLock', 'liftLock'],
-  GROOM: ['viewHorses'],
-  HORSE_OWNER: ['viewHorses'],
+  // [Bug 1, 2] Bổ sung quyền 'viewMedical' mặc định cho GROOM và HORSE_OWNER (giới hạn phạm vi theo ngựa phân công / sở hữu)
+  GROOM: ['viewHorses', 'viewMedical'],
+  HORSE_OWNER: ['viewHorses', 'viewMedical'],
   CLUB_MANAGER: [
     'viewHorses',
     'editHorses',

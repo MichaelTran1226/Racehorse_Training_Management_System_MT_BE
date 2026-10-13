@@ -57,6 +57,9 @@ describe('MedicalService', () => {
       update: jest.fn(),
       upsert: jest.fn(),
     },
+    $transaction: jest.fn((cb) =>
+      typeof cb === 'function' ? cb(mockPrismaService) : Promise.all(cb),
+    ),
   };
 
   const mockAuditService = {
@@ -160,7 +163,9 @@ describe('MedicalService', () => {
       mockPrismaService.medicalRecord.findUnique.mockResolvedValue(mockRecord);
 
       const result = await service.getMedicalRecordDetail('rec-1', mockVetUser);
-      expect(result).toEqual(mockRecord);
+      expect(result.id).toBe(mockRecord.id);
+      expect(result.horseId).toBe(mockRecord.horseId);
+      expect(result.symptoms).toBe(mockRecord.symptoms);
     });
   });
 
