@@ -1478,8 +1478,12 @@ export class TrainingService {
       where.scheduledDate = { gte: start, lt: addDays(start, 1) };
     } else if (query.from || query.to) {
       where.scheduledDate = {
-        ...(query.from && !isNaN(new Date(query.from).getTime()) && { gte: startOfClubDay(new Date(query.from)) }),
-        ...(query.to && !isNaN(new Date(query.to).getTime()) && { lt: addDays(startOfClubDay(new Date(query.to)), 1) }),
+        ...(query.from &&
+          !isNaN(new Date(query.from).getTime()) && { gte: startOfClubDay(new Date(query.from)) }),
+        ...(query.to &&
+          !isNaN(new Date(query.to).getTime()) && {
+            lt: addDays(startOfClubDay(new Date(query.to)), 1),
+          }),
       };
     }
 
