@@ -58,10 +58,25 @@ enum HorseStatus {
   RETIRED
 }
 
+// Lý do Ngừng quản lý (status = RETIRED). DECEASED không được kích hoạt lại.
+enum RetireReason {
+  RETIRED
+  SOLD
+  DECEASED
+  TRANSFERRED
+}
+
 enum StallStatus {
   AVAILABLE
   OCCUPIED
   MAINTENANCE
+  INACTIVE // Ngừng dùng (SC-1.07): không hiện trên sơ đồ, không gán được; thay cho xóa ô (Q-1.C)
+}
+
+// Loại danh mục của hồ sơ ngựa (SC-1.06)
+enum HorseCatalogType {
+  BREED
+  COLOR
 }
 
 enum TrackSurface {
@@ -70,19 +85,21 @@ enum TrackSurface {
   SYNTHETIC
 }
 
+// Q14 = A (Flow 2 §4.1): Nháp -> Đang áp dụng -> Hoàn thành / Đã hủy.
 enum PlanStatus {
   DRAFT
-  APPROVED
   ACTIVE
   COMPLETED
-  SUSPENDED
+  CANCELLED
 }
 
+// Q14 = A (Flow 2 §4.2). BLOCKED = bị chặn do Khóa y tế (khôi phục được), MISSED = bỏ lỡ.
 enum WorkoutStatus {
   SCHEDULED
   COMPLETED
-  CANCELLED_MEDICAL_LOCK
-  SKIPPED
+  BLOCKED
+  MISSED
+  CANCELLED
 }
 
 enum BodySide {
@@ -190,9 +207,12 @@ model User {
   notify               Json?
 
   horsesOwned           Horse[]                 @relation("OwnerHorses")
+  horsesDeleted         Horse[]                 @relation("HorseDeletedBy")
   stallAllocations      StallAllocation[]       @relation("GroomStalls")
   trainingPlansCreated  TrainingPlan[]          @relation("TrainerPlans")
   workoutSessionsStaff  WorkoutSession[]        @relation("StaffWorkouts")
+  workoutResultsRecorded WorkoutSession[]       @relation("WorkoutResultRecorder")
+  workoutResultsEdited  WorkoutSession[]        @relation("WorkoutResultEditor")
   medicalRecordsExamined MedicalRecord[]        @relation("VetRecords")
   medicalLocksIssued    MedicalLock[]           @relation("VetLocksIssued")
   medicalLocksUnlocked  MedicalLock[]           @relation("VetLocksUnlocked")
@@ -291,6 +311,11 @@ model Horse {
   isMedicalLocked Boolean     @default(false)
   ownerId         String?
   owner           User?       @relation("OwnerHorses", fields: [ownerId], references: [id], onDelete: SetNull)
+  retireReason    RetireReason?
+  deletedAt       DateTime?
+  deletedById     String?
+  deletedBy       User?       @relation("HorseDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  deleteReason    String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
@@ -314,12 +339,33 @@ model Horse {
   @@index([ownerId])
   @@index([status])
   @@index([isMedicalLocked])
+  @@index([deletedAt])
+}
+
+// Khu chuồng (SC-1.07): kích thước lưới sơ đồ = rows × cols.
+model StallZone {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String   @unique
+  rows        Int      @default(1)
+  cols        Int      @default(1)
+  description String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  stalls Stall[]
 }
 
 model Stall {
   id          String      @id @default(uuid())
   code        String      @unique
-  zone        String
+  zone        String      // Tên khu (giữ cho dữ liệu cũ và bộ lọc; đồng bộ với StallZone.name)
+  zoneId      String?
+  zoneRef     StallZone?  @relation(fields: [zoneId], references: [id], onDelete: Restrict)
+  row         Int?
+  col         Int?
   status      StallStatus @default(AVAILABLE)
   notes       String?
   createdAt   DateTime    @default(now())
@@ -327,8 +373,26 @@ model Stall {
 
   allocations StallAllocation[]
 
+  @@unique([zoneId, row, col])
   @@index([zone])
   @@index([code])
+}
+
+// Danh mục Giống & Màu lông (SC-1.06). Horse.breed / Horse.color lưu Tên của mục.
+model HorseCatalogItem {
+  id          String           @id @default(uuid())
+  type        HorseCatalogType
+  code        String
+  name        String
+  description String?
+  sortOrder   Int              @default(0)
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([type, code])
+  @@unique([type, name])
+  @@index([type, isActive])
 }
 
 model StallAllocation {
@@ -355,14 +419,20 @@ model TrainingPlan {
   horse         Horse        @relation(fields: [horseId], references: [id], onDelete: Restrict)
   trainerUserId String
   trainer       User         @relation("TrainerPlans", fields: [trainerUserId], references: [id], onDelete: Restrict)
+  // Mã hiển thị GA-000001, sinh bằng bộ đếm Counter("training_plan")
+  planCode      String?      @unique
   phaseName     String
+  objective     String?
+  notes         String?
   phases        Json?
   targetSpeed   Float?
   targetDistance Int?
   trackSurface  TrackSurface @default(TURF)
   startDate     DateTime
   endDate       DateTime
-  status        PlanStatus   @default(APPROVED)
+  status        PlanStatus   @default(DRAFT)
+  cancelReason      String?
+  completionSummary String?
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
@@ -381,7 +451,12 @@ model WorkoutSession {
   assignedStaffUserId  String?
   assignedStaff        User?         @relation("StaffWorkouts", fields: [assignedStaffUserId], references: [id], onDelete: SetNull)
   scheduledDate        DateTime
+  // id của giai đoạn trong TrainingPlan.phases (JSON)
+  phaseId              String?
   distanceMeters       Int
+  // Số hiệp (DL-2.01: 1-10) và tốc độ mục tiêu (km/h)
+  repetitions          Int           @default(1)
+  targetSpeedKmh       Float?
   targetDurationSeconds Int?
   actualTimeSeconds    Float?
   heartRatePeak        Int?
@@ -399,6 +474,29 @@ model WorkoutSession {
   recoveryTimeMinutes  Float?
   staminaScore         Float?
   injuryRiskLevel      String?       @default("LOW")
+  // Lý do bị chặn (BLOCKED) hoặc bị hủy (CANCELLED)
+  statusReason         String?
+  // HT xác nhận đã trao đổi với VET khi xếp bài nặng lúc ngựa ở trạng thái y tế (DL-2.06)
+  medicalOverride      Boolean       @default(false)
+  resultRecordedAt     DateTime?
+  resultRecordedById   String?
+  resultRecordedBy     User?         @relation("WorkoutResultRecorder", fields: [resultRecordedById], references: [id], onDelete: SetNull)
+  resultUpdatedAt      DateTime?
+  resultUpdatedById    String?
+  resultUpdatedBy      User?         @relation("WorkoutResultEditor", fields: [resultUpdatedById], references: [id], onDelete: SetNull)
+  // Kết quả thực tế (SC-2.06)
+  actualDistanceMeters Int?
+  actualSurface        String?
+  trackCondition       String?
+  completionLevel      String?
+  // Nhận xét chuyên môn sau buổi tập (khác trainerNotes = ghi chú chỉ dẫn trước buổi tập)
+  resultNotes          String?
+  abnormalSignTypes    String[]      @default([])
+  // Dấu hiệu bất thường sau buổi tập -> cảnh báo VET (FR-2.14)
+  abnormalSigns        Boolean       @default(false)
+  abnormalNotes        String?
+  vetAcknowledgedAt    DateTime?
+  vetNotes             String?
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt
 

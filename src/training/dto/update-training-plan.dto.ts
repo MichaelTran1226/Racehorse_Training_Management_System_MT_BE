@@ -9,14 +9,26 @@ import {
   Length,
   Min,
 } from 'class-validator';
-import { PlanStatus, TrackSurface } from '@prisma/client';
+import { TrackSurface } from '@prisma/client';
 
 export class UpdateTrainingPlanDto {
   @ApiPropertyOptional({ description: 'Training phase title / name' })
   @IsOptional()
   @IsString()
-  @Length(2, 120)
+  @Length(3, 150, { message: 'Tên giáo án phải từ 3 đến 150 ký tự.' })
   phaseName?: string;
+
+  @ApiPropertyOptional({ description: 'Mục tiêu giáo án (10-1000 ký tự)' })
+  @IsOptional()
+  @IsString()
+  @Length(10, 1000, { message: 'Mục tiêu phải từ 10 đến 1000 ký tự.' })
+  objective?: string;
+
+  @ApiPropertyOptional({ description: 'Ghi chú (≤ 1000 ký tự)' })
+  @IsOptional()
+  @IsString()
+  @Length(0, 1000, { message: 'Ghi chú tối đa 1000 ký tự.' })
+  notes?: string;
 
   @ApiPropertyOptional({ description: 'Target average speed in km/h' })
   @IsOptional()
@@ -44,11 +56,6 @@ export class UpdateTrainingPlanDto {
   @IsOptional()
   @IsISO8601()
   endDate?: string;
-
-  @ApiPropertyOptional({ description: 'Plan status', enum: PlanStatus })
-  @IsOptional()
-  @IsEnum(PlanStatus)
-  status?: PlanStatus;
 
   @ApiPropertyOptional({ description: 'Multi-phase structured training plan breakdown' })
   @IsOptional()
