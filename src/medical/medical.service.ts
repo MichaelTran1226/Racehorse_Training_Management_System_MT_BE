@@ -206,6 +206,29 @@ export class MedicalService {
       throw new NotFoundException('Không tìm thấy chiến mã');
     }
 
+    if (horse.status === HorseStatus.RETIRED) {
+      throw new BadRequestException(
+        'Không thể ghi nhận chấn thương cho chiến mã đã Ngừng quản lý (RETIRED)',
+      );
+    }
+
+    let discDate = new Date();
+    if (dto.discoveryDate) {
+      discDate = new Date(dto.discoveryDate);
+      const now = new Date();
+      if (discDate > now) {
+        throw new BadRequestException(
+          'Ngày phát hiện chấn thương không được sau thời điểm hiện tại',
+        );
+      }
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      if (discDate < thirtyDaysAgo) {
+        throw new BadRequestException(
+          'Ngày phát hiện chấn thương không được sớm hơn 30 ngày trước',
+        );
+      }
+    }
+
     if (dto.medicalRecordId) {
       const record = await this.prisma.medicalRecord.findUnique({
         where: { id: dto.medicalRecordId },
@@ -222,7 +245,7 @@ export class MedicalService {
     const initialHistoryEntry = {
       id: `hist-${Date.now()}`,
       stage: initialStage,
-      evaluationDate: dto.discoveryDate || new Date().toISOString(),
+      evaluationDate: discDate.toISOString().split('T')[0],
       severity: dto.severity || SeverityLevel.MODERATE,
       notes: dto.description || 'Ghi nhận vị trí chấn thương ban đầu',
       updatedByUserId: actor.userId,
@@ -245,7 +268,7 @@ export class MedicalService {
         stage: initialStage,
         status,
         description: dto.description || null,
-        discoveryDate: dto.discoveryDate ? new Date(dto.discoveryDate) : new Date(),
+        discoveryDate: discDate,
         recoveryHistory: [initialHistoryEntry],
       },
       include: {
@@ -328,6 +351,30 @@ export class MedicalService {
       if (dto.stage === 'HEALED') {
         dataToUpdate.status = InjuryStatus.RESOLVED;
       }
+      if (dto.stage !== injury.stage) {
+        let history: any[] = [];
+        if (injury.recoveryHistory) {
+          try {
+            history =
+              typeof injury.recoveryHistory === 'string'
+                ? JSON.parse(injury.recoveryHistory)
+                : (injury.recoveryHistory as any[]);
+          } catch {
+            history = [];
+          }
+        }
+        history.push({
+          id: `hist-${Date.now()}`,
+          stage: dto.stage,
+          evaluationDate: new Date().toISOString(),
+          severity: dto.severity || injury.severity,
+          notes: dto.description || `Cập nhật giai đoạn sang ${dto.stage}`,
+          updatedByUserId: actor.userId,
+          updatedByName: actor.fullName,
+          createdAt: new Date().toISOString(),
+        });
+        dataToUpdate.recoveryHistory = history;
+      }
     }
     if (dto.discoveryDate) dataToUpdate.discoveryDate = new Date(dto.discoveryDate);
     if (dto.description !== undefined) dataToUpdate.description = dto.description;
@@ -404,55 +451,96 @@ export class MedicalService {
   ) {
     this.assertVet(actor, 'update recovery progress');
 
-    const injury = await this.prisma.injuryLog.findUnique({ where: { id } });
-    if (!injury) {
-      throw new NotFoundException('Không tìm thấy điểm chấn thương');
-    }
+    const runTx =
+      typeof this.prisma.$transaction === 'function'
+        ? (cb: any) => this.prisma.$transaction(cb)
+        : (cb: any) => cb(this.prisma);
 
-    if (injury.stage === 'HEALED' && dto.stage === 'HEALED') {
-      throw new BadRequestException('Chấn thương này đã được đánh dấu Đã lành');
-    }
-
-    let history: any[] = [];
-    if (injury.recoveryHistory) {
-      try {
-        history =
-          typeof injury.recoveryHistory === 'string'
-            ? JSON.parse(injury.recoveryHistory)
-            : (injury.recoveryHistory as any[]);
-      } catch {
-        history = [];
+    const updated = await runTx(async (tx: any) => {
+      const injury = await tx.injuryLog.findUnique({ where: { id } });
+      if (!injury) {
+        throw new NotFoundException('Không tìm thấy điểm chấn thương');
       }
-    }
 
-    const newEntry = {
-      id: `hist-${Date.now()}`,
-      stage: dto.stage,
-      evaluationDate: dto.evaluationDate || new Date().toISOString(),
-      severity: dto.currentSeverity || injury.severity,
-      notes: dto.notes,
-      updatedByUserId: actor.userId,
-      updatedByName: actor.fullName,
-      createdAt: new Date().toISOString(),
-    };
+      if (injury.stage === 'HEALED' && dto.stage === 'HEALED') {
+        throw new BadRequestException('Chấn thương này đã được đánh dấu Đã lành');
+      }
 
-    history.push(newEntry);
+      const now = new Date();
+      const evalDate = dto.evaluationDate ? new Date(dto.evaluationDate) : now;
+      if (evalDate > now) {
+        throw new BadRequestException('Ngày đánh giá không được lớn hơn thời điểm hiện tại');
+      }
 
-    const isHealed = dto.stage === 'HEALED';
-    const status = isHealed ? InjuryStatus.RESOLVED : InjuryStatus.HEALING;
+      let history: any[] = [];
+      if (injury.recoveryHistory) {
+        try {
+          history =
+            typeof injury.recoveryHistory === 'string'
+              ? JSON.parse(injury.recoveryHistory)
+              : (injury.recoveryHistory as any[]);
+        } catch {
+          history = [];
+        }
+      }
 
-    const updated = await this.prisma.injuryLog.update({
-      where: { id },
-      data: {
+      if (history.length > 0) {
+        const lastEntry = history[history.length - 1];
+        if (lastEntry.evaluationDate) {
+          const lastEval = new Date(lastEntry.evaluationDate);
+          if (evalDate < lastEval) {
+            throw new BadRequestException('Ngày đánh giá không được sớm hơn lần đánh giá trước đó');
+          }
+        }
+      }
+
+      const STAGE_ORDER: Record<string, number> = {
+        ACUTE: 0,
+        SUBACUTE: 1,
+        RECOVERING: 2,
+        HEALED: 3,
+      };
+
+      const currentStageLevel = STAGE_ORDER[injury.stage ?? 'ACUTE'] ?? 0;
+      const newStageLevel = STAGE_ORDER[dto.stage];
+
+      if (newStageLevel !== undefined) {
+        if (newStageLevel > currentStageLevel + 1) {
+          throw new BadRequestException(
+            `Không thể chuyển giai đoạn nhảy cóc từ ${injury.stage} sang ${dto.stage}`,
+          );
+        }
+      }
+
+      const newEntry = {
+        id: `hist-${Date.now()}`,
         stage: dto.stage,
+        evaluationDate: evalDate.toISOString(),
         severity: dto.currentSeverity || injury.severity,
-        status,
-        recoveryHistory: history,
-      },
-      include: {
-        horse: { select: { id: true, name: true, microchipRfid: true } },
-        medicalRecord: { select: { id: true, examinationDate: true, clinicalDiagnosis: true } },
-      },
+        notes: dto.notes,
+        updatedByUserId: actor.userId,
+        updatedByName: actor.fullName,
+        createdAt: new Date().toISOString(),
+      };
+
+      history.push(newEntry);
+
+      const isHealed = dto.stage === 'HEALED';
+      const status = isHealed ? InjuryStatus.RESOLVED : InjuryStatus.HEALING;
+
+      return await tx.injuryLog.update({
+        where: { id },
+        data: {
+          stage: dto.stage,
+          severity: dto.currentSeverity || injury.severity,
+          status,
+          recoveryHistory: history,
+        },
+        include: {
+          horse: { select: { id: true, name: true, microchipRfid: true } },
+          medicalRecord: { select: { id: true, examinationDate: true, clinicalDiagnosis: true } },
+        },
+      });
     });
 
     await this.audit.record(
@@ -480,24 +568,61 @@ export class MedicalService {
       throw new NotFoundException('Không tìm thấy chiến mã');
     }
 
+    if (horse.status === HorseStatus.RETIRED) {
+      throw new BadRequestException(
+        'Không thể tạo bệnh án cho chiến mã đã Ngừng quản lý (RETIRED)',
+      );
+    }
+
+    let examDate = new Date();
+    if (dto.examinationDate) {
+      examDate = new Date(dto.examinationDate);
+      const now = new Date();
+      if (examDate > now) {
+        throw new BadRequestException('Ngày khám không được sau thời điểm hiện tại');
+      }
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      if (examDate < thirtyDaysAgo) {
+        throw new BadRequestException('Ngày khám không được sớm hơn 30 ngày trước');
+      }
+    }
+
     const isDraft = dto.isDraft ?? false;
 
-    // Build prescription text if labTests or treatment provided as details
-    let prescriptionDetails: string | null = null;
+    // Generate recordNumber BA-YYMM-NNN
+    const now = new Date();
+    const yy = String(now.getFullYear()).slice(-2);
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const count = await this.prisma.medicalRecord.count();
+    const seq = String(count + 1).padStart(3, '0');
+    const recordNumber = `BA-${yy}${mm}-${seq}`;
+
+    // Build labTests JSON
+    let labTestsStr: string | null = null;
     if (dto.labTests && dto.labTests.length > 0) {
-      prescriptionDetails = JSON.stringify({ labTests: dto.labTests });
+      labTestsStr = JSON.stringify(dto.labTests);
     }
 
     const record = await this.prisma.medicalRecord.create({
       data: {
+        recordNumber,
         horseId: dto.horseId,
         veterinarianUserId: actor.userId,
-        examinationDate: dto.examinationDate ? new Date(dto.examinationDate) : new Date(),
+        examinationDate: examDate,
+        examinationType: dto.examinationType || 'Routine Clinical',
+        discoverySource: dto.discoverySource || null,
+        severity: dto.severity || SeverityLevel.MODERATE,
+        temperature: dto.vitals?.temperature ? Number(dto.vitals.temperature) : null,
+        restingHeartRate: dto.vitals?.restingHeartRate ? Number(dto.vitals.restingHeartRate) : null,
+        respiratoryRate: dto.vitals?.respiratoryRate ? Number(dto.vitals.respiratoryRate) : null,
+        weightKg: dto.vitals?.weightKg ? Number(dto.vitals.weightKg) : null,
+        clinicalExamination: dto.vitals?.clinicalExamination || null,
         symptoms: dto.symptoms || dto.reason || 'Khám tổng quát',
         clinicalDiagnosis: dto.diagnosis || 'Chờ chẩn đoán',
-        treatmentProtocol: dto.vitals?.clinicalExamination || dto.reason,
-        prescriptionDetails,
+        treatmentProtocol: dto.reason || dto.vitals?.clinicalExamination || 'Theo dõi và điều trị',
+        labTests: labTestsStr,
         requiresFollowUp: false,
+        status: isDraft ? 'DRAFT' : 'OPEN',
       },
       include: {
         horse: true,
@@ -505,16 +630,22 @@ export class MedicalService {
       },
     });
 
-    // Option to update horse status if recommended
     if (!isDraft && dto.recommendedHorseStatus) {
       const validStatus = Object.values(HorseStatus).includes(
         dto.recommendedHorseStatus as HorseStatus,
       );
-      if (validStatus) {
+      if (validStatus && horse.status !== dto.recommendedHorseStatus) {
         await this.prisma.horse.update({
           where: { id: dto.horseId },
           data: { status: dto.recommendedHorseStatus as HorseStatus },
         });
+
+        await this.audit.record(
+          { id: actor.userId, name: actor.fullName },
+          'HORSE_STATUS_CHANGED',
+          `Changed status of horse ${horse.name} from ${horse.status} to ${dto.recommendedHorseStatus}. Reason: Đề xuất từ bệnh án #${recordNumber}`,
+          horse.id,
+        );
       }
     }
 
@@ -634,22 +765,141 @@ export class MedicalService {
 
     await this.checkHorseAccess(record.horseId, currentUser);
 
+    // Đọc và parse danh sách giai đoạn phác đồ điều trị
+    let treatmentPhases: any[] = [];
+    if (record.treatmentPhases) {
+      try {
+        const parsed = JSON.parse(record.treatmentPhases);
+        if (Array.isArray(parsed)) treatmentPhases = parsed;
+      } catch {
+        /* ignore invalid JSON */
+      }
+    }
+
+    // Đọc và parse danh sách đơn thuốc (từ prescriptions hoặc fallback prescriptionDetails)
+    let prescriptions: any[] = [];
+    const rxSource = record.prescriptions || record.prescriptionDetails;
+    if (rxSource) {
+      try {
+        const parsed = JSON.parse(rxSource);
+        if (Array.isArray(parsed)) {
+          prescriptions = parsed;
+        } else if (parsed && typeof parsed === 'object' && !parsed.labTests) {
+          prescriptions = [parsed];
+        }
+      } catch {
+        /* ignore invalid JSON */
+      }
+    }
+
+    // Đọc và parse danh sách các lần tái khám
+    let followUps: any[] = [];
+    if (record.followUps) {
+      try {
+        const parsed = JSON.parse(record.followUps);
+        if (Array.isArray(parsed)) followUps = parsed;
+      } catch {
+        /* ignore invalid JSON */
+      }
+    }
+
+    // Đọc danh sách xét nghiệm từ cột riêng labTests hoặc prescriptionDetails
+    let labTests: any[] = [];
+    if (record.labTests) {
+      try {
+        const parsed = JSON.parse(record.labTests);
+        if (Array.isArray(parsed)) labTests = parsed;
+      } catch {
+        /* ignore invalid JSON */
+      }
+    } else if (record.prescriptionDetails) {
+      try {
+        const parsed = JSON.parse(record.prescriptionDetails);
+        if (parsed?.labTests && Array.isArray(parsed.labTests)) {
+          labTests = parsed.labTests;
+        }
+      } catch {
+        /* ignore invalid JSON */
+      }
+    }
+
+    const vitals = {
+      temperature: record.temperature ?? undefined,
+      restingHeartRate: record.restingHeartRate ?? undefined,
+      respiratoryRate: record.respiratoryRate ?? undefined,
+      weightKg: record.weightKg ?? undefined,
+      clinicalNotes: record.clinicalExamination ?? undefined,
+    };
+
     if (currentUser.role === Role.HORSE_OWNER) {
       return {
         id: record.id,
+        recordNumber: record.recordNumber || record.id,
         horseId: record.horseId,
+        horseName: record.horse?.name,
         horse: record.horse,
+        status: record.status,
         veterinarian: record.veterinarian,
-        examinationDate: record.examinationDate,
+        vetName: record.veterinarian?.fullName,
+        examinationDate: record.examinationDate.toISOString(),
+        examinationType: record.examinationType || 'Routine Clinical',
         symptoms: record.symptoms,
         clinicalDiagnosis: record.clinicalDiagnosis,
         requiresFollowUp: record.requiresFollowUp,
         followUpDate: record.followUpDate,
-        createdAt: record.createdAt,
+        conclusion: record.conclusion || undefined,
+        treatmentResult: record.treatmentResult || undefined,
+        treatmentPhases,
+        prescriptions,
+        followUps,
+        labTests,
+        closedAt: record.closedAt ? record.closedAt.toISOString() : undefined,
+        createdAt: record.createdAt.toISOString(),
       };
     }
 
-    return record;
+    return {
+      ...record,
+      recordNumber: record.recordNumber || record.id,
+      horseName: record.horse?.name,
+      vetName: record.veterinarian?.fullName,
+      status: record.status,
+      examinationType: record.examinationType || 'Routine Clinical',
+      discoverySource: record.discoverySource || 'VET Self-Discovered',
+      severity: record.severity || 'MODERATE',
+      conclusion: record.conclusion || undefined,
+      treatmentResult: record.treatmentResult || undefined,
+      vitals,
+      treatmentPhases,
+      prescriptions,
+      followUps,
+      labTests,
+      examinationDate: record.examinationDate
+        ? typeof record.examinationDate === 'string'
+          ? record.examinationDate
+          : record.examinationDate.toISOString()
+        : new Date().toISOString(),
+      closedAt: record.closedAt
+        ? typeof record.closedAt === 'string'
+          ? record.closedAt
+          : record.closedAt.toISOString()
+        : undefined,
+      reopenedAt: record.reopenedAt
+        ? typeof record.reopenedAt === 'string'
+          ? record.reopenedAt
+          : record.reopenedAt.toISOString()
+        : undefined,
+      createdAt: record.createdAt
+        ? typeof record.createdAt === 'string'
+          ? record.createdAt
+          : record.createdAt.toISOString()
+        : new Date().toISOString(),
+      updatedAt: record.updatedAt
+        ? typeof record.updatedAt === 'string'
+          ? record.updatedAt
+          : record.updatedAt.toISOString()
+        : new Date().toISOString(),
+    };
   }
 
   async updateMedicalRecord(id: string, actor: CurrentUserPayload, dto: UpdateMedicalRecordDto) {
@@ -703,17 +953,29 @@ export class MedicalService {
       throw new NotFoundException('Không tìm thấy bệnh án');
     }
 
+    if (record.status !== 'DRAFT') {
+      throw new BadRequestException(
+        'Chỉ được phép xóa bản nháp bệnh án. Bệnh án chính thức không thể xóa.',
+      );
+    }
+
+    if (record.veterinarianUserId !== actor.userId && actor.role !== Role.CLUB_MANAGER) {
+      throw new ForbiddenException(
+        'Chỉ bác sĩ tạo bản nháp hoặc Quản trị viên mới có quyền xóa bản nháp này',
+      );
+    }
+
     await this.prisma.medicalRecord.delete({ where: { id } });
 
     await this.audit.record(
       { id: actor.userId, name: actor.fullName },
       'DELETE_MEDICAL_RECORD',
-      `Medical record ${id} deleted`,
+      `Medical record draft ${id} deleted`,
       id,
       { entityName: 'MedicalRecord' },
     );
 
-    return { message: 'Đã xóa bệnh án thành công' };
+    return { message: 'Đã xóa bản nháp bệnh án thành công' };
   }
 
   async finalizeMedicalRecord(recordId: string, actor: CurrentUserPayload, dto: FinalizeRecordDto) {
@@ -724,23 +986,39 @@ export class MedicalService {
       include: { horse: true },
     });
     if (!record) throw new NotFoundException('Không tìm thấy bệnh án');
-    const recAny = record as any;
-    if (recAny.isDraft === false) {
+    if (record.status !== 'DRAFT') {
       throw new BadRequestException('Bệnh án đã được chốt trước đó');
     }
 
-    // 1. Chốt bệnh án
+    const recAny = record as any;
+
+    // 1. Chốt bệnh án: chuyển sang OPEN
     const updated = await this.prisma.medicalRecord.update({
       where: { id: recordId },
-      data: { isDraft: false } as any,
+      data: { status: 'OPEN' },
     });
 
     // 2. Nếu FE yêu cầu áp dụng trạng thái đề xuất lên ngựa
     if (dto.applyProposedStatus && recAny.recommendedHorseStatus) {
-      await this.prisma.horse.update({
-        where: { id: record.horseId },
-        data: { status: recAny.recommendedHorseStatus as any },
-      });
+      const targetStatus = recAny.recommendedHorseStatus as any;
+      if (record.horse?.status !== targetStatus) {
+        if (record.horse?.status === HorseStatus.RETIRED) {
+          throw new BadRequestException(
+            'Chiến mã đã Ngừng quản lý (RETIRED), không thể thay đổi trạng thái',
+          );
+        }
+        await this.prisma.horse.update({
+          where: { id: record.horseId },
+          data: { status: targetStatus },
+        });
+
+        await this.audit.record(
+          { id: actor.userId, name: actor.fullName },
+          'HORSE_STATUS_CHANGED',
+          `Changed status of horse ${record.horse?.name} from ${record.horse?.status} to ${targetStatus}. Reason: Áp dụng đề xuất khi chốt bệnh án #${record.recordNumber || record.id}`,
+          record.horseId,
+        );
+      }
     }
 
     // 3. Nếu FE yêu cầu tạo Medical Lock kèm theo
@@ -749,11 +1027,13 @@ export class MedicalService {
         await this.createMedicalLock(actor, {
           horseId: record.horseId,
           appliedMedicalStatus: (recAny.recommendedHorseStatus as string) || 'INJURED',
-          lockReason: dto.lockReason || `Khóa do chốt bệnh án #${recAny.recordNumber || record.id}`,
+          lockReason: dto.lockReason || `Khóa do chốt bệnh án #${record.recordNumber || record.id}`,
           expectedRestDays: dto.lockExpectedRestDays || 7,
         } as any);
-      } catch {
-        // Nếu đã có lock thì bỏ qua, không throw
+      } catch (err: any) {
+        throw new BadRequestException(
+          `Chốt bệnh án thất bại: Không thể đặt Khóa huấn luyện kèm theo (${err?.message || 'Lỗi không xác định'})`,
+        );
       }
     }
 
@@ -776,11 +1056,47 @@ export class MedicalService {
       throw new NotFoundException('Không tìm thấy bệnh án');
     }
 
+    if (record.status === 'CLOSED') {
+      throw new BadRequestException('Bệnh án đã được kết thúc trước đó');
+    }
+
+    // Tự động dừng tất cả đơn thuốc đang ACTIVE của bệnh án
+    let currentRx: any[] = [];
+    const rxSource = record.prescriptions || record.prescriptionDetails;
+    if (rxSource) {
+      try {
+        currentRx = JSON.parse(rxSource);
+        if (!Array.isArray(currentRx)) currentRx = [];
+      } catch {
+        currentRx = [];
+      }
+    }
+
+    const stoppedRx = currentRx.map((rx) => {
+      if (rx.status === 'ACTIVE') {
+        return {
+          ...rx,
+          status: 'STOPPED',
+          stoppedReason: 'Bệnh án kết thúc điều trị',
+          stoppedAt: new Date().toISOString(),
+        };
+      }
+      return rx;
+    });
+
+    const now = new Date();
+    // Cập nhật status CLOSED, closedAt, conclusion, treatmentResult và dừng đơn thuốc
     const updated = await this.prisma.medicalRecord.update({
       where: { id },
       data: {
         treatmentProtocol: `${record.treatmentProtocol}\n[KẾT LUẬN]: ${dto.conclusion}`,
+        conclusion: dto.conclusion,
+        treatmentResult: dto.treatmentResult || 'RECOVERED',
+        closedAt: now,
         requiresFollowUp: false,
+        status: 'CLOSED',
+        prescriptions: JSON.stringify(stoppedRx),
+        prescriptionDetails: JSON.stringify(stoppedRx),
       },
     });
 
@@ -803,10 +1119,30 @@ export class MedicalService {
       throw new NotFoundException('Không tìm thấy bệnh án');
     }
 
+    if (record.status !== 'CLOSED') {
+      throw new BadRequestException('Chỉ có thể mở lại bệnh án đã kết thúc điều trị');
+    }
+
+    // Kiểm tra quy tắc nghiệp vụ: Chỉ được mở lại trong vòng 7 ngày kể từ khi kết thúc
+    if (record.closedAt) {
+      const diffMs = Date.now() - new Date(record.closedAt).getTime();
+      const diffDays = diffMs / (1000 * 60 * 60 * 24);
+      if (diffDays > 7) {
+        throw new BadRequestException(
+          'Chỉ được phép mở lại bệnh án trong vòng 7 ngày kể từ khi kết thúc điều trị.',
+        );
+      }
+    }
+
+    const now = new Date();
+    // Cập nhật Database: đổi trạng thái sang OPEN, ghi nhận reopenedAt và reopenReason
     const updated = await this.prisma.medicalRecord.update({
       where: { id },
       data: {
         treatmentProtocol: `${record.treatmentProtocol}\n[MỞ LẠI]: ${dto.reason}`,
+        status: 'OPEN',
+        reopenedAt: now,
+        reopenReason: dto.reason,
       },
     });
 
@@ -835,6 +1171,24 @@ export class MedicalService {
     const record = await this.prisma.medicalRecord.findUnique({ where: { id: recordId } });
     if (!record) throw new NotFoundException('Không tìm thấy bệnh án');
 
+    if (dto.startDate && dto.endDate) {
+      const start = new Date(dto.startDate);
+      const end = new Date(dto.endDate);
+      if (end < start) {
+        throw new BadRequestException('Ngày kết thúc giai đoạn phải sau hoặc bằng ngày bắt đầu');
+      }
+    }
+
+    let phases: any[] = [];
+    if (record.treatmentPhases) {
+      try {
+        phases = JSON.parse(record.treatmentPhases);
+        if (!Array.isArray(phases)) phases = [];
+      } catch {
+        phases = [];
+      }
+    }
+
     const allowedActivity = dto.allowedActivity || dto.allowedActivityLevel || '';
 
     const phase = {
@@ -845,17 +1199,31 @@ export class MedicalService {
       target: dto.target || null,
       allowedActivity,
       careInstructions: dto.careInstructions || [],
+      createdAt: new Date().toISOString(),
     };
 
-    const phaseNote = `[PHÁC ĐỒ - ${dto.phaseName}]: Tu: ${dto.startDate} Den: ${dto.endDate} | Muc tieu: ${dto.target || 'N/A'} | Van dong: ${allowedActivity}`;
+    phases.push(phase);
+
+    const phaseNote = `[PHÁC ĐỒ - ${dto.phaseName}]: Từ: ${dto.startDate} Đến: ${dto.endDate} | Mục tiêu: ${dto.target || 'N/A'} | Vận động: ${allowedActivity}`;
     const updatedProtocol = record.treatmentProtocol
       ? `${record.treatmentProtocol}\n${phaseNote}`
       : phaseNote;
 
+    // Lưu phác đồ điều trị vào cột treatmentPhases trong Database
     const updated = await this.prisma.medicalRecord.update({
       where: { id: recordId },
-      data: { treatmentProtocol: updatedProtocol },
+      data: {
+        treatmentPhases: JSON.stringify(phases),
+        treatmentProtocol: updatedProtocol,
+      },
     });
+
+    await this.audit.record(
+      { id: actor.userId, name: actor.fullName },
+      'ADD_TREATMENT_PHASE',
+      `Added treatment phase ${dto.phaseName} to medical record ${recordId}`,
+      recordId,
+    );
 
     return { message: 'Đã thêm giai đoạn phác đồ thành công', phase, record: updated };
   }
@@ -871,14 +1239,45 @@ export class MedicalService {
     const record = await this.prisma.medicalRecord.findUnique({ where: { id: recordId } });
     if (!record) throw new NotFoundException('Không tìm thấy bệnh án');
 
-    const updateNote = `[CẬP NHẬT PHÁC ĐỒ - ${phaseId}]: ${dto.phaseName || ''} | Muc tieu: ${dto.target || 'N/A'} | Huong dan: ${dto.careInstructions?.join(', ') || 'N/A'}`;
-    const updatedProtocol = record.treatmentProtocol
-      ? `${record.treatmentProtocol}\n${updateNote}`
-      : updateNote;
+    let phases: any[] = [];
+    if (record.treatmentPhases) {
+      try {
+        phases = JSON.parse(record.treatmentPhases);
+        if (!Array.isArray(phases)) phases = [];
+      } catch {
+        phases = [];
+      }
+    }
 
+    const index = phases.findIndex((p) => p.id === phaseId);
+    if (index === -1) {
+      throw new NotFoundException('Không tìm thấy giai đoạn phác đồ');
+    }
+
+    const updatedPhase = {
+      ...phases[index],
+      ...dto,
+      allowedActivity:
+        dto.allowedActivity || dto.allowedActivityLevel || phases[index].allowedActivity,
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (updatedPhase.startDate && updatedPhase.endDate) {
+      const start = new Date(updatedPhase.startDate);
+      const end = new Date(updatedPhase.endDate);
+      if (end < start) {
+        throw new BadRequestException('Ngày kết thúc giai đoạn phải sau hoặc bằng ngày bắt đầu');
+      }
+    }
+
+    phases[index] = updatedPhase;
+
+    // Lưu cập nhật vào cột treatmentPhases trong Database
     const updated = await this.prisma.medicalRecord.update({
       where: { id: recordId },
-      data: { treatmentProtocol: updatedProtocol },
+      data: {
+        treatmentPhases: JSON.stringify(phases),
+      },
     });
 
     await this.audit.record(
@@ -889,7 +1288,11 @@ export class MedicalService {
       { entityName: 'MedicalRecord' },
     );
 
-    return { message: 'Đã cập nhật phác đồ điều trị thành công', dto, record: updated };
+    return {
+      message: 'Đã cập nhật phác đồ điều trị thành công',
+      phase: updatedPhase,
+      record: updated,
+    };
   }
 
   // ---------------------------------------------------------------------------
@@ -903,12 +1306,57 @@ export class MedicalService {
     if (!record) throw new NotFoundException('Không tìm thấy bệnh án');
 
     let currentRx: any[] = [];
-    if (record.prescriptionDetails) {
+    const rxSource = record.prescriptions || record.prescriptionDetails;
+    if (rxSource) {
       try {
-        currentRx = JSON.parse(record.prescriptionDetails);
+        currentRx = JSON.parse(rxSource);
         if (!Array.isArray(currentRx)) currentRx = [currentRx];
       } catch {
-        currentRx = [{ raw: record.prescriptionDetails }];
+        currentRx = [];
+      }
+    }
+
+    // Cảnh báo trùng thuốc đang hiệu lực: kiểm tra trong bệnh án hiện tại hoặc các bệnh án OPEN khác của ngựa
+    const activeSameMedInCurrent = currentRx.find(
+      (rx) =>
+        rx.status === 'ACTIVE' &&
+        rx.medicationName?.trim().toLowerCase() === dto.medicationName?.trim().toLowerCase(),
+    );
+
+    let conflictWarning: string | null = null;
+    if (activeSameMedInCurrent) {
+      conflictWarning = `Cảnh báo: Thuốc ${dto.medicationName} đang có hiệu lực trong bệnh án này!`;
+    } else {
+      const otherRecords = await this.prisma.medicalRecord.findMany({
+        where: {
+          horseId: record.horseId,
+          status: 'OPEN',
+          id: { not: recordId },
+        },
+        select: { id: true, recordNumber: true, prescriptions: true, prescriptionDetails: true },
+      });
+
+      for (const otherRec of otherRecords) {
+        const otherSrc = otherRec.prescriptions || otherRec.prescriptionDetails;
+        if (otherSrc) {
+          try {
+            const otherRxs = JSON.parse(otherSrc);
+            if (Array.isArray(otherRxs)) {
+              const matched = otherRxs.find(
+                (rx) =>
+                  rx.status === 'ACTIVE' &&
+                  rx.medicationName?.trim().toLowerCase() ===
+                    dto.medicationName?.trim().toLowerCase(),
+              );
+              if (matched) {
+                conflictWarning = `Cảnh báo: Thuốc ${dto.medicationName} đang được sử dụng ở bệnh án khác (#${otherRec.recordNumber || otherRec.id})!`;
+                break;
+              }
+            }
+          } catch {
+            /* ignore invalid JSON */
+          }
+        }
       }
     }
 
@@ -935,12 +1383,28 @@ export class MedicalService {
 
     currentRx.push(newPrescription);
 
+    // Lưu danh sách đơn thuốc vào cột prescriptions riêng biệt trong Database (đồng bộ prescriptionDetails để tương thích ngược)
     const updated = await this.prisma.medicalRecord.update({
       where: { id: recordId },
-      data: { prescriptionDetails: JSON.stringify(currentRx) },
+      data: {
+        prescriptions: JSON.stringify(currentRx),
+        prescriptionDetails: JSON.stringify(currentRx),
+      },
     });
 
-    return { message: 'Kê đơn thuốc thành công', prescription: newPrescription, record: updated };
+    await this.audit.record(
+      { id: actor.userId, name: actor.fullName },
+      'ADD_PRESCRIPTION',
+      `Prescribed ${dto.medicationName} for medical record ${recordId}`,
+      recordId,
+    );
+
+    return {
+      message: 'Kê đơn thuốc thành công',
+      prescription: newPrescription,
+      warning: conflictWarning,
+      record: updated,
+    };
   }
 
   async updatePrescription(
@@ -955,9 +1419,10 @@ export class MedicalService {
     if (!record) throw new NotFoundException('Không tìm thấy bệnh án');
 
     let currentRx: any[] = [];
-    if (record.prescriptionDetails) {
+    const rxSource = record.prescriptions || record.prescriptionDetails;
+    if (rxSource) {
       try {
-        currentRx = JSON.parse(record.prescriptionDetails);
+        currentRx = JSON.parse(rxSource);
       } catch {
         currentRx = [];
       }
@@ -968,12 +1433,35 @@ export class MedicalService {
       throw new NotFoundException('Không tìm thấy thông tin đơn thuốc');
     }
 
-    currentRx[index] = { ...currentRx[index], ...dto };
+    const rx = currentRx[index];
 
+    // Quy tắc nghiệp vụ: Chỉ cho phép chỉnh sửa khi đơn thuốc chưa bắt đầu dùng (startDate > now)
+    if (rx.startDate) {
+      const start = new Date(rx.startDate);
+      if (start.getTime() <= Date.now()) {
+        throw new BadRequestException(
+          'Đơn thuốc đã bắt đầu có hiệu lực và được sử dụng, không thể chỉnh sửa. Vui lòng dừng đơn thuốc hiện tại và kê đơn mới nếu có thay đổi.',
+        );
+      }
+    }
+
+    currentRx[index] = { ...rx, ...dto, updatedAt: new Date().toISOString() };
+
+    // Cập nhật mảng đơn thuốc vào cột prescriptions trong Database
     await this.prisma.medicalRecord.update({
       where: { id: recordId },
-      data: { prescriptionDetails: JSON.stringify(currentRx) },
+      data: {
+        prescriptions: JSON.stringify(currentRx),
+        prescriptionDetails: JSON.stringify(currentRx),
+      },
     });
+
+    await this.audit.record(
+      { id: actor.userId, name: actor.fullName },
+      'UPDATE_PRESCRIPTION',
+      `Updated prescription ${prescriptionId} for medical record ${recordId}`,
+      recordId,
+    );
 
     return { message: 'Cập nhật đơn thuốc thành công', prescription: currentRx[index] };
   }
@@ -990,9 +1478,10 @@ export class MedicalService {
     if (!record) throw new NotFoundException('Không tìm thấy bệnh án');
 
     let currentRx: any[] = [];
-    if (record.prescriptionDetails) {
+    const rxSource = record.prescriptions || record.prescriptionDetails;
+    if (rxSource) {
       try {
-        currentRx = JSON.parse(record.prescriptionDetails);
+        currentRx = JSON.parse(rxSource);
       } catch {
         currentRx = [];
       }
@@ -1007,10 +1496,21 @@ export class MedicalService {
     rx.stoppedReason = dto.reason || 'Bác sĩ yêu cầu dừng thuốc';
     rx.stoppedAt = new Date().toISOString();
 
+    // Cập nhật trạng thái dừng đơn thuốc vào cột prescriptions trong Database
     await this.prisma.medicalRecord.update({
       where: { id: recordId },
-      data: { prescriptionDetails: JSON.stringify(currentRx) },
+      data: {
+        prescriptions: JSON.stringify(currentRx),
+        prescriptionDetails: JSON.stringify(currentRx),
+      },
     });
+
+    await this.audit.record(
+      { id: actor.userId, name: actor.fullName },
+      'STOP_PRESCRIPTION',
+      `Stopped prescription ${prescriptionId} for medical record ${recordId}: ${rx.stoppedReason}`,
+      recordId,
+    );
 
     return { message: 'Đã dừng đơn thuốc thành công', prescription: rx };
   }
@@ -1028,6 +1528,16 @@ export class MedicalService {
     const rawVisitDate = dto.followUpDate || dto.visitDate;
     const visitDate = rawVisitDate ? new Date(rawVisitDate) : new Date();
 
+    let followUps: any[] = [];
+    if (record.followUps) {
+      try {
+        followUps = JSON.parse(record.followUps);
+        if (!Array.isArray(followUps)) followUps = [];
+      } catch {
+        followUps = [];
+      }
+    }
+
     const followUp = {
       id: `fu-${Date.now()}`,
       followUpDate: visitDate.toISOString().split('T')[0],
@@ -1037,16 +1547,28 @@ export class MedicalService {
       progressNotes: dto.progressNotes,
       adjustments: dto.adjustments || null,
       vetName: actor.fullName || actor.email || 'Veterinarian',
+      createdAt: new Date().toISOString(),
     };
 
+    followUps.push(followUp);
+
+    // Lưu danh sách tái khám vào cột followUps trong Database
     const updated = await this.prisma.medicalRecord.update({
       where: { id: recordId },
       data: {
         requiresFollowUp: true,
         followUpDate: visitDate,
+        followUps: JSON.stringify(followUps),
         treatmentProtocol: `${record.treatmentProtocol}\n[TÁI KHÁM ${visitDate.toLocaleDateString()}]: ${dto.progressNotes}`,
       },
     });
+
+    await this.audit.record(
+      { id: actor.userId, name: actor.fullName },
+      'ADD_FOLLOW_UP',
+      `Recorded follow-up visit for medical record ${recordId}`,
+      recordId,
+    );
 
     return { message: 'Ghi nhận tái khám thành công', followUp, record: updated };
   }
@@ -1067,8 +1589,9 @@ export class MedicalService {
 
     const now = new Date();
     let recheckDate: Date;
-    if (dto.recheckDate) {
-      recheckDate = new Date(dto.recheckDate);
+    const inputDate = dto.recheckDate || dto.reviewDate;
+    if (inputDate) {
+      recheckDate = new Date(inputDate);
     } else {
       const restDays = dto.expectedRestDays || 7;
       recheckDate = new Date(now.getTime() + restDays * 24 * 60 * 60 * 1000);
@@ -1100,7 +1623,15 @@ export class MedicalService {
       }
 
       const lockCount = await tx.medicalLock.count();
-      const lockCode = `KH-${String(lockCount + 1).padStart(6, '0')}`;
+      let lockCode = `KH-${String(lockCount + 1).padStart(6, '0')}`;
+      let attempts = 0;
+      while (attempts < 5) {
+        const existing = await tx.medicalLock.findUnique({ where: { lockCode } });
+        if (!existing) break;
+        attempts++;
+        const randomPart = Math.floor(100000 + Math.random() * 900000);
+        lockCode = `KH-${randomPart}`;
+      }
 
       const lock = await tx.medicalLock.create({
         data: {
@@ -1194,8 +1725,6 @@ export class MedicalService {
   async releaseMedicalLock(lockId: string, actor: CurrentUserPayload, dto: ReleaseMedicalLockDto) {
     this.assertVet(actor, 'lift a training lock');
 
-    const newHorseStatus = dto.newHorseStatus || HorseStatus.RESTING;
-
     const { lock, unlocked } = await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT "id" FROM "MedicalLock" WHERE "id" = ${lockId} FOR UPDATE`;
       const lock = await tx.medicalLock.findUnique({
@@ -1205,6 +1734,8 @@ export class MedicalService {
       if (!lock || !lock.isLocked) {
         throw new BadRequestException('Không tìm thấy Khóa huấn luyện hoặc khóa đã được gỡ');
       }
+
+      const newHorseStatus = dto.newHorseStatus || lock.horse.status;
 
       const unlocked = await tx.medicalLock.update({
         where: { id: lockId },
@@ -1283,8 +1814,9 @@ export class MedicalService {
       const now = new Date();
       let newRecheckDate: Date;
 
-      if (dto.recheckDate) {
-        newRecheckDate = new Date(dto.recheckDate);
+      const targetDate = dto.recheckDate || dto.newReviewDate;
+      if (targetDate) {
+        newRecheckDate = new Date(targetDate);
       } else if (dto.additionalDays) {
         const baseDate = lock.recheckDate && lock.recheckDate > now ? lock.recheckDate : now;
         newRecheckDate = new Date(baseDate.getTime() + dto.additionalDays * 24 * 60 * 60 * 1000);
@@ -1579,7 +2111,7 @@ export class MedicalService {
         examinationType: 'Routine Clinical',
         clinicalDiagnosis: r.clinicalDiagnosis,
         severity: 'MODERATE',
-        status: 'CLOSED',
+        status: (r as any).status || 'OPEN',
         veterinarianName: r.veterinarian?.fullName,
         symptoms: r.symptoms,
         treatmentProtocol: r.treatmentProtocol,
@@ -1590,8 +2122,52 @@ export class MedicalService {
         region: i.anatomicalZone,
         view: i.viewSide,
       })),
-      observations: [],
+      observations: (
+        await this.prisma.dailyGroomingLog.findMany({
+          where: { horseId, healthObservations: { not: null } },
+          orderBy: { shiftDate: 'desc' },
+          take: 20,
+          include: { groom: { select: { id: true, fullName: true } } },
+        })
+      ).map((g) => ({
+        id: g.id,
+        horseId: g.horseId,
+        shift: g.shiftType,
+        observedAt: g.shiftDate.toISOString(),
+        groomId: g.groomUserId,
+        groomName: g.groom?.fullName || 'Groom',
+        urgency: 'NORMAL',
+        content: g.healthObservations || '',
+      })),
     };
+  }
+
+  async getHorseObservations(horseId: string, currentUser: CurrentUserPayload, _urgency?: string) {
+    await this.checkHorseAccess(horseId, currentUser);
+
+    const logs = await this.prisma.dailyGroomingLog.findMany({
+      where: {
+        horseId,
+        healthObservations: { not: null },
+      },
+      orderBy: { shiftDate: 'desc' },
+      include: {
+        groom: { select: { id: true, fullName: true } },
+      },
+    });
+
+    const mapped = logs.map((g) => ({
+      id: g.id,
+      horseId: g.horseId,
+      shift: g.shiftType,
+      observedAt: g.shiftDate.toISOString(),
+      groomId: g.groomUserId,
+      groomName: g.groom?.fullName || 'Groom',
+      urgency: 'NORMAL',
+      content: g.healthObservations || '',
+    }));
+
+    return { observations: mapped };
   }
 
   /**
@@ -1956,55 +2532,94 @@ export class MedicalService {
       ];
     }
 
-    const [total, schedules] = await Promise.all([
-      this.prisma.preventiveSchedule.count({ where }),
-      this.prisma.preventiveSchedule.findMany({
-        where,
-        skip,
-        take,
-        orderBy: { dueDate: 'asc' },
-        include: {
-          horse: {
-            select: {
-              id: true,
-              name: true,
-              microchipRfid: true,
-              status: true,
-              stallAllocations: {
-                where: { isActive: true },
-                select: { stall: { select: { code: true, zone: true } } },
+    const now = new Date();
+    if (status) {
+      if (status === 'OVERDUE') {
+        where.dueDate = { lt: now };
+        where.status = { not: PreventiveStatus.COMPLETED };
+      } else if (status === 'UPCOMING' || status === 'UPCOMING_7') {
+        where.dueDate = {
+          gte: now,
+          lte: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+        };
+        where.status = { not: PreventiveStatus.COMPLETED };
+      } else if (status === 'COMPLETED') {
+        where.status = PreventiveStatus.COMPLETED;
+      }
+    }
+
+    const baseWhere = { ...where };
+    delete baseWhere.dueDate;
+    delete baseWhere.status;
+
+    const [total, overdueCount, upcoming7DaysCount, upcoming30DaysCount, schedules] =
+      await Promise.all([
+        this.prisma.preventiveSchedule.count({ where }),
+        this.prisma.preventiveSchedule.count({
+          where: {
+            ...baseWhere,
+            dueDate: { lt: now },
+            status: { not: PreventiveStatus.COMPLETED },
+          },
+        }),
+        this.prisma.preventiveSchedule.count({
+          where: {
+            ...baseWhere,
+            dueDate: {
+              gte: now,
+              lte: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+            },
+            status: { not: PreventiveStatus.COMPLETED },
+          },
+        }),
+        this.prisma.preventiveSchedule.count({
+          where: {
+            ...baseWhere,
+            dueDate: {
+              gte: now,
+              lte: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000),
+            },
+            status: { not: PreventiveStatus.COMPLETED },
+          },
+        }),
+        this.prisma.preventiveSchedule.findMany({
+          where,
+          skip,
+          take,
+          orderBy: { dueDate: 'asc' },
+          include: {
+            horse: {
+              select: {
+                id: true,
+                name: true,
+                microchipRfid: true,
+                status: true,
+                stallAllocations: {
+                  where: { isActive: true },
+                  select: { stall: { select: { code: true, zone: true } } },
+                },
               },
             },
+            typeCatalog: true,
+            veterinarian: { select: { id: true, fullName: true, email: true } },
           },
-          typeCatalog: true,
-          veterinarian: { select: { id: true, fullName: true, email: true } },
-        },
-      }),
-    ]);
-
-    const now = new Date();
-    let overdueCount = 0;
-    let upcoming7DaysCount = 0;
-    let upcoming30DaysCount = 0;
+        }),
+      ]);
 
     const mapped = schedules.map((sch) => {
       const noticeDays = sch.typeCatalog?.advanceNoticeDays || 7;
       const dueDate = new Date(sch.dueDate);
 
-      const isOverdue = dueDate < now;
-      const isUpcoming7 =
-        !isOverdue && dueDate <= new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-      const isUpcoming30 =
-        !isOverdue && dueDate <= new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      const isOverdue = dueDate < now && sch.status !== PreventiveStatus.COMPLETED;
       const isNotice =
-        !isOverdue && dueDate <= new Date(now.getTime() + noticeDays * 24 * 60 * 60 * 1000);
-
-      if (isOverdue) overdueCount++;
-      if (isUpcoming7) upcoming7DaysCount++;
-      if (isUpcoming30) upcoming30DaysCount++;
+        !isOverdue &&
+        dueDate <= new Date(now.getTime() + noticeDays * 24 * 60 * 60 * 1000) &&
+        sch.status !== PreventiveStatus.COMPLETED;
 
       let statusBadge = 'NORMAL';
-      if (isOverdue) {
+      if (sch.status === PreventiveStatus.COMPLETED) {
+        statusBadge = 'COMPLETED';
+      } else if (isOverdue) {
         statusBadge = 'OVERDUE';
       } else if (isNotice) {
         statusBadge = 'UPCOMING';
@@ -2023,21 +2638,6 @@ export class MedicalService {
       };
     });
 
-    let filteredResult = mapped;
-    if (status) {
-      if (status === 'OVERDUE') {
-        filteredResult = mapped.filter((item) => item.statusBadge === 'OVERDUE');
-      } else if (status === 'UPCOMING') {
-        filteredResult = mapped.filter((item) => item.statusBadge === 'UPCOMING');
-      } else if (status === 'NORMAL') {
-        filteredResult = mapped.filter((item) => item.statusBadge === 'NORMAL');
-      } else if (status === 'NODATA') {
-        filteredResult = mapped.filter((item) => item.statusBadge === 'NODATA');
-      } else if (status === 'UPCOMING_7') {
-        filteredResult = mapped.filter((item) => item.isUpcomingNotice);
-      }
-    }
-
     return {
       counts: {
         overdue: overdueCount,
@@ -2045,11 +2645,11 @@ export class MedicalService {
         upcoming30Days: upcoming30DaysCount,
         total,
       },
-      data: filteredResult,
-      total: filteredResult.length,
+      data: mapped,
+      total,
       page: parseInt(page, 10),
       limit: parseInt(limit, 10),
-      totalPages: Math.ceil(filteredResult.length / take),
+      totalPages: Math.ceil(total / take),
     };
   }
 
@@ -2109,77 +2709,85 @@ export class MedicalService {
     const performedByName =
       dto.performedByMode === 'EXTERNAL' ? dto.performedByName! : actor.fullName;
 
-    for (const horseId of horseIds) {
-      const horse = await this.prisma.horse.findUnique({ where: { id: horseId, deletedAt: null } });
-      if (!horse) continue;
+    const runTx =
+      typeof this.prisma.$transaction === 'function'
+        ? (cb: any) => this.prisma.$transaction(cb)
+        : (cb: any) => cb(this.prisma);
 
-      const schedule = await this.prisma.preventiveSchedule.findFirst({
-        where: { horseId, typeCatalogId: catalog.id },
-      });
+    await runTx(async (tx: any) => {
+      for (const horseId of horseIds) {
+        const horse = await tx.horse.findUnique({ where: { id: horseId, deletedAt: null } });
+        if (!horse) continue;
 
-      let history: any[] = [];
-      if (schedule?.historyLogs) {
-        try {
-          history =
-            typeof schedule.historyLogs === 'string'
-              ? JSON.parse(schedule.historyLogs)
-              : (schedule.historyLogs as any[]);
-        } catch {
-          history = [];
+        const schedule = await tx.preventiveSchedule.findFirst({
+          where: { horseId, typeCatalogId: catalog.id },
+        });
+
+        let history: any[] = [];
+        if (schedule?.historyLogs) {
+          try {
+            history =
+              typeof schedule.historyLogs === 'string'
+                ? JSON.parse(schedule.historyLogs)
+                : (schedule.historyLogs as any[]);
+          } catch {
+            /* ignore invalid JSON */
+            history = [];
+          }
+        }
+
+        const logEntry = {
+          id: `log-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          performedDate: performedDate.toISOString(),
+          performedByMode: dto.performedByMode || 'SELF',
+          performedByName,
+          productAdministered: dto.productAdministered || null,
+          batchNumber: dto.batchNumber || null,
+          nextDueDate: nextDueDate.toISOString(),
+          notes: dto.notes || null,
+          createdAt: now.toISOString(),
+        };
+        history.push(logEntry);
+
+        if (schedule) {
+          await tx.preventiveSchedule.update({
+            where: { id: schedule.id },
+            data: {
+              veterinarianUserId: actor.userId,
+              lastCompletedDate: performedDate,
+              completedDate: performedDate,
+              dueDate: nextDueDate,
+              productAdministered: dto.productAdministered || null,
+              batchNumber: dto.batchNumber || null,
+              performedByMode: dto.performedByMode || 'SELF',
+              performedByName,
+              notes: dto.notes || null,
+              status: PreventiveStatus.COMPLETED,
+              historyLogs: history,
+            },
+          });
+        } else {
+          await tx.preventiveSchedule.create({
+            data: {
+              horseId,
+              typeCatalogId: catalog.id,
+              scheduleType: catalog.category,
+              veterinarianUserId: actor.userId,
+              lastCompletedDate: performedDate,
+              completedDate: performedDate,
+              dueDate: nextDueDate,
+              productAdministered: dto.productAdministered || null,
+              batchNumber: dto.batchNumber || null,
+              performedByMode: dto.performedByMode || 'SELF',
+              performedByName,
+              notes: dto.notes || null,
+              status: PreventiveStatus.COMPLETED,
+              historyLogs: history,
+            },
+          });
         }
       }
-
-      const logEntry = {
-        id: `log-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-        performedDate: performedDate.toISOString(),
-        performedByMode: dto.performedByMode || 'SELF',
-        performedByName,
-        productAdministered: dto.productAdministered || null,
-        batchNumber: dto.batchNumber || null,
-        nextDueDate: nextDueDate.toISOString(),
-        notes: dto.notes || null,
-        createdAt: now.toISOString(),
-      };
-      history.push(logEntry);
-
-      if (schedule) {
-        await this.prisma.preventiveSchedule.update({
-          where: { id: schedule.id },
-          data: {
-            veterinarianUserId: actor.userId,
-            lastCompletedDate: performedDate,
-            completedDate: performedDate,
-            dueDate: nextDueDate,
-            productAdministered: dto.productAdministered || null,
-            batchNumber: dto.batchNumber || null,
-            performedByMode: dto.performedByMode || 'SELF',
-            performedByName,
-            notes: dto.notes || null,
-            status: PreventiveStatus.COMPLETED,
-            historyLogs: history,
-          },
-        });
-      } else {
-        await this.prisma.preventiveSchedule.create({
-          data: {
-            horseId,
-            typeCatalogId: catalog.id,
-            scheduleType: catalog.category,
-            veterinarianUserId: actor.userId,
-            lastCompletedDate: performedDate,
-            completedDate: performedDate,
-            dueDate: nextDueDate,
-            productAdministered: dto.productAdministered || null,
-            batchNumber: dto.batchNumber || null,
-            performedByMode: dto.performedByMode || 'SELF',
-            performedByName,
-            notes: dto.notes || null,
-            status: PreventiveStatus.COMPLETED,
-            historyLogs: history,
-          },
-        });
-      }
-    }
+    });
 
     await this.audit.record(
       { id: actor.userId, name: actor.fullName },

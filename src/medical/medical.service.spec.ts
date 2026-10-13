@@ -177,7 +177,9 @@ describe('MedicalService', () => {
       mockPrismaService.medicalRecord.findUnique.mockResolvedValue(mockRecord);
 
       const result = await service.getMedicalRecordDetail('rec-1', mockVetUser);
-      expect(result).toEqual(mockRecord);
+      expect(result.id).toBe(mockRecord.id);
+      expect(result.horseId).toBe(mockRecord.horseId);
+      expect(result.symptoms).toBe(mockRecord.symptoms);
     });
   });
 

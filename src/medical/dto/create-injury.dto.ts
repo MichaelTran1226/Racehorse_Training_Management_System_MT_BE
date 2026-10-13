@@ -2,12 +2,15 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsDateString,
   IsEnum,
+  IsIn,
   IsNumber,
   IsOptional,
   IsString,
   IsUUID,
   Max,
+  MaxLength,
   Min,
+  MinLength,
 } from 'class-validator';
 import { BodySide, SeverityLevel } from '@prisma/client';
 
@@ -36,11 +39,18 @@ export class CreateInjuryDto {
   @ApiPropertyOptional({ description: 'Góc nhìn: LEFT | RIGHT', default: 'LEFT' })
   @IsOptional()
   @IsString()
+  @IsIn(['LEFT', 'RIGHT'], { message: 'viewSide phải là LEFT hoặc RIGHT' })
   viewSide?: string;
 
-  @ApiPropertyOptional({ description: 'Lớp hiển thị: MUSCLE | BONE', default: 'MUSCLE' })
+  @ApiPropertyOptional({
+    description: 'Lớp hiển thị: MUSCLE | BONE | TENDON_LIGAMENT',
+    default: 'MUSCLE',
+  })
   @IsOptional()
   @IsString()
+  @IsIn(['MUSCLE', 'BONE', 'TENDON_LIGAMENT'], {
+    message: 'layer phải là MUSCLE, BONE hoặc TENDON_LIGAMENT',
+  })
   layer?: string;
 
   @ApiProperty({ description: 'Vùng giải phẫu' })
@@ -67,6 +77,9 @@ export class CreateInjuryDto {
   })
   @IsOptional()
   @IsString()
+  @IsIn(['ACUTE', 'SUBACUTE', 'RECOVERING', 'HEALED'], {
+    message: 'stage phải là ACUTE, SUBACUTE, RECOVERING hoặc HEALED',
+  })
   stage?: string;
 
   @ApiPropertyOptional({ description: 'Ngày phát hiện (ISO date string)' })
@@ -77,5 +90,7 @@ export class CreateInjuryDto {
   @ApiPropertyOptional({ description: 'Mô tả chi tiết điểm chấn thương' })
   @IsOptional()
   @IsString()
+  @MinLength(10, { message: 'Mô tả chi tiết chấn thương phải từ 10 ký tự trở lên' })
+  @MaxLength(1000, { message: 'Mô tả chi tiết chấn thương không được vượt quá 1000 ký tự' })
   description?: string;
 }

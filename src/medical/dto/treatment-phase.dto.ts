@@ -51,6 +51,10 @@ export class UpdateTreatmentPhaseDto {
   allowedActivityLevel?: string;
 
   @IsOptional()
+  @IsString()
+  allowedActivity?: string;
+
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
   careInstructions?: string[];

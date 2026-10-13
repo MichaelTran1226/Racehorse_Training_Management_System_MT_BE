@@ -72,6 +72,17 @@ export class MedicalController {
     return this.medicalService.getHorseMedicalProfile(id, user);
   }
 
+  @Get('horses/:id/observations')
+  @RequirePermission('viewMedical')
+  @ApiOperation({ summary: 'Ghi chú quan sát sức khỏe của Groom (FR-3.17)' })
+  getHorseObservations(
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserPayload,
+    @Query('urgency') urgency?: string,
+  ) {
+    return this.medicalService.getHorseObservations(id, user, urgency);
+  }
+
   // ---------------------------------------------------------------------------
   // 2D INJURIES & RECOVERY PROGRESS (TASK P2-03 / API-007)
   // ---------------------------------------------------------------------------

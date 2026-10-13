@@ -121,6 +121,13 @@ enum InjuryStatus {
   RESOLVED
 }
 
+// Trạng thái vòng đời của hồ sơ bệnh án (DRAFT: Bản nháp, OPEN: Đang điều trị, CLOSED: Đã đóng)
+enum MedicalRecordStatus {
+  DRAFT
+  OPEN
+  CLOSED
+}
+
 enum PreventiveType {
   VACCINATION
   DEWORMING
@@ -506,32 +513,61 @@ model WorkoutSession {
 }
 
 model MedicalRecord {
-  id                  String     @id @default(uuid())
+  id                  String              @id @default(uuid())
+  // Mã hồ sơ bệnh án định danh duy nhất theo định dạng BA-YYMM-NNN
+  recordNumber        String?
   horseId             String
-  horse               Horse      @relation(fields: [horseId], references: [id], onDelete: Restrict)
+  horse               Horse               @relation(fields: [horseId], references: [id], onDelete: Restrict)
   veterinarianUserId  String
-  veterinarian        User       @relation("VetRecords", fields: [veterinarianUserId], references: [id], onDelete: Restrict)
-  examinationDate     DateTime   @default(now())
+  veterinarian        User                @relation("VetRecords", fields: [veterinarianUserId], references: [id], onDelete: Restrict)
+  // Trạng thái bệnh án: DRAFT, OPEN, CLOSED
+  status              MedicalRecordStatus @default(OPEN)
+  examinationDate     DateTime            @default(now())
+  // Loại khám lâm sàng (Định kỳ, cấp cứu, theo dõi...)
+  examinationType     String?             @default("Routine Clinical")
+  // Nguồn phát hiện tình trạng bệnh (Groom báo cáo, Vet phát hiện...)
+  discoverySource     String?
+  // Mức độ nghiêm trọng của bệnh
+  severity            SeverityLevel?      @default(MODERATE)
+  // Chỉ số sinh tồn (Vitals) khi thăm khám
+  temperature         Float?
+  restingHeartRate    Int?
+  respiratoryRate     Int?
+  weightKg            Float?
+  clinicalExamination String?
   symptoms            String
   clinicalDiagnosis   String
   treatmentProtocol   String
   prescriptionDetails String?
-  requiresFollowUp    Boolean    @default(false)
+  // Thông tin kết thúc và mở lại bệnh án điều trị
+  conclusion          String?
+  treatmentResult     String?
+  closedAt            DateTime?
+  reopenedAt          DateTime?
+  reopenReason        String?
+  // Dữ liệu JSON có cấu trúc cho phác đồ điều trị, đơn thuốc, lịch tái khám và chỉ định xét nghiệm
+  treatmentPhases     String?
+  prescriptions       String?
+  followUps           String?
+  labTests            String?
+  requiresFollowUp    Boolean             @default(false)
   followUpDate        DateTime?
-  createdAt           DateTime   @default(now())
-  updatedAt           DateTime   @updatedAt
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
 
   injuries     InjuryLog[]
   medicalLocks MedicalLock[]
 
   @@index([horseId])
   @@index([veterinarianUserId])
+  @@index([recordNumber])
 }
 
 model InjuryLog {
   id              String         @id @default(uuid())
   medicalRecordId String?
-  medicalRecord   MedicalRecord? @relation(fields: [medicalRecordId], references: [id], onDelete: Cascade)
+  // Thiết lập quan hệ SetNull để bảo toàn dữ liệu điểm chấn thương 2D khi xóa bản nháp bệnh án
+  medicalRecord   MedicalRecord? @relation(fields: [medicalRecordId], references: [id], onDelete: SetNull)
   horseId         String
   horse           Horse          @relation(fields: [horseId], references: [id], onDelete: Restrict)
   coordinateX     Float          // Normalized 0.0 - 1.0 (Lateral Skeleton Map)
