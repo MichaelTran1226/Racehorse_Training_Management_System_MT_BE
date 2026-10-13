@@ -14,6 +14,8 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, CurrentUserPayload } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermission } from '../common/decorators/require-permission.decorator';
+import { apiError } from '../common/exceptions/api-error';
 import { UserRole } from '../common/enums/role.enum';
 import { HorsesService } from './horses.service';
 import { CreateHorseDto } from './dto/create-horse.dto';
@@ -21,6 +23,9 @@ import { UpdateHorseDto } from './dto/update-horse.dto';
 import { QueryHorseDto } from './dto/query-horse.dto';
 import { ChangeHorseStatusDto } from './dto/change-status.dto';
 import { TransferHorseOwnerDto } from './dto/transfer-owner.dto';
+import { DeleteHorseDto } from './dto/delete-horse.dto';
+import { RestoreHorseDto } from './dto/restore-horse.dto';
+import { QueryDeletedHorseDto } from './dto/query-deleted-horse.dto';
 
 @ApiTags('Horses')
 @ApiBearerAuth('JWT-auth')
@@ -32,6 +37,15 @@ export class HorsesController {
   @ApiOperation({ summary: 'Lấy danh sách ngựa theo phân quyền vai trò (FR-1.03)' })
   async findAll(@Query() query: QueryHorseDto, @CurrentUser() user: CurrentUserPayload) {
     return this.horsesService.findAll(query, user);
+  }
+
+  // Phải khai báo TRƯỚC ':id', nếu không Nest hiểu "deleted" là một id.
+  @Get('deleted')
+  @RequirePermission('deleteHorses')
+  @Roles(UserRole.CLUB_MANAGER)
+  @ApiOperation({ summary: 'Danh sách hồ sơ ngựa đã xóa (SC-1.05) - Chỉ Club Manager' })
+  async findDeleted(@Query() query: QueryDeletedHorseDto) {
+    return this.horsesService.findDeleted(query);
   }
 
   @Get(':id')
@@ -50,6 +64,7 @@ export class HorsesController {
   }
 
   @Post()
+  @RequirePermission('editHorses')
   @Roles(UserRole.CLUB_MANAGER)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Tạo hồ sơ ngựa mới (FR-1.01) - Chỉ Club Manager' })
@@ -58,6 +73,7 @@ export class HorsesController {
   }
 
   @Put(':id')
+  @RequirePermission('editHorses')
   @Roles(UserRole.CLUB_MANAGER)
   @ApiOperation({ summary: 'Cập nhật thông tin định danh ngựa (FR-1.02) - Chỉ Club Manager' })
   async update(
@@ -69,6 +85,7 @@ export class HorsesController {
   }
 
   @Patch(':id/transfer-owner')
+  @RequirePermission('editHorses')
   @Roles(UserRole.CLUB_MANAGER)
   @ApiOperation({ summary: 'Chuyển quyền sở hữu ngựa (FR-1.02, Flow 1) - Chỉ Club Manager' })
   async transferOwner(
@@ -80,10 +97,32 @@ export class HorsesController {
   }
 
   @Delete(':id')
+  @RequirePermission('deleteHorses')
   @Roles(UserRole.CLUB_MANAGER)
-  @ApiOperation({ summary: 'Xóa hồ sơ ngựa (chưa có dữ liệu phụ thuộc) - Chỉ Club Manager' })
-  async remove(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
-    return this.horsesService.remove(id, user);
+  @ApiOperation({
+    summary: 'Xóa mềm hồ sơ ngựa tạo nhầm (DL-1.10, chưa có dữ liệu phụ thuộc) - Chỉ Club Manager',
+  })
+  async remove(
+    @Param('id') id: string,
+    @Body() dto: DeleteHorseDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.horsesService.remove(id, dto, user);
+  }
+
+  @Post(':id/restore')
+  @RequirePermission('deleteHorses')
+  @Roles(UserRole.CLUB_MANAGER)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Khôi phục hồ sơ đã xóa hoặc Hoàn tác xóa (DL-1.11) - Chỉ Club Manager',
+  })
+  async restore(
+    @Param('id') id: string,
+    @Body() dto: RestoreHorseDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.horsesService.restore(id, dto, user);
   }
 
   @Patch(':id/status')
@@ -94,6 +133,10 @@ export class HorsesController {
     @Body() dto: ChangeHorseStatusDto,
     @CurrentUser() user: CurrentUserPayload,
   ) {
+    // Q-2.C: CM chỉ dùng API này để Ngừng quản lý / Kích hoạt lại -> cần công tắc deleteHorses.
+    if (user.role === UserRole.CLUB_MANAGER && user.permissions && !user.permissions.deleteHorses) {
+      throw apiError(HttpStatus.FORBIDDEN, 'FORBIDDEN', 'Not allowed');
+    }
     return this.horsesService.changeStatus(id, dto, user);
   }
 }

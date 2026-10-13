@@ -9,6 +9,7 @@ import {
   TrackSurface,
   PreventiveType,
   PreventiveStatus,
+  HorseCatalogType,
 } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
@@ -92,19 +93,61 @@ async function main() {
   console.log(`- Groom: ${groom.email}`);
   console.log(`- Owner: ${owner.email}`);
 
-  // 2. Create Stalls
+  // 2. Khu chuồng (SC-1.07) và ô chuồng có vị trí trên lưới
+  const zones = [
+    { code: 'ZONE-A', name: 'Zone A - Barn 1', rows: 2, cols: 4, sortOrder: 1 },
+    { code: 'ZONE-B', name: 'Zone B - Barn 2', rows: 1, cols: 4, sortOrder: 2 },
+  ];
+  const zoneIds: Record<string, string> = {};
+  for (const z of zones) {
+    const zone = await prisma.stallZone.upsert({ where: { code: z.code }, update: {}, create: z });
+    zoneIds[z.name] = zone.id;
+  }
+
   const stalls = [
-    { code: 'STALL-A01', zone: 'Zone A - Barn 1', status: StallStatus.AVAILABLE },
-    { code: 'STALL-A02', zone: 'Zone A - Barn 1', status: StallStatus.AVAILABLE },
-    { code: 'STALL-B01', zone: 'Zone B - Barn 2', status: StallStatus.AVAILABLE },
+    { code: 'STALL-A01', zone: 'Zone A - Barn 1', row: 1, col: 1, status: StallStatus.AVAILABLE },
+    { code: 'STALL-A02', zone: 'Zone A - Barn 1', row: 1, col: 2, status: StallStatus.AVAILABLE },
+    { code: 'STALL-B01', zone: 'Zone B - Barn 2', row: 1, col: 1, status: StallStatus.AVAILABLE },
   ];
 
   for (const s of stalls) {
+    const place = { zoneId: zoneIds[s.zone], row: s.row, col: s.col };
     await prisma.stall.upsert({
       where: { code: s.code },
-      update: {},
-      create: s,
+      update: place,
+      create: { ...s, ...place },
     });
+  }
+
+  // 2b. Danh mục Giống & Màu lông (SC-1.06). Tên phải khớp Horse.breed / Horse.color đang có.
+  const catalog: Array<{ type: HorseCatalogType; names: string[] }> = [
+    {
+      type: HorseCatalogType.BREED,
+      names: [
+        'Thoroughbred',
+        'Arabian',
+        'Arabian Cross',
+        'Quarter Horse',
+        'Warmblood',
+        'Standardbred',
+        'Appaloosa',
+        'Paint',
+      ],
+    },
+    {
+      type: HorseCatalogType.COLOR,
+      names: ['Bay', 'Bay Dark', 'Chestnut', 'Black', 'Grey', 'Gray Roaming', 'Roan', 'Palomino'],
+    },
+  ];
+  for (const { type, names } of catalog) {
+    for (const [i, name] of names.entries()) {
+      const code = name.toUpperCase().replace(/[^A-Z0-9]+/g, '_');
+      await prisma.horseCatalogItem.upsert({
+        where: { type_code: { type, code } },
+        update: {},
+        create: { type, code, name, sortOrder: i + 1 },
+      });
+    }
   }
 
   // 3. Create 3 Canonical Horses
@@ -307,46 +350,63 @@ async function main() {
 
   // 6. Seed Training Plans and Workout Sessions
   const now = new Date();
+  // YYYY-MM-DD theo giờ câu lạc bộ (UTC+7) của ngày hôm nay + offset
+  const clubDay = (offset: number) =>
+    new Date(now.getTime() + 7 * 3600000 + offset * 86400000).toISOString().slice(0, 10);
+  const plan1Phases = [
+    {
+      id: 'ph-1',
+      name: 'Volume building & aerobic base',
+      type: 'BASE',
+      startDate: clubDay(-20),
+      endDate: clubDay(-6),
+      goal: 'Aerobic base before speed work',
+      sessionsPerWeek: 5,
+      maxWeeklyDistance: 9000,
+      surface: 'TURF',
+      targetSpeedKmh: 38,
+    },
+    {
+      id: 'ph-2',
+      name: 'Speed work & sprint conditioning',
+      type: 'SPEED',
+      startDate: clubDay(-5),
+      endDate: clubDay(20),
+      goal: 'Race-pace breezes',
+      sessionsPerWeek: 5,
+      maxWeeklyDistance: 12000,
+      surface: 'TURF',
+      targetSpeedKmh: 58,
+    },
+    {
+      id: 'ph-3',
+      name: 'Tapering & gate rehearsal',
+      type: 'PRE_RACE',
+      startDate: clubDay(21),
+      endDate: clubDay(40),
+      sessionsPerWeek: 4,
+      maxWeeklyDistance: 8000,
+      surface: 'TURF',
+      targetSpeedKmh: 45,
+    },
+  ];
   const plan1 = await prisma.trainingPlan.upsert({
     where: { id: `plan-${horse1.id}` },
     update: {},
     create: {
       id: `plan-${horse1.id}`,
+      planCode: 'GA-000001',
       horseId: horse1.id,
       trainerUserId: trainer.id,
       phaseName: 'Derby Speed & Stamina Conditioning 2026',
+      objective: 'Peak for the autumn Derby over 2000 m with a strong final 400 m.',
       targetSpeed: 58.0,
       targetDistance: 2000,
       trackSurface: TrackSurface.TURF,
       startDate: new Date(now.getTime() - 20 * 86400000),
       endDate: new Date(now.getTime() + 40 * 86400000),
       status: PlanStatus.ACTIVE,
-      phases: [
-        {
-          order: 1,
-          name: 'Phase 1: Volume Building & Aerobic Base',
-          weeks: 'Weeks 1-2',
-          targetDistanceMeters: 1600,
-          targetSpeedKmh: 38,
-          intensity: 'MODERATE',
-        },
-        {
-          order: 2,
-          name: 'Phase 2: Speed Work & Sprint Conditioning',
-          weeks: 'Weeks 3-4',
-          targetDistanceMeters: 2000,
-          targetSpeedKmh: 58,
-          intensity: 'HEAVY',
-        },
-        {
-          order: 3,
-          name: 'Phase 3: Tapering & Gate Rehearsal',
-          weeks: 'Weeks 5-6',
-          targetDistanceMeters: 1200,
-          targetSpeedKmh: 45,
-          intensity: 'LIGHT',
-        },
-      ],
+      phases: plan1Phases,
     },
   });
 
@@ -356,9 +416,10 @@ async function main() {
     update: {},
     create: {
       id: `w1-${horse1.id}`,
+      phaseId: 'ph-1',
       trainingPlanId: plan1.id,
       horseId: horse1.id,
-      assignedStaffUserId: trainer.id,
+      assignedStaffUserId: groom.id,
       scheduledDate: new Date(now.getTime() - 14 * 86400000),
       distanceMeters: 1200,
       actualTimeSeconds: 72.0,
@@ -366,8 +427,8 @@ async function main() {
       heartRateRecovery: 108,
       performanceScore: 8.9,
       status: WorkoutStatus.COMPLETED,
-      workoutType: 'REGULAR',
-      intensity: 'MODERATE',
+      workoutType: 'CANTER',
+      intensity: 'MEDIUM',
       trackSurface: 'TURF',
       averageSpeedKmh: 60.0,
       topSpeedKmh: 64.2,
@@ -383,9 +444,10 @@ async function main() {
     update: {},
     create: {
       id: `w2-${horse1.id}`,
+      phaseId: 'ph-1',
       trainingPlanId: plan1.id,
       horseId: horse1.id,
-      assignedStaffUserId: trainer.id,
+      assignedStaffUserId: groom.id,
       scheduledDate: new Date(now.getTime() - 7 * 86400000),
       distanceMeters: 1600,
       actualTimeSeconds: 98.5,
@@ -393,7 +455,7 @@ async function main() {
       heartRateRecovery: 114,
       performanceScore: 8.6,
       status: WorkoutStatus.COMPLETED,
-      workoutType: 'TIME_TRIAL',
+      workoutType: 'TRIAL',
       intensity: 'HEAVY',
       trackSurface: 'DIRT',
       averageSpeedKmh: 58.5,
@@ -410,46 +472,57 @@ async function main() {
     update: {},
     create: {
       id: `w3-${horse1.id}`,
+      phaseId: 'ph-2',
       trainingPlanId: plan1.id,
       horseId: horse1.id,
-      assignedStaffUserId: trainer.id,
+      assignedStaffUserId: groom.id,
       scheduledDate: new Date(now.getTime() + 2 * 86400000),
       distanceMeters: 1400,
       targetDurationSeconds: 84,
       status: WorkoutStatus.SCHEDULED,
-      workoutType: 'REGULAR',
-      intensity: 'MODERATE',
+      workoutType: 'CANTER',
+      intensity: 'MEDIUM',
       trackSurface: 'TURF',
       trainerNotes: 'Targeting smooth splits and controlled deceleration.',
     },
   });
 
-  // Suspended plan and cancelled workout for Horse 2 (Medical Lock)
+  // Horse 2 đang Khóa y tế: giáo án giữ Đang áp dụng, chỉ còn bài nhẹ
   const plan2 = await prisma.trainingPlan.upsert({
     where: { id: `plan-${horse2.id}` },
     update: {},
     create: {
       id: `plan-${horse2.id}`,
+      planCode: 'GA-000002',
       horseId: horse2.id,
       trainerUserId: trainer.id,
       phaseName: 'Rehabilitation & Low-Impact Conditioning',
+      objective: 'Return to light work safely while the fore tendon heals.',
       targetSpeed: 25.0,
       targetDistance: 800,
       trackSurface: TrackSurface.TURF,
       startDate: new Date(now.getTime() - 5 * 86400000),
       endDate: new Date(now.getTime() + 25 * 86400000),
-      status: PlanStatus.SUSPENDED,
+      status: PlanStatus.ACTIVE,
       phases: [
         {
-          order: 1,
-          name: 'Phase 1: Hand Walking & Gentle Trot',
-          weeks: 'Weeks 1-2',
-          targetDistanceMeters: 800,
-          targetSpeedKmh: 20,
-          intensity: 'LIGHT',
+          id: 'ph-r1',
+          name: 'Hand walking & gentle trot',
+          type: 'RECOVERY',
+          startDate: clubDay(-5),
+          endDate: clubDay(25),
+          sessionsPerWeek: 5,
+          maxWeeklyDistance: 5000,
+          surface: 'TURF',
         },
       ],
     },
+  });
+  // Bộ đếm mã giáo án: 2 giáo án seed đã dùng GA-000001, GA-000002.
+  await prisma.counter.upsert({
+    where: { name: 'training_plan' },
+    update: {},
+    create: { name: 'training_plan', value: 2 },
   });
 
   await prisma.workoutSession.upsert({
@@ -457,16 +530,18 @@ async function main() {
     update: {},
     create: {
       id: `w1-${horse2.id}`,
+      phaseId: 'ph-r1',
       trainingPlanId: plan2.id,
       horseId: horse2.id,
-      assignedStaffUserId: trainer.id,
+      assignedStaffUserId: groom.id,
       scheduledDate: new Date(now.getTime() + 1 * 86400000),
       distanceMeters: 800,
-      status: WorkoutStatus.CANCELLED_MEDICAL_LOCK,
-      workoutType: 'RECOVERY',
+      // Khóa y tế chỉ chặn bài nặng: đi bộ nhẹ phục hồi vẫn được xếp (Flow 2 Q-2.01).
+      status: WorkoutStatus.SCHEDULED,
+      workoutType: 'WALK',
       intensity: 'LIGHT',
-      trainerNotes:
-        'Tự động hủy do Khóa huấn luyện thú y: Khám lâm sàng phát hiện sưng gân chi trước',
+      trackSurface: 'TURF',
+      trainerNotes: 'Đi bộ phục hồi 20 phút, theo dõi chi trước.',
     },
   });
 

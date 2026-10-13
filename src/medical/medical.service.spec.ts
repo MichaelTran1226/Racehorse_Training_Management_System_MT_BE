@@ -8,7 +8,9 @@ import { ForbiddenException, NotFoundException } from '@nestjs/common';
 describe('MedicalService', () => {
   let service: MedicalService;
 
-  const mockPrismaService = {
+  const mockPrismaService: any = {
+    $transaction: jest.fn((fn: (tx: any) => unknown) => fn(mockPrismaService)),
+    $queryRaw: jest.fn().mockResolvedValue([]),
     horse: {
       findUnique: jest.fn(),
       findMany: jest.fn(),
@@ -73,6 +75,13 @@ describe('MedicalService', () => {
     role: Role.VETERINARIAN,
   };
 
+  const mockManagerUser = {
+    userId: 'cm-1',
+    email: 'cm@example.com',
+    fullName: 'Club Manager',
+    role: Role.CLUB_MANAGER,
+  };
+
   const mockOwnerUser = {
     userId: 'owner-1',
     email: 'owner@example.com',
@@ -98,6 +107,14 @@ describe('MedicalService', () => {
   });
 
   describe('createMedicalRecord', () => {
+    it('should not let a Club Manager create a medical record (VET_ONLY)', async () => {
+      const error = await service
+        .createMedicalRecord(mockManagerUser, { horseId: 'horse-1' } as any)
+        .catch((e) => e);
+      expect(error).toBeInstanceOf(ForbiddenException);
+      expect(error.getResponse()).toEqual(expect.objectContaining({ code: 'VET_ONLY' }));
+    });
+
     it('should throw ForbiddenException if user is not VETERINARIAN or CLUB_MANAGER', async () => {
       await expect(
         service.createMedicalRecord(mockOwnerUser, {
@@ -240,15 +257,45 @@ describe('MedicalService', () => {
         where: { id: 'horse-1' },
         data: expect.objectContaining({ isMedicalLocked: true, status: 'INJURED' }),
       });
+      // Flow 2 Q-2.01: giáo án giữ nguyên, chỉ buổi tập nặng đã lên lịch bị chặn.
+      expect(mockPrismaService.trainingPlan.updateMany).not.toHaveBeenCalled();
+      expect(mockPrismaService.workoutSession.updateMany).toHaveBeenCalledWith({
+        where: {
+          horseId: 'horse-1',
+          status: 'SCHEDULED',
+          OR: [{ intensity: 'HEAVY' }, { workoutType: { in: ['BREEZE', 'TRIAL'] } }],
+        },
+        data: expect.objectContaining({ status: 'BLOCKED' }),
+      });
+      // Mọi lệnh ghi chạy trong một transaction, dòng Horse bị khóa trước khi kiểm khóa trùng.
+      expect(mockPrismaService.$transaction).toHaveBeenCalledTimes(1);
+      expect(mockPrismaService.$queryRaw).toHaveBeenCalled();
+      expect(mockAuditService.record).toHaveBeenCalledWith(
+        expect.anything(),
+        'CREATE_MEDICAL_LOCK',
+        expect.any(String),
+        'lock-1',
+        { entityName: 'MedicalLock' },
+        mockPrismaService,
+      );
+    });
+
+    it('should not let a Club Manager place a training lock (VET_ONLY)', async () => {
+      const error = await service
+        .createMedicalLock(mockManagerUser, { horseId: 'horse-1', lockReason: 'Test' })
+        .catch((e) => e);
+      expect(error).toBeInstanceOf(ForbiddenException);
+      expect(error.getResponse()).toEqual(expect.objectContaining({ code: 'VET_ONLY' }));
+      expect(mockPrismaService.$transaction).not.toHaveBeenCalled();
     });
 
     it('should throw BadRequestException if horse already has active lock', async () => {
       mockPrismaService.horse.findUnique.mockResolvedValue({
         id: 'horse-1',
         name: 'Thunder',
-        medicalLocks: [{ id: 'lock-old', isLocked: true }],
         isMedicalLocked: true,
       });
+      mockPrismaService.medicalLock.findFirst.mockResolvedValue({ id: 'lock-old', isLocked: true });
 
       await expect(
         service.createMedicalLock(mockVetUser, {
@@ -322,6 +369,8 @@ describe('MedicalService', () => {
         'EXTEND_MEDICAL_LOCK',
         expect.any(String),
         'lock-1',
+        { entityName: 'MedicalLock' },
+        mockPrismaService,
       );
     });
 
@@ -383,6 +432,7 @@ describe('MedicalService', () => {
         'CREATE_INJURY_LOG',
         expect.any(String),
         'inj-1',
+        { entityName: 'InjuryLog' },
       );
     });
 

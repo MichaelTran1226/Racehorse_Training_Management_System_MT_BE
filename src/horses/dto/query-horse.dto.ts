@@ -28,6 +28,13 @@ export class QueryHorseDto {
   @IsString()
   gender?: string;
 
+  @ApiPropertyOptional({
+    description: 'true = chỉ ngựa chưa có ô chuồng (DL-1.02, bộ lọc SC-1.01)',
+  })
+  @IsOptional()
+  @IsString()
+  noStall?: string;
+
   @ApiPropertyOptional({ description: 'Trường sắp xếp (name, horseCode, status, createdAt, dob)' })
   @IsOptional()
   @IsString()

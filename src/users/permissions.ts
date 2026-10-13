@@ -47,10 +47,12 @@ export const PERMISSIONS: PermissionMeta[] = [
   { key: 'viewHorses', core: true },
   { key: 'editHorses' },
   { key: 'deleteHorses', ownerRoles: [Role.CLUB_MANAGER] },
-  { key: 'createPlan' },
-  { key: 'assignSchedule' },
-  { key: 'recordMetrics' },
-  { key: 'ackAlerts' },
+  // API giáo án / buổi tập / kết quả chỉ mở cho HT (Flow 2), nên công tắc chỉ có nghĩa với HT.
+  { key: 'createPlan', ownerRoles: [Role.HEAD_TRAINER] },
+  { key: 'assignSchedule', ownerRoles: [Role.HEAD_TRAINER] },
+  { key: 'recordMetrics', ownerRoles: [Role.HEAD_TRAINER] },
+  // Q-0.04: chỉ Bác sĩ thú y ghi nhận cảnh báo dấu hiệu bất thường.
+  { key: 'ackAlerts', ownerRoles: [Role.VETERINARIAN] },
   { key: 'viewMedical' },
   { key: 'placeLock', ownerRoles: [Role.VETERINARIAN] },
   { key: 'liftLock', ownerRoles: [Role.VETERINARIAN] },
@@ -65,10 +67,9 @@ const DEFAULT_ON: Record<Role, PermissionKey[]> = {
     'createPlan',
     'assignSchedule',
     'recordMetrics',
-    'ackAlerts',
     'viewMedical',
   ],
-  VETERINARIAN: ['viewHorses', 'viewMedical', 'placeLock', 'liftLock'],
+  VETERINARIAN: ['viewHorses', 'viewMedical', 'placeLock', 'liftLock', 'ackAlerts'],
   // [Bug 1, 2] Bổ sung quyền 'viewMedical' mặc định cho GROOM và HORSE_OWNER (giới hạn phạm vi theo ngựa phân công / sở hữu)
   GROOM: ['viewHorses', 'viewMedical'],
   HORSE_OWNER: ['viewHorses', 'viewMedical'],
@@ -96,13 +97,17 @@ function forcedValue(role: Role, meta: PermissionMeta): boolean | undefined {
 }
 
 // Ép các quyền bị khóa về đúng giá trị; bỏ qua khóa lạ và giá trị không phải boolean.
+// Quyền chưa có trong bản đã lưu (quyền mới thêm sau) lấy theo mặc định của vai trò.
 export function normalizePermissions(
   role: Role,
   map: Partial<Record<string, unknown>>,
 ): PermissionMap {
+  const defaults = defaultPermissions(role);
   const out = {} as PermissionMap;
   for (const meta of PERMISSIONS) {
-    out[meta.key] = forcedValue(role, meta) ?? map[meta.key] === true;
+    const stored = map[meta.key];
+    out[meta.key] =
+      forcedValue(role, meta) ?? (stored === undefined ? defaults[meta.key] : stored === true);
   }
   return out;
 }
@@ -116,14 +121,15 @@ export const NOTIFY_KEYS: NotifyKey[] = [
 
 export function defaultNotify(role: Role): NotifyMap {
   return {
-    thresholdAlert: role === Role.HEAD_TRAINER,
+    // Q-0.04: cảnh báo dấu hiệu bất thường chỉ báo tới Bác sĩ thú y.
+    thresholdAlert: role === Role.VETERINARIAN,
     lockLifted: true,
     dailyDigest: false,
     raceResults: true,
   };
 }
 
-// Threshold Alert: bắt buộc bật với Head Trainer, các vai trò khác không nhận => đều không đổi được.
+// Threshold Alert: bắt buộc bật với Bác sĩ thú y, các vai trò khác không nhận => đều không đổi được.
 export function isNotifyLocked(_role: Role, key: NotifyKey): boolean {
   return key === 'thresholdAlert';
 }

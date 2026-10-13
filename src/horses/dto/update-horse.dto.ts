@@ -1,14 +1,16 @@
-import { IsEnum, IsISO8601, IsOptional, IsString, Length, Matches } from 'class-validator';
+import { IsIn, IsISO8601, IsOptional, IsString, Length, Matches } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { HorseStatus } from '@prisma/client';
+import { Transform } from 'class-transformer';
+import { HORSE_GENDERS, HORSE_NAME_RE, normalizeName, RFID_RE } from '../horse-rules';
 
 export class UpdateHorseDto {
   @ApiPropertyOptional({ description: 'Horse name (2-100 characters)' })
   @IsOptional()
   @IsString({ message: 'Horse name must be a string.' })
   @Length(2, 100, { message: 'Horse name must be between 2 and 100 characters.' })
-  @Matches(/^[a-zA-Z0-9\s'.-]+$/, {
-    message: "Horse name can only contain alphanumeric characters, spaces, and ' - .",
+  @Transform(({ value }) => normalizeName(value))
+  @Matches(HORSE_NAME_RE, {
+    message: "Horse name can only contain letters (accents allowed), digits, spaces, and ' - .",
   })
   name?: string;
 
@@ -22,9 +24,19 @@ export class UpdateHorseDto {
   @IsISO8601({}, { message: 'Date of birth must follow YYYY-MM-DD format.' })
   dob?: string;
 
-  @ApiPropertyOptional({ description: 'Gender' })
+  @ApiPropertyOptional({ description: 'Gender: Stallion, Mare, Gelding' })
   @IsOptional()
   @IsString({ message: 'Invalid gender string.' })
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      const v = value.trim();
+      if (v.toLowerCase() === 'colt') return 'Stallion';
+      if (v.toLowerCase() === 'filly') return 'Mare';
+      return v.charAt(0).toUpperCase() + v.slice(1).toLowerCase();
+    }
+    return value;
+  })
+  @IsIn(HORSE_GENDERS, { message: 'Please select a gender.' })
   gender?: string;
 
   @ApiPropertyOptional({ description: 'Coat color' })
@@ -38,19 +50,14 @@ export class UpdateHorseDto {
   @Matches(/^\d{15}$/, { message: 'Microchip number must consist of exactly 15 digits.' })
   microchip?: string;
 
-  @ApiPropertyOptional({ description: 'RFID tag code (must follow RFID-... prefix)' })
+  @ApiPropertyOptional({ description: 'RFID tag code (4-32 A-Z, 0-9, -)' })
   @IsOptional()
   @IsString()
-  @Matches(/^RFID-[A-Z0-9-]{4,28}$/, {
-    message:
-      "RFID tag must start with 'RFID-' prefix followed by 4-28 uppercase letters, digits, or hyphens (e.g. RFID-985141002341).",
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value))
+  @Matches(RFID_RE, {
+    message: 'RFID tag must be 4-32 characters: uppercase letters, digits, or hyphens.',
   })
   rfid?: string;
-
-  @ApiPropertyOptional({ enum: HorseStatus })
-  @IsOptional()
-  @IsEnum(HorseStatus, { message: 'Invalid horse status.' })
-  status?: HorseStatus;
 
   @ApiPropertyOptional({ description: 'Owner User ID' })
   @IsOptional()
