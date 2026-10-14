@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { Role } from '@prisma/client';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { CurrentUserPayload } from '../common/decorators/current-user.decorator';
 
 describe('MedicalService', () => {
   let service: MedicalService;
@@ -578,6 +579,57 @@ describe('MedicalService', () => {
 
       expect(res.message).toBe('Đã thiết lập lịch chăm sóc định kỳ cho chiến mã thành công');
       expect(mockPrismaService.preventiveSchedule.create).toHaveBeenCalled();
+    });
+  });
+
+  describe('getHealthBoard (FR-3.01)', () => {
+    it('should filter horses by ownerId when user is HORSE_OWNER', async () => {
+      mockPrismaService.horse.findMany.mockResolvedValue([]);
+      const ownerUser: CurrentUserPayload = {
+        userId: 'owner-1',
+        email: 'owner@example.com',
+        role: Role.HORSE_OWNER,
+        fullName: 'Owner User',
+        permissions: { viewMedical: true },
+      };
+
+      await service.getHealthBoard({}, ownerUser);
+
+      expect(mockPrismaService.horse.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            deletedAt: null,
+            ownerId: 'owner-1',
+          }),
+        }),
+      );
+    });
+
+    it('should filter horses by assigned groom when user is GROOM', async () => {
+      mockPrismaService.horse.findMany.mockResolvedValue([]);
+      const groomUser: CurrentUserPayload = {
+        userId: 'groom-1',
+        email: 'groom@example.com',
+        role: Role.GROOM,
+        fullName: 'Groom User',
+        permissions: { viewMedical: true },
+      };
+
+      await service.getHealthBoard({}, groomUser);
+
+      expect(mockPrismaService.horse.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            deletedAt: null,
+            stallAllocations: {
+              some: {
+                assignedGroomUserId: 'groom-1',
+                isActive: true,
+              },
+            },
+          }),
+        }),
+      );
     });
   });
 });
