@@ -1,10 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MedicalController } from './medical.controller';
-import { MedicalService } from './medical.service';
+import { HealthOverviewService } from './health-overview.service';
+import { InjuriesService } from './injuries.service';
+import { MedicalLocksService } from './medical-locks.service';
+import { MedicalRecordsService } from './medical-records.service';
+import { PreventiveCareService } from './preventive-care.service';
 
 describe('MedicalController', () => {
   let controller: MedicalController;
-  let service: MedicalService;
+  let service: HealthOverviewService;
 
   const mockUser = {
     userId: 'vet-1',
@@ -62,11 +66,17 @@ describe('MedicalController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [MedicalController],
-      providers: [{ provide: MedicalService, useValue: mockMedicalService }],
+      providers: [
+        { provide: HealthOverviewService, useValue: mockMedicalService },
+        { provide: InjuriesService, useValue: {} },
+        { provide: MedicalLocksService, useValue: {} },
+        { provide: MedicalRecordsService, useValue: {} },
+        { provide: PreventiveCareService, useValue: {} },
+      ],
     }).compile();
 
     controller = module.get<MedicalController>(MedicalController);
-    service = module.get<MedicalService>(MedicalService);
+    service = module.get(HealthOverviewService);
   });
 
   it('should be defined', () => {

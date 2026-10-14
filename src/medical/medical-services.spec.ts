@@ -1,13 +1,23 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { MedicalService } from './medical.service';
+import { MedicalAccessService } from './medical-access.service';
+import { InjuriesService } from './injuries.service';
+import { MedicalLocksService } from './medical-locks.service';
+import { MedicalRecordsService } from './medical-records.service';
+import { HealthOverviewService } from './health-overview.service';
+import { PreventiveCareService } from './preventive-care.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { Role } from '@prisma/client';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { notificationsMock } from '../notifications/notifications.testing';
 
-describe('MedicalService', () => {
-  let service: MedicalService;
+// Flow 3: các service y tế sau khi tách (C-10), dùng chung một bộ Prisma giả.
+describe('Medical services', () => {
+  let injuries: InjuriesService;
+  let locks: MedicalLocksService;
+  let records: MedicalRecordsService;
+  let overview: HealthOverviewService;
+  let preventive: PreventiveCareService;
 
   const mockPrismaService: any = {
     $transaction: jest.fn((fn: (tx: any) => unknown) => fn(mockPrismaService)),
@@ -90,19 +100,28 @@ describe('MedicalService', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        MedicalService,
+        MedicalAccessService,
+        InjuriesService,
+        MedicalLocksService,
+        MedicalRecordsService,
+        HealthOverviewService,
+        PreventiveCareService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: AuditService, useValue: mockAuditService },
         notificationsMock(),
       ],
     }).compile();
 
-    service = module.get<MedicalService>(MedicalService);
+    injuries = module.get(InjuriesService);
+    locks = module.get(MedicalLocksService);
+    records = module.get(MedicalRecordsService);
+    overview = module.get(HealthOverviewService);
+    preventive = module.get(PreventiveCareService);
     jest.clearAllMocks();
   });
 
   it('should be defined', () => {
-    expect(service).toBeDefined();
+    expect(records).toBeDefined();
   });
 
   describe('getHealthBoard scope (C-03)', () => {
@@ -117,19 +136,19 @@ describe('MedicalService', () => {
     beforeEach(() => mockPrismaService.horse.findMany.mockResolvedValue([]));
 
     it('should limit a Horse Owner to the horses they own', async () => {
-      await service.getHealthBoard({}, user('HORSE_OWNER', 'owner-1'));
+      await overview.getHealthBoard({}, user('HORSE_OWNER', 'owner-1'));
       expect(whereOf().ownerId).toBe('owner-1');
     });
 
     it('should limit a Groom to the horses in their care', async () => {
-      await service.getHealthBoard({}, user('GROOM', 'groom-1'));
+      await overview.getHealthBoard({}, user('GROOM', 'groom-1'));
       expect(whereOf().stallAllocations).toEqual({
         some: { isActive: true, assignedGroomUserId: 'groom-1' },
       });
     });
 
     it('should show the whole herd to a Veterinarian', async () => {
-      await service.getHealthBoard({}, user('VETERINARIAN'));
+      await overview.getHealthBoard({}, user('VETERINARIAN'));
       expect(whereOf().ownerId).toBeUndefined();
       expect(whereOf().stallAllocations).toBeUndefined();
     });
@@ -137,7 +156,7 @@ describe('MedicalService', () => {
 
   describe('createMedicalRecord', () => {
     it('should not let a Club Manager create a medical record (VET_ONLY)', async () => {
-      const error = await service
+      const error = await records
         .createMedicalRecord(mockManagerUser, { horseId: 'horse-1' } as any)
         .catch((e) => e);
       expect(error).toBeInstanceOf(ForbiddenException);
@@ -146,7 +165,7 @@ describe('MedicalService', () => {
 
     it('should throw ForbiddenException if user is not VETERINARIAN or CLUB_MANAGER', async () => {
       await expect(
-        service.createMedicalRecord(mockOwnerUser, {
+        records.createMedicalRecord(mockOwnerUser, {
           horseId: 'horse-1',
           examinationType: 'Khám bệnh',
           reason: 'Lý do khám bệnh chi tiết',
@@ -158,7 +177,7 @@ describe('MedicalService', () => {
       mockPrismaService.horse.findUnique.mockResolvedValue(null);
 
       await expect(
-        service.createMedicalRecord(mockVetUser, {
+        records.createMedicalRecord(mockVetUser, {
           horseId: 'non-existent-horse',
           examinationType: 'Khám bệnh',
           reason: 'Lý do khám bệnh chi tiết',
@@ -176,7 +195,7 @@ describe('MedicalService', () => {
         clinicalDiagnosis: 'Cảm cúm',
       });
 
-      const result = await service.createMedicalRecord(mockVetUser, {
+      const result = await records.createMedicalRecord(mockVetUser, {
         horseId: 'horse-1',
         examinationType: 'Khám bệnh',
         reason: 'Triệu chứng sốt',
@@ -192,7 +211,7 @@ describe('MedicalService', () => {
     it('should throw NotFoundException if record not found', async () => {
       mockPrismaService.medicalRecord.findUnique.mockResolvedValue(null);
 
-      await expect(service.getMedicalRecordDetail('invalid-id', mockVetUser)).rejects.toThrow(
+      await expect(records.getMedicalRecordDetail('invalid-id', mockVetUser)).rejects.toThrow(
         NotFoundException,
       );
     });
@@ -208,7 +227,7 @@ describe('MedicalService', () => {
       };
       mockPrismaService.medicalRecord.findUnique.mockResolvedValue(mockRecord);
 
-      const result = await service.getMedicalRecordDetail('rec-1', mockVetUser);
+      const result = await records.getMedicalRecordDetail('rec-1', mockVetUser);
       expect(result.id).toBe(mockRecord.id);
       expect(result.horseId).toBe(mockRecord.horseId);
       expect(result.symptoms).toBe(mockRecord.symptoms);
@@ -227,7 +246,7 @@ describe('MedicalService', () => {
         treatmentProtocol: 'Phác đồ ban đầu\n[KẾT LUẬN]: Đã phục hồi hoàn toàn',
       });
 
-      const result = await service.closeMedicalRecord('rec-1', mockVetUser, {
+      const result = await records.closeMedicalRecord('rec-1', mockVetUser, {
         conclusion: 'Đã phục hồi hoàn toàn',
       });
 
@@ -239,7 +258,7 @@ describe('MedicalService', () => {
   describe('MedicalLock (Task P2-04)', () => {
     it('should throw ForbiddenException if user is not VETERINARIAN or CLUB_MANAGER when creating lock', async () => {
       await expect(
-        service.createMedicalLock(mockOwnerUser, {
+        locks.createMedicalLock(mockOwnerUser, {
           horseId: 'horse-1',
           lockReason: 'Test',
         }),
@@ -248,7 +267,7 @@ describe('MedicalService', () => {
 
     it('should throw ForbiddenException if user is not VETERINARIAN or CLUB_MANAGER when releasing lock', async () => {
       await expect(
-        service.releaseMedicalLock('lock-1', mockOwnerUser, {
+        locks.releaseMedicalLock('lock-1', mockOwnerUser, {
           unlockReason: 'Test',
         }),
       ).rejects.toThrow(ForbiddenException);
@@ -272,7 +291,7 @@ describe('MedicalService', () => {
         recheckDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       });
 
-      const result = await service.createMedicalLock(mockVetUser, {
+      const result = await locks.createMedicalLock(mockVetUser, {
         horseId: 'horse-1',
         expectedRestDays: 7,
         lockReason: 'Chấn thương cơ đùi nghiêm trọng',
@@ -311,7 +330,7 @@ describe('MedicalService', () => {
     });
 
     it('should not let a Club Manager place a training lock (VET_ONLY)', async () => {
-      const error = await service
+      const error = await locks
         .createMedicalLock(mockManagerUser, { horseId: 'horse-1', lockReason: 'Test' })
         .catch((e) => e);
       expect(error).toBeInstanceOf(ForbiddenException);
@@ -328,7 +347,7 @@ describe('MedicalService', () => {
       mockPrismaService.medicalLock.findFirst.mockResolvedValue({ id: 'lock-old', isLocked: true });
 
       await expect(
-        service.createMedicalLock(mockVetUser, {
+        locks.createMedicalLock(mockVetUser, {
           horseId: 'horse-1',
           lockReason: 'Thử khóa lại con ngựa đã bị khóa',
         }),
@@ -354,7 +373,7 @@ describe('MedicalService', () => {
         horse: { id: 'horse-1', name: 'Thunder' },
       });
 
-      const result = await service.releaseMedicalLock('lock-1', mockVetUser, {
+      const result = await locks.releaseMedicalLock('lock-1', mockVetUser, {
         unlockReason: 'Đã khỏi hoàn toàn và đủ điều kiện vận động',
         newHorseStatus: 'RESTING' as any,
       });
@@ -388,7 +407,7 @@ describe('MedicalService', () => {
         isLocked: true,
       });
 
-      const result = await service.extendMedicalLock('lock-1', mockVetUser, {
+      const result = await locks.extendMedicalLock('lock-1', mockVetUser, {
         recheckDate: newRecheck.toISOString(),
         recheckNotes: 'Cần thêm 7 ngày điều trị dứt điểm',
       });
@@ -418,7 +437,7 @@ describe('MedicalService', () => {
         },
       ]);
 
-      const result = await service.getMedicalLocks(mockVetUser, { overdueOnly: 'true' });
+      const result = await locks.getMedicalLocks(mockVetUser, { overdueOnly: 'true' });
       expect(result.data).toHaveLength(1);
       expect(result.data[0].isOverdue).toBe(true);
       expect(result.data[0].daysOverdue).toBeGreaterThanOrEqual(3);
@@ -446,7 +465,7 @@ describe('MedicalService', () => {
       };
       mockPrismaService.injuryLog.create.mockResolvedValue(mockCreatedInjury);
 
-      const result = await service.createInjury(mockVetUser, {
+      const result = await injuries.createInjury(mockVetUser, {
         horseId: 'horse-1',
         coordinateX: 0.45,
         coordinateY: 0.6,
@@ -472,7 +491,7 @@ describe('MedicalService', () => {
         { id: 'inj-2', horseId: 'horse-1', stage: 'HEALED', status: 'RESOLVED' },
       ]);
 
-      const result = await service.getHorseInjuries('horse-1', mockVetUser, {});
+      const result = await injuries.getHorseInjuries('horse-1', mockVetUser, {});
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe('inj-1');
     });
@@ -485,7 +504,7 @@ describe('MedicalService', () => {
       });
       mockPrismaService.injuryLog.delete.mockResolvedValue({ id: 'inj-1' });
 
-      const res = await service.deleteInjury('inj-1', mockVetUser);
+      const res = await injuries.deleteInjury('inj-1', mockVetUser);
       expect(res.message).toBe('Đã xóa điểm chấn thương thành công');
       expect(mockPrismaService.injuryLog.delete).toHaveBeenCalledWith({ where: { id: 'inj-1' } });
     });
@@ -503,7 +522,7 @@ describe('MedicalService', () => {
         status: 'RESOLVED',
       });
 
-      const res = await service.updateRecoveryProgress('inj-1', mockVetUser, {
+      const res = await injuries.updateRecoveryProgress('inj-1', mockVetUser, {
         stage: 'HEALED',
         notes: 'Chấn thương đã bình phục hoàn toàn',
       });
@@ -534,7 +553,7 @@ describe('MedicalService', () => {
         isActive: true,
       });
 
-      const res = await service.createPreventiveCatalog(mockVetUser, {
+      const res = await preventive.createPreventiveCatalog(mockVetUser, {
         code: 'vac_influenza',
         name: 'Tiêm cúm ngựa',
         category: 'VACCINATION' as any,
@@ -568,7 +587,7 @@ describe('MedicalService', () => {
         status: 'NORMAL',
       });
 
-      const res = await service.recordPreventiveCare(mockVetUser, {
+      const res = await preventive.recordPreventiveCare(mockVetUser, {
         horseId: 'horse-1',
         typeCatalogId: 'cat-1',
         performedDate: new Date().toISOString(),
@@ -597,7 +616,7 @@ describe('MedicalService', () => {
         typeCatalogId: 'cat-1',
       });
 
-      const res = await service.setupHorsePreventive(mockVetUser, {
+      const res = await preventive.setupHorsePreventive(mockVetUser, {
         horseId: 'horse-1',
         schedules: [
           {
