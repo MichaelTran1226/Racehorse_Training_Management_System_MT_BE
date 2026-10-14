@@ -28,8 +28,11 @@ import {
   ResetPasswordDto,
   VerifyOtpDto,
 } from './dto/account-flow.dto';
+import { SkipThrottle } from '@nestjs/throttler';
+import { AuthThrottlerGuard } from '../common/guards/auth-throttler.guard';
 
 @ApiTags('Authentication')
+@UseGuards(AuthThrottlerGuard)
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -55,6 +58,7 @@ export class AuthController {
 
   @Get('otp')
   @Public()
+  @SkipThrottle()
   @ApiOperation({ summary: 'Mốc thời gian của mã OTP đang có (cho bộ đếm ngược)' })
   getOtp(@Query() query: OtpQueryDto) {
     return this.otpService.times(normEmail(query.email), purposeOf(query.purpose));
@@ -129,6 +133,7 @@ export class AuthController {
 
   @Post('refresh')
   @Public()
+  @SkipThrottle()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Rotate and refresh JWT Access token using Refresh token',
@@ -154,6 +159,7 @@ export class AuthController {
 
   @Post('logout')
   @Public()
+  @SkipThrottle()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Logout and revoke active session/refresh token',
@@ -174,6 +180,7 @@ export class AuthController {
   }
 
   @Get('me')
+  @SkipThrottle()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({

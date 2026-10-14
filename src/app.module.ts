@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD, APP_INTERCEPTOR, APP_FILTER } from '@nestjs/core';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './health/health.module';
@@ -27,6 +28,11 @@ import { NotificationsModule } from './notifications/notifications.module';
       envFilePath: ['.env', '.env.local'],
     }),
     ScheduleModule.forRoot(),
+    // C-04: 10 lần gọi / phút / IP cho các API xác thực (gắn ở AuthController). Tắt khi chạy test.
+    ThrottlerModule.forRoot({
+      throttlers: [{ ttl: 60_000, limit: 10 }],
+      skipIf: () => process.env.NODE_ENV === 'test',
+    }),
     PrismaModule,
     HealthModule,
     MailModule,

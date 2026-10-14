@@ -4,7 +4,7 @@ import { OtpPurpose, Prisma, Role, User, UserStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { AuditActor, AuditService } from '../audit/audit.service';
-import { AuthService } from '../auth/auth.service';
+import { AuthService, loginAttemptsOf } from '../auth/auth.service';
 import { OtpService, otpTimes } from '../auth/otp.service';
 import { apiError } from '../common/exceptions/api-error';
 import { EMAIL_RE, normEmail, str } from '../common/utils/input';
@@ -286,7 +286,7 @@ export class AccountsService {
       // Dọn dữ liệu phụ theo email (không có khóa ngoại tới User).
       await tx.otpCode.deleteMany({ where: { email: target.email } });
       await tx.resetToken.deleteMany({ where: { email: target.email } });
-      await tx.loginAttempt.deleteMany({ where: { email: target.email } });
+      await tx.loginAttempt.deleteMany({ where: loginAttemptsOf(target.email) });
       await tx.user.delete({ where: { id: target.id } });
       await this.audit.record(
         actor,

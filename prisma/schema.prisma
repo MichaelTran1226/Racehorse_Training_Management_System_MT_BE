@@ -253,10 +253,12 @@ model OtpCode {
 }
 
 // Đếm số lần sai mật khẩu theo email (kể cả email không tồn tại).
+// Bộ đếm sai mật khẩu. Khóa `email` là "email", "email#<IP>" hoặc "email#*" (đếm trên mọi IP, xem auth.service.ts).
 model LoginAttempt {
   email       String    @id
   fails       Int       @default(0)
   lockedUntil DateTime?
+  windowStart DateTime? // đầu cửa sổ 1 giờ của dòng "email#*"
 }
 
 // Vé đặt mật khẩu, cấp sau khi nhập đúng OTP (quên mật khẩu / nhận lời mời). Chỉ lưu bản băm SHA-256.

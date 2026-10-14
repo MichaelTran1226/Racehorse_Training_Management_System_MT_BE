@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
-import { OtpPurpose, Role, User, UserStatus } from '@prisma/client';
+import { OtpPurpose, Prisma, Role, User, UserStatus } from '@prisma/client';
 import * as crypto from 'crypto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
@@ -32,6 +32,15 @@ import { OTP_TTL, OtpService, otpTimes, sha256 } from './otp.service';
 
 const LOGIN_MAX_FAILS = 5;
 const LOGIN_LOCK = 15 * 60 * 1000;
+// C-04: ngưỡng theo email trên mọi IP.
+const ACCOUNT_MAX_FAILS = 20;
+const ACCOUNT_WINDOW = 60 * 60 * 1000;
+const ACCOUNT_LOCK = 60 * 60 * 1000;
+
+/** Mọi dòng bộ đếm sai mật khẩu của một email: `email`, `email#<IP>`, `email#*`. */
+export function loginAttemptsOf(email: string): Prisma.LoginAttemptWhereInput {
+  return { OR: [{ email }, { email: { startsWith: `${email}#` } }] };
+}
 const REFRESH_TTL = 7 * 24 * 60 * 60 * 1000;
 const REMEMBER_TTL = 30 * 24 * 60 * 60 * 1000; // "Remember me": giữ đăng nhập 30 ngày
 // Refresh token đã đổi sang token mới mà bị dùng lại sau khoảng này => coi là bị đánh cắp.
@@ -144,42 +153,51 @@ export class AuthService {
   }
 
   /**
-   * Tạo khóa đếm lần thử đăng nhập kết hợp email và IP nguồn (CL-0.04).
-   * Nếu có IP thì khóa theo cặp email#IP để kẻ xấu không thể cố tình khóa tài khoản của người khác;
-   * nếu không truyền IP (e.g. test hoặc internal) thì dùng email trực tiếp.
+   * Bộ đếm sai mật khẩu có 2 lớp (CL-0.04, C-04):
+   * - theo cặp email#IP: sai 5 lần => khóa 15 phút (người khác đổi IP không khóa oan tài khoản này);
+   * - theo email trên mọi IP (dòng `email#*`): sai 20 lần trong 1 giờ => khóa 1 giờ,
+   *   để kẻ tấn công đổi IP liên tục cũng không dò mật khẩu không giới hạn.
+   * Không truyền IP (đổi mật khẩu, test) thì lớp 1 dùng chính email làm khóa.
    */
   getAttemptKey(email: string, ipAddress?: string): string {
     return ipAddress ? `${email}#${ipAddress}` : email;
   }
 
-  /** Email/IP đang bị khóa tạm (sai mật khẩu 5 lần) => 429 ATTEMPTS_EXCEEDED kèm thời điểm mở khóa (CL-0.04). */
+  private accountKey(email: string): string {
+    return `${email}#*`;
+  }
+
+  /** Email (hoặc cặp email/IP) đang bị khóa tạm => 429 ATTEMPTS_EXCEEDED kèm thời điểm mở khóa. */
   async assertNotLockedOut(email: string, ipAddress?: string): Promise<void> {
-    const key = this.getAttemptKey(email, ipAddress);
-    let attempt = await this.prisma.loginAttempt.findUnique({ where: { email: key } });
-    if (!attempt && ipAddress) {
-      attempt = await this.prisma.loginAttempt.findUnique({ where: { email } });
-    }
-    if (attempt?.lockedUntil && attempt.lockedUntil.getTime() > Date.now()) {
+    const rows = await this.prisma.loginAttempt.findMany({
+      where: { email: { in: [this.getAttemptKey(email, ipAddress), this.accountKey(email)] } },
+    });
+    const until = rows
+      .map((r) => r.lockedUntil?.getTime() ?? 0)
+      .reduce((a, b) => Math.max(a, b), 0);
+    if (until > Date.now()) {
       throw apiError(HttpStatus.TOO_MANY_REQUESTS, 'ATTEMPTS_EXCEEDED', 'Too many attempts', {
-        retryAt: attempt.lockedUntil.toISOString(),
+        retryAt: new Date(until).toISOString(),
       });
     }
   }
 
   /**
-   * Ghi một lần nhập sai mật khẩu (đăng nhập hoặc đổi mật khẩu dùng chung bộ đếm theo cặp email#IP).
-   * Đủ 5 lần => khóa 15 phút và trả `lockedUntil`; chưa đủ => trả số lần còn lại.
-   * Hết khóa 15 phút thì đếm lại từ đầu.
+   * Ghi một lần nhập sai mật khẩu (đăng nhập và đổi mật khẩu dùng chung bộ đếm).
+   * Trả `lockedUntil` nếu lần sai này làm khóa tài khoản; nếu không thì số lần còn lại trước khi khóa 15 phút.
    */
   async recordFailedAttempt(
     email: string,
     ipAddress?: string,
   ): Promise<{ attemptsLeft: number; lockedUntil?: Date }> {
+    const now = Date.now();
+    const accountLock = await this.countAccountFailure(email, now);
+
     const key = this.getAttemptKey(email, ipAddress);
     const attempt = await this.prisma.loginAttempt.findUnique({ where: { email: key } });
     const fails = (attempt && !attempt.lockedUntil ? attempt.fails : 0) + 1;
-    if (fails >= LOGIN_MAX_FAILS) {
-      const lockedUntil = new Date(Date.now() + LOGIN_LOCK);
+    if (fails >= LOGIN_MAX_FAILS || accountLock) {
+      const lockedUntil = new Date(Math.max(now + LOGIN_LOCK, accountLock?.getTime() ?? 0));
       await this.prisma.loginAttempt.upsert({
         where: { email: key },
         create: { email: key, fails: 0, lockedUntil },
@@ -195,10 +213,36 @@ export class AuthService {
     return { attemptsLeft: LOGIN_MAX_FAILS - fails };
   }
 
+  /** Lớp 2: đếm lần sai của email trên mọi IP trong cửa sổ 1 giờ; đủ ngưỡng thì khóa 1 giờ. */
+  private async countAccountFailure(email: string, now: number): Promise<Date | undefined> {
+    const key = this.accountKey(email);
+    const row = await this.prisma.loginAttempt.findUnique({ where: { email: key } });
+    const inWindow = row?.windowStart && now - row.windowStart.getTime() < ACCOUNT_WINDOW;
+    const fails = (inWindow ? row.fails : 0) + 1;
+    if (fails >= ACCOUNT_MAX_FAILS) {
+      const lockedUntil = new Date(now + ACCOUNT_LOCK);
+      await this.prisma.loginAttempt.upsert({
+        where: { email: key },
+        create: { email: key, fails: 0, lockedUntil, windowStart: null },
+        update: { fails: 0, lockedUntil, windowStart: null },
+      });
+      return lockedUntil;
+    }
+    const windowStart = inWindow ? row.windowStart : new Date(now);
+    await this.prisma.loginAttempt.upsert({
+      where: { email: key },
+      create: { email: key, fails, windowStart },
+      update: { fails, windowStart, lockedUntil: null },
+    });
+    return undefined;
+  }
+
+  /** Đăng nhập đúng: xóa bộ đếm của cặp email/IP và của email. */
   async clearFailedAttempts(email: string, ipAddress?: string): Promise<void> {
-    const key = this.getAttemptKey(email, ipAddress);
     await this.prisma.loginAttempt.deleteMany({
-      where: { OR: [{ email: key }, { email }] },
+      where: {
+        email: { in: [this.getAttemptKey(email, ipAddress), email, this.accountKey(email)] },
+      },
     });
   }
 
@@ -588,7 +632,8 @@ export class AuthService {
       },
     });
     await this.prisma.resetToken.deleteMany({ where: { email: entry.email } });
-    await this.prisma.loginAttempt.deleteMany({ where: { email: entry.email } });
+    // Đặt lại mật khẩu => mở mọi khóa tạm của email này, trên mọi IP.
+    await this.prisma.loginAttempt.deleteMany({ where: loginAttemptsOf(entry.email) });
     await this.prisma.otpCode.deleteMany({
       where: { email: entry.email, purpose: OtpPurpose.INVITE },
     });
