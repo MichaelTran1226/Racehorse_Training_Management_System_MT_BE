@@ -27,13 +27,13 @@ export class RecordPreventiveCareDto {
   horseIds?: string[];
 
   @ApiProperty({ description: 'ID loại chăm sóc định kỳ' })
-  @IsNotEmpty({ message: 'Vui lòng chọn loại chăm sóc định kỳ' })
+  @IsNotEmpty({ message: 'Choose the preventive care type' })
   @IsUUID()
   typeCatalogId: string;
 
   @ApiPropertyOptional({ description: 'Ngày thực hiện (ISO date string, mặc định hôm nay)' })
   @IsOptional()
-  @IsDateString({}, { message: 'Ngày thực hiện không hợp lệ' })
+  @IsDateString({}, { message: 'The date performed is not valid' })
   performedDate?: string;
 
   @ApiPropertyOptional({
@@ -47,7 +47,7 @@ export class RecordPreventiveCareDto {
   @ApiPropertyOptional({ description: 'Tên người thực hiện (bắt buộc khi chọn EXTERNAL)' })
   @IsOptional()
   @IsString()
-  @Length(2, 100, { message: 'Tên người thực hiện phải từ 2 đến 100 ký tự' })
+  @Length(2, 100, { message: 'The performer name must be 2 to 100 characters' })
   performedByName?: string;
 
   @ApiPropertyOptional({ description: 'Sản phẩm / Vaccine / Thuốc tẩy giun đã dùng' })
@@ -58,18 +58,18 @@ export class RecordPreventiveCareDto {
   @ApiPropertyOptional({ description: 'Số lô sản phẩm' })
   @IsOptional()
   @IsString()
-  @Length(0, 50, { message: 'Số lô tối đa 50 ký tự' })
+  @Length(0, 50, { message: 'The batch number can be at most 50 characters' })
   batchNumber?: string;
 
   @ApiPropertyOptional({ description: 'Ghi chú thêm' })
   @IsOptional()
   @IsString()
-  @Length(0, 500, { message: 'Ghi chú tối đa 500 ký tự' })
+  @Length(0, 500, { message: 'Notes can be at most 500 characters' })
   notes?: string;
 
   @ApiPropertyOptional({ description: 'Ngày đến hạn tiếp theo (tự tính hoặc chỉnh tay)' })
   @IsOptional()
-  @IsDateString({}, { message: 'Ngày đến hạn tiếp theo không hợp lệ' })
+  @IsDateString({}, { message: 'The next due date is not valid' })
   customNextDueDate?: string;
 }
 

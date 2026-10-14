@@ -12,26 +12,26 @@ import { SeverityLevel } from '@prisma/client';
 
 export class UpdateRecoveryProgressDto {
   @ApiProperty({ description: 'Giai đoạn mới: ACUTE | SUBACUTE | RECOVERING | HEALED' })
-  @IsNotEmpty({ message: 'Vui lòng chọn giai đoạn mới' })
+  @IsNotEmpty({ message: 'Choose the new stage' })
   @IsString()
   @IsIn(['ACUTE', 'SUBACUTE', 'RECOVERING', 'HEALED'], {
-    message: 'Giai đoạn phải là một trong: ACUTE, SUBACUTE, RECOVERING, HEALED',
+    message: 'The stage must be one of ACUTE, SUBACUTE, RECOVERING, HEALED',
   })
   stage: string;
 
   @ApiPropertyOptional({ description: 'Ngày đánh giá (ISO date string)' })
   @IsOptional()
-  @IsDateString({}, { message: 'Ngày đánh giá không hợp lệ' })
+  @IsDateString({}, { message: 'The assessment date is not valid' })
   evaluationDate?: string;
 
   @ApiPropertyOptional({ enum: SeverityLevel, description: 'Mức độ hiện tại' })
   @IsOptional()
-  @IsEnum(SeverityLevel, { message: 'Mức độ hiện tại không hợp lệ' })
+  @IsEnum(SeverityLevel, { message: 'The current severity is not valid' })
   currentSeverity?: SeverityLevel;
 
   @ApiProperty({ description: 'Ghi chú đánh giá / lý do tái phát (10-1000 ký tự)' })
-  @IsNotEmpty({ message: 'Ghi chú không được để trống' })
+  @IsNotEmpty({ message: 'Notes are required' })
   @IsString()
-  @Length(10, 1000, { message: 'Ghi chú phải từ 10 đến 1000 ký tự' })
+  @Length(10, 1000, { message: 'Notes must be 10 to 1000 characters' })
   notes: string;
 }

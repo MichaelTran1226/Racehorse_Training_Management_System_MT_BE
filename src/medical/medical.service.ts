@@ -1,10 +1,4 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-  HttpStatus,
-} from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -106,12 +100,16 @@ export class MedicalService {
     });
 
     if (!horse) {
-      throw new NotFoundException('Không tìm thấy thông tin chiến mã');
+      throw apiError(HttpStatus.NOT_FOUND, 'HORSE_NOT_FOUND', 'Horse not found.');
     }
 
     if (currentUser.role === Role.HORSE_OWNER) {
       if (horse.ownerId !== currentUser.userId) {
-        throw new ForbiddenException('Bạn không có quyền truy cập hồ sơ y tế chiến mã này');
+        throw apiError(
+          HttpStatus.FORBIDDEN,
+          'HORSE_OUT_OF_SCOPE',
+          'You can only view the medical file of your own horses.',
+        );
       }
       return;
     }
@@ -121,7 +119,11 @@ export class MedicalService {
         (allocation) => allocation.assignedGroomUserId === currentUser.userId,
       );
       if (!isAssigned) {
-        throw new ForbiddenException('Bạn không có quyền xem hồ sơ y tế chiến mã không được giao');
+        throw apiError(
+          HttpStatus.FORBIDDEN,
+          'HORSE_OUT_OF_SCOPE',
+          'You can only view the medical file of horses in your care.',
+        );
       }
       return;
     }
@@ -138,7 +140,7 @@ export class MedicalService {
       where: { id: horseId, deletedAt: null },
     });
     if (!horse) {
-      throw new NotFoundException('Không tìm thấy chiến mã');
+      throw apiError(HttpStatus.NOT_FOUND, 'HORSE_NOT_FOUND', 'Horse not found.');
     }
 
     const where: any = { horseId };
@@ -220,12 +222,14 @@ export class MedicalService {
       },
     });
     if (!horse) {
-      throw new NotFoundException('Không tìm thấy chiến mã');
+      throw apiError(HttpStatus.NOT_FOUND, 'HORSE_NOT_FOUND', 'Horse not found.');
     }
 
     if (horse.status === HorseStatus.RETIRED) {
-      throw new BadRequestException(
-        'Không thể ghi nhận chấn thương cho chiến mã đã Ngừng quản lý (RETIRED)',
+      throw apiError(
+        HttpStatus.BAD_REQUEST,
+        'HORSE_RETIRED',
+        'The horse is no longer managed by the club; injuries cannot be recorded.',
       );
     }
 
@@ -234,14 +238,18 @@ export class MedicalService {
       discDate = new Date(dto.discoveryDate);
       const now = new Date();
       if (discDate > now) {
-        throw new BadRequestException(
-          'Ngày phát hiện chấn thương không được sau thời điểm hiện tại',
+        throw apiError(
+          HttpStatus.BAD_REQUEST,
+          'DATE_IN_FUTURE',
+          'The injury date cannot be in the future.',
         );
       }
       const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       if (discDate < thirtyDaysAgo) {
-        throw new BadRequestException(
-          'Ngày phát hiện chấn thương không được sớm hơn 30 ngày trước',
+        throw apiError(
+          HttpStatus.BAD_REQUEST,
+          'DATE_TOO_OLD',
+          'The injury date cannot be more than 30 days ago.',
         );
       }
     }
@@ -251,7 +259,11 @@ export class MedicalService {
         where: { id: dto.medicalRecordId },
       });
       if (!record || record.horseId !== dto.horseId) {
-        throw new BadRequestException('Bệnh án không tồn tại hoặc không thuộc chiến mã này');
+        throw apiError(
+          HttpStatus.BAD_REQUEST,
+          'RECORD_NOT_FOR_HORSE',
+          'The medical record does not exist or belongs to another horse.',
+        );
       }
     }
 
@@ -329,7 +341,7 @@ export class MedicalService {
     });
 
     if (!injury) {
-      throw new NotFoundException('Không tìm thấy thông tin điểm chấn thương');
+      throw apiError(HttpStatus.NOT_FOUND, 'INJURY_NOT_FOUND', 'Injury point not found.');
     }
 
     await this.checkHorseAccess(injury.horseId, currentUser);
@@ -342,7 +354,7 @@ export class MedicalService {
 
     const injury = await this.prisma.injuryLog.findUnique({ where: { id } });
     if (!injury) {
-      throw new NotFoundException('Không tìm thấy điểm chấn thương');
+      throw apiError(HttpStatus.NOT_FOUND, 'INJURY_NOT_FOUND', 'Injury point not found.');
     }
 
     if (dto.medicalRecordId) {
@@ -350,7 +362,11 @@ export class MedicalService {
         where: { id: dto.medicalRecordId },
       });
       if (!record || record.horseId !== injury.horseId) {
-        throw new BadRequestException('Bệnh án không tồn tại hoặc không thuộc chiến mã này');
+        throw apiError(
+          HttpStatus.BAD_REQUEST,
+          'RECORD_NOT_FOR_HORSE',
+          'The medical record does not exist or belongs to another horse.',
+        );
       }
     }
 
@@ -422,7 +438,7 @@ export class MedicalService {
 
     const injury = await this.prisma.injuryLog.findUnique({ where: { id } });
     if (!injury) {
-      throw new NotFoundException('Không tìm thấy điểm chấn thương');
+      throw apiError(HttpStatus.NOT_FOUND, 'INJURY_NOT_FOUND', 'Injury point not found.');
     }
 
     const now = new Date().getTime();
@@ -443,8 +459,10 @@ export class MedicalService {
     }
 
     if (hoursDifference > 24 || historyLength > 1) {
-      throw new BadRequestException(
-        'Chỉ có thể xóa điểm chấn thương được tạo trong vòng 24 giờ và chưa có lịch sử cập nhật hồi phục',
+      throw apiError(
+        HttpStatus.BAD_REQUEST,
+        'INJURY_NOT_DELETABLE',
+        'An injury point can be deleted only within 24 hours and before any recovery update.',
       );
     }
 
@@ -476,17 +494,25 @@ export class MedicalService {
     const updated = await runTx(async (tx: any) => {
       const injury = await tx.injuryLog.findUnique({ where: { id } });
       if (!injury) {
-        throw new NotFoundException('Không tìm thấy điểm chấn thương');
+        throw apiError(HttpStatus.NOT_FOUND, 'INJURY_NOT_FOUND', 'Injury point not found.');
       }
 
       if (injury.stage === 'HEALED' && dto.stage === 'HEALED') {
-        throw new BadRequestException('Chấn thương này đã được đánh dấu Đã lành');
+        throw apiError(
+          HttpStatus.BAD_REQUEST,
+          'INJURY_HEALED',
+          'This injury is already marked as healed.',
+        );
       }
 
       const now = new Date();
       const evalDate = dto.evaluationDate ? new Date(dto.evaluationDate) : now;
       if (evalDate > now) {
-        throw new BadRequestException('Ngày đánh giá không được lớn hơn thời điểm hiện tại');
+        throw apiError(
+          HttpStatus.BAD_REQUEST,
+          'DATE_IN_FUTURE',
+          'The assessment date cannot be in the future.',
+        );
       }
 
       let history: any[] = [];
@@ -506,7 +532,11 @@ export class MedicalService {
         if (lastEntry.evaluationDate) {
           const lastEval = new Date(lastEntry.evaluationDate);
           if (evalDate < lastEval) {
-            throw new BadRequestException('Ngày đánh giá không được sớm hơn lần đánh giá trước đó');
+            throw apiError(
+              HttpStatus.BAD_REQUEST,
+              'DATE_BEFORE_PREVIOUS',
+              'The assessment date cannot be earlier than the previous assessment.',
+            );
           }
         }
       }
@@ -523,8 +553,10 @@ export class MedicalService {
 
       if (newStageLevel !== undefined) {
         if (newStageLevel > currentStageLevel + 1) {
-          throw new BadRequestException(
-            `Không thể chuyển giai đoạn nhảy cóc từ ${injury.stage} sang ${dto.stage}`,
+          throw apiError(
+            HttpStatus.BAD_REQUEST,
+            'INVALID_STAGE_TRANSITION',
+            `Recovery cannot skip stages (${injury.stage} → ${dto.stage}).`,
           );
         }
       }
@@ -582,12 +614,14 @@ export class MedicalService {
       where: { id: dto.horseId, deletedAt: null },
     });
     if (!horse) {
-      throw new NotFoundException('Không tìm thấy chiến mã');
+      throw apiError(HttpStatus.NOT_FOUND, 'HORSE_NOT_FOUND', 'Horse not found.');
     }
 
     if (horse.status === HorseStatus.RETIRED) {
-      throw new BadRequestException(
-        'Không thể tạo bệnh án cho chiến mã đã Ngừng quản lý (RETIRED)',
+      throw apiError(
+        HttpStatus.BAD_REQUEST,
+        'HORSE_RETIRED',
+        'The horse is no longer managed by the club; medical records cannot be created.',
       );
     }
 
@@ -596,11 +630,19 @@ export class MedicalService {
       examDate = new Date(dto.examinationDate);
       const now = new Date();
       if (examDate > now) {
-        throw new BadRequestException('Ngày khám không được sau thời điểm hiện tại');
+        throw apiError(
+          HttpStatus.BAD_REQUEST,
+          'DATE_IN_FUTURE',
+          'The examination date cannot be in the future.',
+        );
       }
       const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       if (examDate < thirtyDaysAgo) {
-        throw new BadRequestException('Ngày khám không được sớm hơn 30 ngày trước');
+        throw apiError(
+          HttpStatus.BAD_REQUEST,
+          'DATE_TOO_OLD',
+          'The examination date cannot be more than 30 days ago.',
+        );
       }
     }
 
@@ -777,7 +819,7 @@ export class MedicalService {
     });
 
     if (!record) {
-      throw new NotFoundException('Không tìm thấy bệnh án');
+      throw apiError(HttpStatus.NOT_FOUND, 'RECORD_NOT_FOUND', 'Medical record not found.');
     }
 
     await this.checkHorseAccess(record.horseId, currentUser);
@@ -926,7 +968,7 @@ export class MedicalService {
       where: { id },
     });
     if (!record) {
-      throw new NotFoundException('Không tìm thấy bệnh án');
+      throw apiError(HttpStatus.NOT_FOUND, 'RECORD_NOT_FOUND', 'Medical record not found.');
     }
 
     const dataToUpdate: any = {};
@@ -967,18 +1009,22 @@ export class MedicalService {
       where: { id },
     });
     if (!record) {
-      throw new NotFoundException('Không tìm thấy bệnh án');
+      throw apiError(HttpStatus.NOT_FOUND, 'RECORD_NOT_FOUND', 'Medical record not found.');
     }
 
     if (record.status !== 'DRAFT') {
-      throw new BadRequestException(
-        'Chỉ được phép xóa bản nháp bệnh án. Bệnh án chính thức không thể xóa.',
+      throw apiError(
+        HttpStatus.BAD_REQUEST,
+        'RECORD_NOT_DRAFT',
+        'Only a draft medical record can be deleted.',
       );
     }
 
     if (record.veterinarianUserId !== actor.userId && actor.role !== Role.CLUB_MANAGER) {
-      throw new ForbiddenException(
-        'Chỉ bác sĩ tạo bản nháp hoặc Quản trị viên mới có quyền xóa bản nháp này',
+      throw apiError(
+        HttpStatus.FORBIDDEN,
+        'NOT_DRAFT_OWNER',
+        'Only the veterinarian who created this draft can delete it.',
       );
     }
 
@@ -1002,9 +1048,14 @@ export class MedicalService {
       where: { id: recordId },
       include: { horse: true },
     });
-    if (!record) throw new NotFoundException('Không tìm thấy bệnh án');
+    if (!record)
+      throw apiError(HttpStatus.NOT_FOUND, 'RECORD_NOT_FOUND', 'Medical record not found.');
     if (record.status !== 'DRAFT') {
-      throw new BadRequestException('Bệnh án đã được chốt trước đó');
+      throw apiError(
+        HttpStatus.BAD_REQUEST,
+        'RECORD_ALREADY_FINALIZED',
+        'This medical record is already official.',
+      );
     }
 
     const recAny = record as any;
@@ -1020,8 +1071,10 @@ export class MedicalService {
       const targetStatus = recAny.recommendedHorseStatus as any;
       if (record.horse?.status !== targetStatus) {
         if (record.horse?.status === HorseStatus.RETIRED) {
-          throw new BadRequestException(
-            'Chiến mã đã Ngừng quản lý (RETIRED), không thể thay đổi trạng thái',
+          throw apiError(
+            HttpStatus.BAD_REQUEST,
+            'HORSE_RETIRED',
+            'The horse is no longer managed by the club; its status cannot change.',
           );
         }
         await this.prisma.horse.update({
@@ -1048,8 +1101,10 @@ export class MedicalService {
           expectedRestDays: dto.lockExpectedRestDays || 7,
         } as any);
       } catch (err: any) {
-        throw new BadRequestException(
-          `Chốt bệnh án thất bại: Không thể đặt Khóa huấn luyện kèm theo (${err?.message || 'Lỗi không xác định'})`,
+        throw apiError(
+          HttpStatus.BAD_REQUEST,
+          'FINALIZE_LOCK_FAILED',
+          `The record was not made official: the Training Lock could not be placed (${err?.message || 'unknown error'}).`,
         );
       }
     }
@@ -1070,11 +1125,15 @@ export class MedicalService {
 
     const record = await this.prisma.medicalRecord.findUnique({ where: { id } });
     if (!record) {
-      throw new NotFoundException('Không tìm thấy bệnh án');
+      throw apiError(HttpStatus.NOT_FOUND, 'RECORD_NOT_FOUND', 'Medical record not found.');
     }
 
     if (record.status === 'CLOSED') {
-      throw new BadRequestException('Bệnh án đã được kết thúc trước đó');
+      throw apiError(
+        HttpStatus.BAD_REQUEST,
+        'RECORD_ALREADY_CLOSED',
+        'This medical record is already closed.',
+      );
     }
 
     // Tự động dừng tất cả đơn thuốc đang ACTIVE của bệnh án
@@ -1133,11 +1192,15 @@ export class MedicalService {
 
     const record = await this.prisma.medicalRecord.findUnique({ where: { id } });
     if (!record) {
-      throw new NotFoundException('Không tìm thấy bệnh án');
+      throw apiError(HttpStatus.NOT_FOUND, 'RECORD_NOT_FOUND', 'Medical record not found.');
     }
 
     if (record.status !== 'CLOSED') {
-      throw new BadRequestException('Chỉ có thể mở lại bệnh án đã kết thúc điều trị');
+      throw apiError(
+        HttpStatus.BAD_REQUEST,
+        'RECORD_NOT_CLOSED',
+        'Only a closed medical record can be reopened.',
+      );
     }
 
     // Kiểm tra quy tắc nghiệp vụ: Chỉ được mở lại trong vòng 7 ngày kể từ khi kết thúc
@@ -1145,8 +1208,10 @@ export class MedicalService {
       const diffMs = Date.now() - new Date(record.closedAt).getTime();
       const diffDays = diffMs / (1000 * 60 * 60 * 24);
       if (diffDays > 7) {
-        throw new BadRequestException(
-          'Chỉ được phép mở lại bệnh án trong vòng 7 ngày kể từ khi kết thúc điều trị.',
+        throw apiError(
+          HttpStatus.BAD_REQUEST,
+          'REOPEN_EXPIRED',
+          'A medical record can be reopened only within 7 days after it was closed.',
         );
       }
     }
@@ -1186,13 +1251,18 @@ export class MedicalService {
     this.assertVet(actor, 'add treatment phases');
 
     const record = await this.prisma.medicalRecord.findUnique({ where: { id: recordId } });
-    if (!record) throw new NotFoundException('Không tìm thấy bệnh án');
+    if (!record)
+      throw apiError(HttpStatus.NOT_FOUND, 'RECORD_NOT_FOUND', 'Medical record not found.');
 
     if (dto.startDate && dto.endDate) {
       const start = new Date(dto.startDate);
       const end = new Date(dto.endDate);
       if (end < start) {
-        throw new BadRequestException('Ngày kết thúc giai đoạn phải sau hoặc bằng ngày bắt đầu');
+        throw apiError(
+          HttpStatus.BAD_REQUEST,
+          'INVALID_DATE_RANGE',
+          'The phase end date must be on or after its start date.',
+        );
       }
     }
 
@@ -1254,7 +1324,8 @@ export class MedicalService {
     this.assertVet(actor, 'update treatment phases');
 
     const record = await this.prisma.medicalRecord.findUnique({ where: { id: recordId } });
-    if (!record) throw new NotFoundException('Không tìm thấy bệnh án');
+    if (!record)
+      throw apiError(HttpStatus.NOT_FOUND, 'RECORD_NOT_FOUND', 'Medical record not found.');
 
     let phases: any[] = [];
     if (record.treatmentPhases) {
@@ -1268,7 +1339,7 @@ export class MedicalService {
 
     const index = phases.findIndex((p) => p.id === phaseId);
     if (index === -1) {
-      throw new NotFoundException('Không tìm thấy giai đoạn phác đồ');
+      throw apiError(HttpStatus.NOT_FOUND, 'PHASE_NOT_FOUND', 'Treatment phase not found.');
     }
 
     const updatedPhase = {
@@ -1283,7 +1354,11 @@ export class MedicalService {
       const start = new Date(updatedPhase.startDate);
       const end = new Date(updatedPhase.endDate);
       if (end < start) {
-        throw new BadRequestException('Ngày kết thúc giai đoạn phải sau hoặc bằng ngày bắt đầu');
+        throw apiError(
+          HttpStatus.BAD_REQUEST,
+          'INVALID_DATE_RANGE',
+          'The phase end date must be on or after its start date.',
+        );
       }
     }
 
@@ -1320,7 +1395,8 @@ export class MedicalService {
     this.assertVet(actor, 'prescribe medication');
 
     const record = await this.prisma.medicalRecord.findUnique({ where: { id: recordId } });
-    if (!record) throw new NotFoundException('Không tìm thấy bệnh án');
+    if (!record)
+      throw apiError(HttpStatus.NOT_FOUND, 'RECORD_NOT_FOUND', 'Medical record not found.');
 
     let currentRx: any[] = [];
     const rxSource = record.prescriptions || record.prescriptionDetails;
@@ -1433,7 +1509,8 @@ export class MedicalService {
     this.assertVet(actor, 'edit prescriptions');
 
     const record = await this.prisma.medicalRecord.findUnique({ where: { id: recordId } });
-    if (!record) throw new NotFoundException('Không tìm thấy bệnh án');
+    if (!record)
+      throw apiError(HttpStatus.NOT_FOUND, 'RECORD_NOT_FOUND', 'Medical record not found.');
 
     let currentRx: any[] = [];
     const rxSource = record.prescriptions || record.prescriptionDetails;
@@ -1447,7 +1524,7 @@ export class MedicalService {
 
     const index = currentRx.findIndex((rx) => rx.id === prescriptionId);
     if (index === -1) {
-      throw new NotFoundException('Không tìm thấy thông tin đơn thuốc');
+      throw apiError(HttpStatus.NOT_FOUND, 'PRESCRIPTION_NOT_FOUND', 'Prescription not found.');
     }
 
     const rx = currentRx[index];
@@ -1456,8 +1533,10 @@ export class MedicalService {
     if (rx.startDate) {
       const start = new Date(rx.startDate);
       if (start.getTime() <= Date.now()) {
-        throw new BadRequestException(
-          'Đơn thuốc đã bắt đầu có hiệu lực và được sử dụng, không thể chỉnh sửa. Vui lòng dừng đơn thuốc hiện tại và kê đơn mới nếu có thay đổi.',
+        throw apiError(
+          HttpStatus.BAD_REQUEST,
+          'PRESCRIPTION_STARTED',
+          'This prescription has already started and cannot be edited. Stop it and prescribe a new one.',
         );
       }
     }
@@ -1492,7 +1571,8 @@ export class MedicalService {
     this.assertVet(actor, 'stop medication');
 
     const record = await this.prisma.medicalRecord.findUnique({ where: { id: recordId } });
-    if (!record) throw new NotFoundException('Không tìm thấy bệnh án');
+    if (!record)
+      throw apiError(HttpStatus.NOT_FOUND, 'RECORD_NOT_FOUND', 'Medical record not found.');
 
     let currentRx: any[] = [];
     const rxSource = record.prescriptions || record.prescriptionDetails;
@@ -1506,7 +1586,7 @@ export class MedicalService {
 
     const rx = currentRx.find((item) => item.id === prescriptionId);
     if (!rx) {
-      throw new NotFoundException('Không tìm thấy đơn thuốc');
+      throw apiError(HttpStatus.NOT_FOUND, 'PRESCRIPTION_NOT_FOUND', 'Prescription not found.');
     }
 
     rx.status = 'STOPPED';
@@ -1540,7 +1620,8 @@ export class MedicalService {
     this.assertVet(actor, 'record follow-up visits');
 
     const record = await this.prisma.medicalRecord.findUnique({ where: { id: recordId } });
-    if (!record) throw new NotFoundException('Không tìm thấy bệnh án');
+    if (!record)
+      throw apiError(HttpStatus.NOT_FOUND, 'RECORD_NOT_FOUND', 'Medical record not found.');
 
     const rawVisitDate = dto.followUpDate || dto.visitDate;
     const visitDate = rawVisitDate ? new Date(rawVisitDate) : new Date();
@@ -1615,12 +1696,20 @@ export class MedicalService {
     }
 
     if (recheckDate <= now) {
-      throw new BadRequestException('Ngày xem xét lại phải từ ngày mai trở đi');
+      throw apiError(
+        HttpStatus.BAD_REQUEST,
+        'REVIEW_DATE_TOO_EARLY',
+        'The review date must be tomorrow or later.',
+      );
     }
 
     const maxRecheck = new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000);
     if (recheckDate > maxRecheck) {
-      throw new BadRequestException('Ngày xem xét lại tối đa 180 ngày kể từ hôm nay');
+      throw apiError(
+        HttpStatus.BAD_REQUEST,
+        'REVIEW_DATE_TOO_LATE',
+        'The review date must be within 180 days from today.',
+      );
     }
 
     const restDaysCalculated = Math.ceil(
@@ -1630,13 +1719,17 @@ export class MedicalService {
     const { lock, horse } = await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT "id" FROM "Horse" WHERE "id" = ${dto.horseId} FOR UPDATE`;
       const horse = await tx.horse.findUnique({ where: { id: dto.horseId, deletedAt: null } });
-      if (!horse) throw new NotFoundException('Không tìm thấy chiến mã');
+      if (!horse) throw apiError(HttpStatus.NOT_FOUND, 'HORSE_NOT_FOUND', 'Horse not found.');
 
       const existingLock = await tx.medicalLock.findFirst({
         where: { horseId: dto.horseId, isLocked: true },
       });
       if (existingLock) {
-        throw new BadRequestException('Chiến mã này đã có Khóa huấn luyện đang hiệu lực');
+        throw apiError(
+          HttpStatus.BAD_REQUEST,
+          'LOCK_ALREADY_ACTIVE',
+          'This horse already has an active Training Lock.',
+        );
       }
 
       const lockCount = await tx.medicalLock.count();
@@ -1768,7 +1861,11 @@ export class MedicalService {
         include: { horse: { include: { injuryLogs: { where: { stage: 'ACUTE' } } } } },
       });
       if (!lock || !lock.isLocked) {
-        throw new BadRequestException('Không tìm thấy Khóa huấn luyện hoặc khóa đã được gỡ');
+        throw apiError(
+          HttpStatus.BAD_REQUEST,
+          'LOCK_NOT_ACTIVE',
+          'The Training Lock was not found or is already lifted.',
+        );
       }
 
       const newHorseStatus = dto.newHorseStatus || lock.horse.status;
@@ -1858,7 +1955,11 @@ export class MedicalService {
       await tx.$queryRaw`SELECT "id" FROM "MedicalLock" WHERE "id" = ${lockId} FOR UPDATE`;
       const lock = await tx.medicalLock.findUnique({ where: { id: lockId } });
       if (!lock || !lock.isLocked) {
-        throw new BadRequestException('Không tìm thấy Khóa huấn luyện đang hiệu lực');
+        throw apiError(
+          HttpStatus.BAD_REQUEST,
+          'LOCK_NOT_ACTIVE',
+          'No active Training Lock was found.',
+        );
       }
 
       const now = new Date();
@@ -1871,22 +1972,36 @@ export class MedicalService {
         const baseDate = lock.recheckDate && lock.recheckDate > now ? lock.recheckDate : now;
         newRecheckDate = new Date(baseDate.getTime() + dto.additionalDays * 24 * 60 * 60 * 1000);
       } else {
-        throw new BadRequestException('Vui lòng chọn ngày xem xét mới hoặc số ngày gia hạn');
+        throw apiError(
+          HttpStatus.BAD_REQUEST,
+          'VALIDATION',
+          'Choose a new review date or the number of extra days.',
+        );
       }
 
       if (newRecheckDate <= now) {
-        throw new BadRequestException('Ngày xem xét mới phải sau ngày hiện tại');
+        throw apiError(
+          HttpStatus.BAD_REQUEST,
+          'REVIEW_DATE_TOO_EARLY',
+          'The new review date must be after today.',
+        );
       }
 
       if (lock.recheckDate && newRecheckDate <= lock.recheckDate) {
-        throw new BadRequestException(
-          `Ngày xem xét mới phải sau ngày xem xét cũ (${lock.recheckDate.toLocaleDateString()})`,
+        throw apiError(
+          HttpStatus.BAD_REQUEST,
+          'REVIEW_DATE_NOT_LATER',
+          `The new review date must be after the current one (${lock.recheckDate.toISOString().slice(0, 10)}).`,
         );
       }
 
       const maxRecheck = new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000);
       if (newRecheckDate > maxRecheck) {
-        throw new BadRequestException('Ngày xem xét mới tối đa 180 ngày kể từ hôm nay');
+        throw apiError(
+          HttpStatus.BAD_REQUEST,
+          'REVIEW_DATE_TOO_LATE',
+          'The new review date must be within 180 days from today.',
+        );
       }
 
       let history: any[] = [];
@@ -2085,7 +2200,7 @@ export class MedicalService {
     });
 
     if (!lock) {
-      throw new NotFoundException('Không tìm thấy Khóa huấn luyện');
+      throw apiError(HttpStatus.NOT_FOUND, 'LOCK_NOT_FOUND', 'Training Lock not found.');
     }
 
     await this.checkHorseAccess(lock.horseId, currentUser);
@@ -2132,7 +2247,7 @@ export class MedicalService {
     });
 
     if (!horse) {
-      throw new NotFoundException('Không tìm thấy chiến mã');
+      throw apiError(HttpStatus.NOT_FOUND, 'HORSE_NOT_FOUND', 'Horse not found.');
     }
 
     const records = await this.prisma.medicalRecord.findMany({
@@ -2414,19 +2529,23 @@ export class MedicalService {
       where: { code: codeUpper },
     });
     if (existingCode) {
-      throw new BadRequestException('Mã loại đã tồn tại');
+      throw apiError(HttpStatus.BAD_REQUEST, 'DUPLICATE_CODE', 'This type code already exists.');
     }
 
     const existingName = await this.prisma.preventiveTypeCatalog.findUnique({
       where: { name: dto.name },
     });
     if (existingName) {
-      throw new BadRequestException('Tên loại đã tồn tại');
+      throw apiError(HttpStatus.BAD_REQUEST, 'DUPLICATE_NAME', 'This type name already exists.');
     }
 
     const noticeDays = dto.advanceNoticeDays || 7;
     if (noticeDays >= dto.intervalDays) {
-      throw new BadRequestException('Số ngày nhắc trước phải nhỏ hơn chu kỳ lặp lại');
+      throw apiError(
+        HttpStatus.BAD_REQUEST,
+        'INVALID_NOTICE_DAYS',
+        'The reminder days must be shorter than the repeat interval.',
+      );
     }
 
     const catalog = await this.prisma.preventiveTypeCatalog.create({
@@ -2486,19 +2605,29 @@ export class MedicalService {
     this.assertVet(actor, 'edit preventive care types');
 
     const catalog = await this.prisma.preventiveTypeCatalog.findUnique({ where: { id } });
-    if (!catalog) throw new NotFoundException('Không tìm thấy loại chăm sóc định kỳ');
+    if (!catalog)
+      throw apiError(
+        HttpStatus.NOT_FOUND,
+        'PREVENTIVE_TYPE_NOT_FOUND',
+        'Preventive care type not found.',
+      );
 
     if (dto.name && dto.name !== catalog.name) {
       const existingName = await this.prisma.preventiveTypeCatalog.findUnique({
         where: { name: dto.name },
       });
-      if (existingName) throw new BadRequestException('Tên loại đã tồn tại');
+      if (existingName)
+        throw apiError(HttpStatus.BAD_REQUEST, 'DUPLICATE_NAME', 'This type name already exists.');
     }
 
     const newInterval = dto.intervalDays || catalog.intervalDays;
     const newNotice = dto.advanceNoticeDays || catalog.advanceNoticeDays;
     if (newNotice >= newInterval) {
-      throw new BadRequestException('Số ngày nhắc trước phải nhỏ hơn chu kỳ lặp lại');
+      throw apiError(
+        HttpStatus.BAD_REQUEST,
+        'INVALID_NOTICE_DAYS',
+        'The reminder days must be shorter than the repeat interval.',
+      );
     }
 
     const updated = await this.prisma.preventiveTypeCatalog.update({
@@ -2528,7 +2657,12 @@ export class MedicalService {
     this.assertVet(actor, 'change preventive care type status');
 
     const catalog = await this.prisma.preventiveTypeCatalog.findUnique({ where: { id } });
-    if (!catalog) throw new NotFoundException('Không tìm thấy loại chăm sóc định kỳ');
+    if (!catalog)
+      throw apiError(
+        HttpStatus.NOT_FOUND,
+        'PREVENTIVE_TYPE_NOT_FOUND',
+        'Preventive care type not found.',
+      );
 
     const updated = await this.prisma.preventiveTypeCatalog.update({
       where: { id },
@@ -2738,21 +2872,25 @@ export class MedicalService {
       where: { id: dto.typeCatalogId },
     });
     if (!catalog) {
-      throw new NotFoundException('Không tìm thấy loại chăm sóc định kỳ');
+      throw apiError(
+        HttpStatus.NOT_FOUND,
+        'PREVENTIVE_TYPE_NOT_FOUND',
+        'Preventive care type not found.',
+      );
     }
 
     const horseIds =
       dto.horseIds && dto.horseIds.length > 0 ? dto.horseIds : dto.horseId ? [dto.horseId] : [];
 
     if (horseIds.length === 0) {
-      throw new BadRequestException('Vui lòng chọn ít nhất một chiến mã');
+      throw apiError(HttpStatus.BAD_REQUEST, 'VALIDATION', 'Choose at least one horse.');
     }
 
     if (
       dto.performedByMode === 'EXTERNAL' &&
       (!dto.performedByName || dto.performedByName.trim().length === 0)
     ) {
-      throw new BadRequestException('Vui lòng nhập tên người thực hiện');
+      throw apiError(HttpStatus.BAD_REQUEST, 'VALIDATION', 'Enter who performed the care.');
     }
 
     if (
@@ -2760,25 +2898,37 @@ export class MedicalService {
         catalog.category === PreventiveType.DEWORMING) &&
       !dto.productAdministered
     ) {
-      throw new BadRequestException('Vui lòng chọn sản phẩm / vaccine đã dùng');
+      throw apiError(HttpStatus.BAD_REQUEST, 'VALIDATION', 'Enter the product or vaccine used.');
     }
 
     const now = new Date();
     const performedDate = dto.performedDate ? new Date(dto.performedDate) : now;
     if (performedDate > now) {
-      throw new BadRequestException('Ngày thực hiện không được sau thời điểm hiện tại');
+      throw apiError(
+        HttpStatus.BAD_REQUEST,
+        'DATE_IN_FUTURE',
+        'The date performed cannot be in the future.',
+      );
     }
 
     const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
     if (performedDate < ninetyDaysAgo) {
-      throw new BadRequestException('Ngày thực hiện không được sớm hơn 90 ngày');
+      throw apiError(
+        HttpStatus.BAD_REQUEST,
+        'DATE_TOO_OLD',
+        'The date performed cannot be more than 90 days ago.',
+      );
     }
 
     let nextDueDate: Date;
     if (dto.customNextDueDate) {
       nextDueDate = new Date(dto.customNextDueDate);
       if (nextDueDate <= performedDate) {
-        throw new BadRequestException('Ngày đến hạn tiếp theo phải sau ngày thực hiện');
+        throw apiError(
+          HttpStatus.BAD_REQUEST,
+          'INVALID_DATE_RANGE',
+          'The next due date must be after the date performed.',
+        );
       }
     } else {
       nextDueDate = new Date(performedDate.getTime() + catalog.intervalDays * 24 * 60 * 60 * 1000);
@@ -2888,7 +3038,7 @@ export class MedicalService {
     const horse = await this.prisma.horse.findUnique({
       where: { id: dto.horseId, deletedAt: null },
     });
-    if (!horse) throw new NotFoundException('Không tìm thấy chiến mã');
+    if (!horse) throw apiError(HttpStatus.NOT_FOUND, 'HORSE_NOT_FOUND', 'Horse not found.');
 
     const now = new Date();
     for (const item of dto.schedules) {

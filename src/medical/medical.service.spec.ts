@@ -332,7 +332,7 @@ describe('MedicalService', () => {
           horseId: 'horse-1',
           lockReason: 'Thử khóa lại con ngựa đã bị khóa',
         }),
-      ).rejects.toThrow('Chiến mã này đã có Khóa huấn luyện đang hiệu lực');
+      ).rejects.toThrow('This horse already has an active Training Lock.');
     });
 
     it('should release medical lock and check warning flags', async () => {
