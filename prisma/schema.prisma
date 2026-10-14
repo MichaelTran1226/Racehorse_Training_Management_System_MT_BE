@@ -191,6 +191,7 @@ model User {
   id                   String     @id @default(uuid())
   email                String     @unique
   passwordHash         String     @default("") // "" = tài khoản INVITED chưa đặt mật khẩu
+  passwordChangedAt    DateTime?
   fullName             String
   phoneNumber          String?
   role                 Role
@@ -230,6 +231,7 @@ model User {
   auditLogs             AuditLog[]              @relation("UserAuditLogs")
   refreshTokens         RefreshToken[]
   permissionRequests    PermissionRequest[]
+  notifications         Notification[]
 
   @@index([email])
   @@index([role])
@@ -251,10 +253,12 @@ model OtpCode {
 }
 
 // Đếm số lần sai mật khẩu theo email (kể cả email không tồn tại).
+// Bộ đếm sai mật khẩu. Khóa `email` là "email", "email#<IP>" hoặc "email#*" (đếm trên mọi IP, xem auth.service.ts).
 model LoginAttempt {
   email       String    @id
   fails       Int       @default(0)
   lockedUntil DateTime?
+  windowStart DateTime? // đầu cửa sổ 1 giờ của dòng "email#*"
 }
 
 // Vé đặt mật khẩu, cấp sau khi nhập đúng OTP (quên mật khẩu / nhận lời mời). Chỉ lưu bản băm SHA-256.
@@ -282,6 +286,37 @@ model PermissionRequest {
 }
 
 // Bộ đếm cho các mã hiển thị: REQ-YYMM-NNN (requestCode), 403-YYMM-NNNN (mã tham chiếu 403).
+enum NotificationCategory {
+  ACCOUNT
+  HORSE
+  TRAINING
+  LOCK
+  MEDICAL
+  SYSTEM
+}
+
+// Thông báo trong ứng dụng (C-01). Mỗi dòng là 1 thông báo của 1 người nhận.
+// FE dịch theo `type` + `params`; `title`/`message` là bản tiếng Anh dự phòng.
+model Notification {
+  id         String               @id @default(uuid())
+  userId     String
+  user       User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type       String
+  category   NotificationCategory
+  title      String
+  message    String
+  params     Json?
+  link       String?
+  senderName String?
+  // Chống gửi trùng (VD nhắc lịch định kỳ mỗi ngày chỉ 1 lần): khóa sự kiện + người nhận
+  dedupeKey  String?              @unique
+  readAt     DateTime?
+  createdAt  DateTime             @default(now())
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+}
+
 model Counter {
   name  String @id
   value Int    @default(0)

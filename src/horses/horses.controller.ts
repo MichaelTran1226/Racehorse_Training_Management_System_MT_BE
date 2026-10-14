@@ -18,6 +18,8 @@ import { RequirePermission } from '../common/decorators/require-permission.decor
 import { apiError } from '../common/exceptions/api-error';
 import { UserRole } from '../common/enums/role.enum';
 import { HorsesService } from './horses.service';
+import { HorseHistoryService } from './horse-history.service';
+import { HorseLifecycleService } from './horse-lifecycle.service';
 import { CreateHorseDto } from './dto/create-horse.dto';
 import { UpdateHorseDto } from './dto/update-horse.dto';
 import { QueryHorseDto } from './dto/query-horse.dto';
@@ -31,7 +33,11 @@ import { QueryDeletedHorseDto } from './dto/query-deleted-horse.dto';
 @ApiBearerAuth('JWT-auth')
 @Controller('horses')
 export class HorsesController {
-  constructor(private readonly horsesService: HorsesService) {}
+  constructor(
+    private readonly horsesService: HorsesService,
+    private readonly history: HorseHistoryService,
+    private readonly lifecycle: HorseLifecycleService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Lấy danh sách ngựa theo phân quyền vai trò (FR-1.03)' })
@@ -45,7 +51,7 @@ export class HorsesController {
   @Roles(UserRole.CLUB_MANAGER)
   @ApiOperation({ summary: 'Danh sách hồ sơ ngựa đã xóa (SC-1.05) - Chỉ Club Manager' })
   async findDeleted(@Query() query: QueryDeletedHorseDto) {
-    return this.horsesService.findDeleted(query);
+    return this.lifecycle.findDeleted(query);
   }
 
   @Get(':id')
@@ -60,7 +66,7 @@ export class HorsesController {
       'Lấy toàn bộ lịch sử vòng đời định danh, y tế, huấn luyện và chuyển nhượng của ngựa (Flow 1, FR-1.04)',
   })
   async getHistory(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
-    return this.horsesService.getHistory(id, user);
+    return this.history.getHistory(id, user);
   }
 
   @Post()
@@ -107,7 +113,7 @@ export class HorsesController {
     @Body() dto: DeleteHorseDto,
     @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.horsesService.remove(id, dto, user);
+    return this.lifecycle.remove(id, dto, user);
   }
 
   @Post(':id/restore')
@@ -122,7 +128,7 @@ export class HorsesController {
     @Body() dto: RestoreHorseDto,
     @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.horsesService.restore(id, dto, user);
+    return this.lifecycle.restore(id, dto, user);
   }
 
   @Patch(':id/status')
@@ -137,6 +143,6 @@ export class HorsesController {
     if (user.role === UserRole.CLUB_MANAGER && user.permissions && !user.permissions.deleteHorses) {
       throw apiError(HttpStatus.FORBIDDEN, 'FORBIDDEN', 'Not allowed');
     }
-    return this.horsesService.changeStatus(id, dto, user);
+    return this.lifecycle.changeStatus(id, dto, user);
   }
 }

@@ -2,13 +2,18 @@ import { AuditService } from './audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CounterService } from './counter.service';
 import { auditRequestContext } from './audit-context.middleware';
+import { NotificationsService } from '../notifications/notifications.service';
 
 describe('AuditService query', () => {
   const prisma = {
     auditLog: { findMany: jest.fn(), count: jest.fn(), create: jest.fn() },
     $transaction: jest.fn(),
   };
-  const service = new AuditService(prisma as unknown as PrismaService, {} as CounterService);
+  const service = new AuditService(
+    prisma as unknown as PrismaService,
+    {} as CounterService,
+    { notifyRoles: jest.fn() } as unknown as NotificationsService,
+  );
   beforeEach(() => {
     jest.clearAllMocks();
     prisma.auditLog.findMany.mockResolvedValue([]);

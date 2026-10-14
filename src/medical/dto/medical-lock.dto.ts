@@ -38,23 +38,23 @@ export class CreateMedicalLockDto {
   appliedMedicalStatus?: HorseStatus;
 
   @ApiProperty({ description: 'Lý do đặt Khóa huấn luyện (10-500 ký tự)' })
-  @IsNotEmpty({ message: 'Vui lòng nhập lý do đặt khóa' })
+  @IsNotEmpty({ message: 'Enter the reason for the lock' })
   @IsString()
-  @Length(10, 500, { message: 'Lý do phải từ 10 đến 500 ký tự' })
+  @Length(10, 500, { message: 'The reason must be 10 to 500 characters' })
   lockReason: string;
 
   @ApiPropertyOptional({
     description: 'Ngày xem xét lại (ISO date string, từ ngày mai đến 180 ngày)',
   })
   @IsOptional()
-  @IsDateString({}, { message: 'Ngày xem xét lại không hợp lệ' })
+  @IsDateString({}, { message: 'The review date is not valid' })
   recheckDate?: string;
 
   @ApiPropertyOptional({
     description: 'Alias cho recheckDate',
   })
   @IsOptional()
-  @IsDateString({}, { message: 'Ngày xem xét lại không hợp lệ' })
+  @IsDateString({}, { message: 'The review date is not valid' })
   reviewDate?: string;
 
   @ApiPropertyOptional({ description: 'Số ngày nghỉ dự kiến (1 - 180 ngày)', default: 7 })
@@ -72,9 +72,9 @@ export class CreateMedicalLockDto {
 
 export class ReleaseMedicalLockDto {
   @ApiProperty({ description: 'Lý do gỡ Khóa huấn luyện / kết luận (10-500 ký tự)' })
-  @IsNotEmpty({ message: 'Vui lòng nhập lý do gỡ khóa' })
+  @IsNotEmpty({ message: 'Enter the reason for lifting the lock' })
   @IsString()
-  @Length(10, 500, { message: 'Lý do gỡ khóa phải từ 10 đến 500 ký tự' })
+  @Length(10, 500, { message: 'The reason for lifting must be 10 to 500 characters' })
   unlockReason: string;
 
   @ApiPropertyOptional({
@@ -89,12 +89,12 @@ export class ReleaseMedicalLockDto {
 export class ExtendMedicalLockDto {
   @ApiPropertyOptional({ description: 'Ngày xem xét lại mới (ISO date string)' })
   @IsOptional()
-  @IsDateString({}, { message: 'Ngày xem xét mới không hợp lệ' })
+  @IsDateString({}, { message: 'The new review date is not valid' })
   recheckDate?: string;
 
   @ApiPropertyOptional({ description: 'Alias cho recheckDate' })
   @IsOptional()
-  @IsDateString({}, { message: 'Ngày xem xét mới không hợp lệ' })
+  @IsDateString({}, { message: 'The new review date is not valid' })
   newReviewDate?: string;
 
   @ApiPropertyOptional({ description: 'Số ngày gia hạn thêm (1 - 180 ngày)' })
@@ -105,9 +105,9 @@ export class ExtendMedicalLockDto {
   additionalDays?: number;
 
   @ApiProperty({ description: 'Lý do gia hạn (10-500 ký tự)' })
-  @IsNotEmpty({ message: 'Vui lòng nhập lý do gia hạn' })
+  @IsNotEmpty({ message: 'Enter the reason for the extension' })
   @IsString()
-  @Length(10, 500, { message: 'Lý do gia hạn phải từ 10 đến 500 ký tự' })
+  @Length(10, 500, { message: 'The reason for the extension must be 10 to 500 characters' })
   recheckNotes?: string;
 
   @ApiPropertyOptional({ description: 'Alias cho recheckNotes' })

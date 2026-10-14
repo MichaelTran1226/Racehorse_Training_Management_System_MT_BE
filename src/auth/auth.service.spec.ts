@@ -14,6 +14,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { OtpService } from './otp.service';
 import { AuditService } from '../audit/audit.service';
 import { CounterService } from '../audit/counter.service';
+import { notificationsMock } from '../notifications/notifications.testing';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -39,6 +40,7 @@ describe('AuthService', () => {
     },
     loginAttempt: {
       findUnique: jest.fn(),
+      findMany: jest.fn().mockResolvedValue([]),
       upsert: jest.fn(),
       deleteMany: jest.fn(),
     },
@@ -94,6 +96,7 @@ describe('AuthService', () => {
         { provide: OtpService, useValue: mockOtpService },
         { provide: AuditService, useValue: mockAuditService },
         { provide: CounterService, useValue: mockCounterService },
+        notificationsMock(),
       ],
     }).compile();
 
@@ -385,15 +388,59 @@ describe('AuthService', () => {
     });
 
     it('should refuse sign-in while the email is locked out, without checking the password', async () => {
-      mockPrismaService.loginAttempt.findUnique.mockResolvedValue({
-        fails: 0,
-        lockedUntil: new Date(Date.now() + 60000),
-      });
+      mockPrismaService.loginAttempt.findMany.mockResolvedValueOnce([
+        { email: 'manager@equiflow.com#*', fails: 0, lockedUntil: new Date(Date.now() + 60000) },
+      ]);
 
       await expect(
         service.login({ email: 'manager@equiflow.com', password: 'ValidPassword123' }),
       ).rejects.toThrow(HttpException);
       expect(mockPrismaService.user.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('should lock the email for 1 hour after 20 wrong passwords from any IP (C-04)', async () => {
+      // Cặp email#IP mới chỉ sai 1 lần, nhưng email đã sai 19 lần từ các IP khác trong giờ này.
+      mockPrismaService.loginAttempt.findUnique.mockImplementation(({ where }) =>
+        Promise.resolve(
+          where.email.endsWith('#*')
+            ? { fails: 19, lockedUntil: null, windowStart: new Date(Date.now() - 10 * 60000) }
+            : null,
+        ),
+      );
+      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+      jest.spyOn(bcrypt, 'compare').mockImplementation(() => Promise.resolve(false));
+
+      const error = (await service
+        .login({ email: 'manager@equiflow.com', password: 'WrongPassword' }, '203.0.113.9')
+        .catch((e: HttpException) => e)) as HttpException;
+
+      expect(error.getStatus()).toBe(HttpStatus.TOO_MANY_REQUESTS);
+      const retryAt = new Date((error.getResponse() as { data: { retryAt: string } }).data.retryAt);
+      expect(retryAt.getTime() - Date.now()).toBeGreaterThan(59 * 60000);
+    });
+
+    it('should start a new 1-hour window when the old one has passed', async () => {
+      mockPrismaService.loginAttempt.findUnique.mockImplementation(({ where }) =>
+        Promise.resolve(
+          where.email.endsWith('#*')
+            ? { fails: 19, lockedUntil: null, windowStart: new Date(Date.now() - 2 * 3600000) }
+            : null,
+        ),
+      );
+      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+      jest.spyOn(bcrypt, 'compare').mockImplementation(() => Promise.resolve(false));
+
+      const error = (await service
+        .login({ email: 'manager@equiflow.com', password: 'WrongPassword' }, '203.0.113.9')
+        .catch((e: HttpException) => e)) as HttpException;
+
+      expect(error.getStatus()).toBe(HttpStatus.UNAUTHORIZED);
+      expect(mockPrismaService.loginAttempt.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { email: 'manager@equiflow.com#*' },
+          update: expect.objectContaining({ fails: 1 }),
+        }),
+      );
     });
   });
 

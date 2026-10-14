@@ -3,6 +3,7 @@ import { PermissionRequestStatus, Prisma, Role, UserStatus } from '@prisma/clien
 import { PrismaService } from '../prisma/prisma.service';
 import { apiError } from '../common/exceptions/api-error';
 import { yymm } from '../common/utils/input';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CounterService } from './counter.service';
 import { ListAuditDto } from './dto/list-audit.dto';
 import { auditRequestContext } from './audit-context.middleware';
@@ -24,6 +25,7 @@ export class AuditService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly counter: CounterService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async list(query: ListAuditDto) {
@@ -122,6 +124,19 @@ export class AuditService {
       await this.prisma.permissionRequest.create({ data: { userId: actor.id, screen, reference } });
     }
     await this.record(actor, 'PERMISSION_REQUESTED', screen);
+    await this.notifications.notifyRoles(
+      [Role.CLUB_MANAGER],
+      {
+        type: 'PERMISSION_REQUEST',
+        category: 'ACCOUNT',
+        title: 'Permission access request',
+        message: `${actor.name} asked for access to ${screen} (ref ${reference}).`,
+        params: { name: actor.name, screen, reference },
+        link: '/accounts',
+        senderName: actor.name,
+      },
+      actor.id,
+    );
     return { ok: true };
   }
 

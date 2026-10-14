@@ -23,6 +23,15 @@ export class UserProfileDto {
   @ApiProperty({ example: '/manager/dashboard' })
   dashboardUrl: string;
 
+  @ApiPropertyOptional({
+    example: '2026-10-13T00:00:00.000Z',
+    description: 'Next password change due date (180 days)',
+  })
+  nextChangeDue?: string;
+
+  @ApiPropertyOptional({ example: false, description: 'True if password is older than 180 days' })
+  passwordExpired?: boolean;
+
   // Các trường dưới đây khớp PublicAccount bên FE (src/shared/types/auth.ts)
   @ApiPropertyOptional({ example: '0989 100 200' })
   phone?: string;

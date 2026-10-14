@@ -39,7 +39,7 @@ export class CreateInjuryDto {
   @ApiPropertyOptional({ description: 'Góc nhìn: LEFT | RIGHT', default: 'LEFT' })
   @IsOptional()
   @IsString()
-  @IsIn(['LEFT', 'RIGHT'], { message: 'viewSide phải là LEFT hoặc RIGHT' })
+  @IsIn(['LEFT', 'RIGHT'], { message: 'viewSide must be LEFT or RIGHT' })
   viewSide?: string;
 
   @ApiPropertyOptional({
@@ -49,7 +49,7 @@ export class CreateInjuryDto {
   @IsOptional()
   @IsString()
   @IsIn(['MUSCLE', 'BONE', 'TENDON_LIGAMENT'], {
-    message: 'layer phải là MUSCLE, BONE hoặc TENDON_LIGAMENT',
+    message: 'layer must be MUSCLE, BONE or TENDON_LIGAMENT',
   })
   layer?: string;
 
@@ -78,7 +78,7 @@ export class CreateInjuryDto {
   @IsOptional()
   @IsString()
   @IsIn(['ACUTE', 'SUBACUTE', 'RECOVERING', 'HEALED'], {
-    message: 'stage phải là ACUTE, SUBACUTE, RECOVERING hoặc HEALED',
+    message: 'stage must be ACUTE, SUBACUTE, RECOVERING or HEALED',
   })
   stage?: string;
 
@@ -90,7 +90,7 @@ export class CreateInjuryDto {
   @ApiPropertyOptional({ description: 'Mô tả chi tiết điểm chấn thương' })
   @IsOptional()
   @IsString()
-  @MinLength(10, { message: 'Mô tả chi tiết chấn thương phải từ 10 ký tự trở lên' })
-  @MaxLength(1000, { message: 'Mô tả chi tiết chấn thương không được vượt quá 1000 ký tự' })
+  @MinLength(10, { message: 'The injury description needs at least 10 characters' })
+  @MaxLength(1000, { message: 'The injury description can be at most 1000 characters' })
   description?: string;
 }

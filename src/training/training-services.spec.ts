@@ -1,7 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { HttpStatus } from '@nestjs/common';
 import { HorseStatus, PlanStatus, TrackSurface, WorkoutStatus } from '@prisma/client';
-import { TrainingService } from './training.service';
+import { TrainingCommonService } from './training-common.service';
+import { TrainingPlansService } from './training-plans.service';
+import { WorkoutsService } from './workouts.service';
+import { TrainingInsightsService } from './training-insights.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CounterService } from '../audit/counter.service';
@@ -18,6 +21,7 @@ import {
   withinTrainingHours,
   workoutLoad,
 } from './training-rules';
+import { notificationsMock } from '../notifications/notifications.testing';
 
 /** Mã lỗi (code) của lời hứa bị từ chối. */
 async function codeOf(p: Promise<unknown>): Promise<string> {
@@ -30,7 +34,10 @@ async function codeOf(p: Promise<unknown>): Promise<string> {
 }
 
 describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
-  let service: TrainingService;
+  let common: TrainingCommonService;
+  let plans: TrainingPlansService;
+  let workouts: WorkoutsService;
+  let insights: TrainingInsightsService;
   let prisma: any;
   let audit: any;
 
@@ -126,13 +133,20 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        TrainingService,
+        TrainingCommonService,
+        TrainingPlansService,
+        WorkoutsService,
+        TrainingInsightsService,
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: audit },
         { provide: CounterService, useValue: { next: jest.fn().mockResolvedValue(45) } },
+        notificationsMock(),
       ],
     }).compile();
-    service = module.get<TrainingService>(TrainingService);
+    common = module.get(TrainingCommonService);
+    plans = module.get(TrainingPlansService);
+    workouts = module.get(WorkoutsService);
+    insights = module.get(TrainingInsightsService);
   });
 
   describe('training-rules', () => {
@@ -212,7 +226,7 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
     it('gives the plan a GA- code from the counter', async () => {
       prisma.horse.findUnique.mockResolvedValue(healthyHorse);
       prisma.trainingPlan.create.mockResolvedValue({ ...draftPlan, horse: healthyHorse });
-      await service.createPlan(dto, trainer);
+      await plans.createPlan(dto, trainer);
       expect(prisma.trainingPlan.create).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ planCode: 'GA-000045' }) }),
       );
@@ -222,13 +236,11 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
       prisma.horse.findUnique.mockResolvedValue(healthyHorse);
       expect(
         await codeOf(
-          service.createPlan({ ...dto, startDate: clubDate(addDays(today, -10)) }, trainer),
+          plans.createPlan({ ...dto, startDate: clubDate(addDays(today, -10)) }, trainer),
         ),
       ).toBe('START_DATE_TOO_EARLY');
       expect(
-        await codeOf(
-          service.createPlan({ ...dto, endDate: clubDate(addDays(today, 400)) }, trainer),
-        ),
+        await codeOf(plans.createPlan({ ...dto, endDate: clubDate(addDays(today, 400)) }, trainer)),
       ).toBe('PLAN_TOO_LONG');
     });
 
@@ -236,7 +248,7 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
       prisma.horse.findUnique.mockResolvedValue({ ...healthyHorse, isMedicalLocked: true });
       prisma.trainingPlan.create.mockResolvedValue({ ...draftPlan, horse: healthyHorse });
 
-      await service.createPlan(dto, trainer);
+      await plans.createPlan(dto, trainer);
 
       expect(prisma.trainingPlan.create).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ status: PlanStatus.DRAFT }) }),
@@ -246,17 +258,17 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
 
     it('rejects a retired horse and a plan without phases', async () => {
       prisma.horse.findUnique.mockResolvedValue({ ...healthyHorse, status: HorseStatus.RETIRED });
-      expect(await codeOf(service.createPlan(dto, trainer))).toBe('HORSE_RETIRED');
+      expect(await codeOf(plans.createPlan(dto, trainer))).toBe('HORSE_RETIRED');
 
       prisma.horse.findUnique.mockResolvedValue(healthyHorse);
-      expect(await codeOf(service.createPlan({ ...dto, phases: [] }, trainer))).toBe(
+      expect(await codeOf(plans.createPlan({ ...dto, phases: [] }, trainer))).toBe(
         'PHASES_REQUIRED',
       );
     });
 
     it('rejects start date after end date', async () => {
       prisma.horse.findUnique.mockResolvedValue(healthyHorse);
-      const error = await service
+      const error = await plans
         .createPlan({ ...dto, startDate: clubDate(addDays(today, 40)) }, trainer)
         .catch((e) => e);
       expect(error.getStatus()).toBe(HttpStatus.BAD_REQUEST);
@@ -273,7 +285,7 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
 
     it('blocks activation while the horse is under a training lock', async () => {
       prisma.horse.findUnique.mockResolvedValue({ ...healthyHorse, isMedicalLocked: true });
-      expect(await codeOf(service.changePlanStatus('plan-1', { status: 'ACTIVE' }, trainer))).toBe(
+      expect(await codeOf(plans.changePlanStatus('plan-1', { status: 'ACTIVE' }, trainer))).toBe(
         'MEDICAL_LOCK_ACTIVE',
       );
       expect(prisma.trainingPlan.update).not.toHaveBeenCalled();
@@ -281,32 +293,32 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
 
     it('needs at least one workout', async () => {
       prisma.workoutSession.count.mockResolvedValue(0);
-      expect(await codeOf(service.changePlanStatus('plan-1', { status: 'ACTIVE' }, trainer))).toBe(
+      expect(await codeOf(plans.changePlanStatus('plan-1', { status: 'ACTIVE' }, trainer))).toBe(
         'PLAN_HAS_NO_WORKOUTS',
       );
     });
 
     it('allows only one active plan per horse', async () => {
       prisma.trainingPlan.findFirst.mockResolvedValue({ id: 'plan-2', phaseName: 'Other' });
-      expect(await codeOf(service.changePlanStatus('plan-1', { status: 'ACTIVE' }, trainer))).toBe(
+      expect(await codeOf(plans.changePlanStatus('plan-1', { status: 'ACTIVE' }, trainer))).toBe(
         'HORSE_HAS_ACTIVE_PLAN',
       );
     });
 
     it('asks for VET confirmation when the horse is in a medical status', async () => {
       prisma.horse.findUnique.mockResolvedValue({ ...healthyHorse, status: HorseStatus.INJURED });
-      expect(await codeOf(service.changePlanStatus('plan-1', { status: 'ACTIVE' }, trainer))).toBe(
+      expect(await codeOf(plans.changePlanStatus('plan-1', { status: 'ACTIVE' }, trainer))).toBe(
         'VET_CONFIRMATION_REQUIRED',
       );
       expect(
         await codeOf(
-          service.changePlanStatus('plan-1', { status: 'ACTIVE', vetConsulted: true }, trainer),
+          plans.changePlanStatus('plan-1', { status: 'ACTIVE', vetConsulted: true }, trainer),
         ),
       ).toBe('OK');
     });
 
     it('activates and optionally moves a resting horse to IN_TRAINING', async () => {
-      await service.changePlanStatus(
+      await plans.changePlanStatus(
         'plan-1',
         { status: 'ACTIVE', moveHorseToTraining: true },
         trainer,
@@ -326,12 +338,12 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
     it('cancel needs a reason and cancels pending workouts', async () => {
       prisma.trainingPlan.findUnique.mockResolvedValue({ ...draftPlan, status: PlanStatus.ACTIVE });
       prisma.horse.findUnique.mockResolvedValue(healthyHorse);
-      expect(
-        await codeOf(service.changePlanStatus('plan-1', { status: 'CANCELLED' }, trainer)),
-      ).toBe('REASON_REQUIRED');
+      expect(await codeOf(plans.changePlanStatus('plan-1', { status: 'CANCELLED' }, trainer))).toBe(
+        'REASON_REQUIRED',
+      );
 
       prisma.workoutSession.updateMany.mockResolvedValue({ count: 3 });
-      const res = await service.changePlanStatus(
+      const res = await plans.changePlanStatus(
         'plan-1',
         { status: 'CANCELLED', reason: 'Ngựa chuyển sang giáo án khác' },
         trainer,
@@ -351,7 +363,7 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
       prisma.horse.findUnique.mockResolvedValue(healthyHorse);
       expect(
         await codeOf(
-          service.changePlanStatus(
+          plans.changePlanStatus(
             'plan-1',
             { status: 'COMPLETED', summary: 'Hoàn thành tốt mục tiêu' },
             trainer,
@@ -371,7 +383,7 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
       prisma.horse.findUnique.mockResolvedValue({ ...healthyHorse, isMedicalLocked: true });
       expect(
         await codeOf(
-          service.createWorkout(
+          workouts.createWorkout(
             'plan-1',
             { ...workoutDto, workoutType: 'BREEZE', targetSpeedKmh: 55, jockeyName: 'An' },
             trainer,
@@ -379,7 +391,7 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
         ),
       ).toBe('MEDICAL_LOCK_ACTIVE');
 
-      const ok = await service.createWorkout(
+      const ok = await workouts.createWorkout(
         'plan-1',
         { ...workoutDto, workoutType: 'WALK', intensity: 'LIGHT' },
         trainer,
@@ -391,11 +403,11 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
     it('forces BREEZE / TRIAL to HEAVY and needs speed + jockey', async () => {
       expect(
         await codeOf(
-          service.createWorkout('plan-1', { ...workoutDto, workoutType: 'TRIAL' }, trainer),
+          workouts.createWorkout('plan-1', { ...workoutDto, workoutType: 'TRIAL' }, trainer),
         ),
       ).toBe('TARGET_SPEED_REQUIRED');
 
-      const w = await service.createWorkout(
+      const w = await workouts.createWorkout(
         'plan-1',
         {
           ...workoutDto,
@@ -413,21 +425,21 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
       const night = new Date(addDays(today, 1).getTime() + 22 * 60 * 60 * 1000).toISOString();
       expect(
         await codeOf(
-          service.createWorkout('plan-1', { ...workoutDto, scheduledDate: night }, trainer),
+          workouts.createWorkout('plan-1', { ...workoutDto, scheduledDate: night }, trainer),
         ),
       ).toBe('OUTSIDE_TRAINING_HOURS');
 
       const past = new Date(addDays(today, -1).getTime() + 7 * 60 * 60 * 1000).toISOString();
       expect(
         await codeOf(
-          service.createWorkout('plan-1', { ...workoutDto, scheduledDate: past }, trainer),
+          workouts.createWorkout('plan-1', { ...workoutDto, scheduledDate: past }, trainer),
         ),
       ).toBe('DATE_IN_PAST');
     });
 
     it('allows at most 3 workouts per horse per day', async () => {
       prisma.workoutSession.count.mockResolvedValue(3);
-      expect(await codeOf(service.createWorkout('plan-1', workoutDto, trainer))).toBe(
+      expect(await codeOf(workouts.createWorkout('plan-1', workoutDto, trainer))).toBe(
         'MAX_WORKOUTS_PER_DAY',
       );
     });
@@ -436,7 +448,7 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
       prisma.workoutSession.findFirst.mockResolvedValue({ id: 'w-x', horse: { name: 'Bolt' } });
       expect(
         await codeOf(
-          service.createWorkout(
+          workouts.createWorkout(
             'plan-1',
             { ...workoutDto, workoutType: 'TRIAL', targetSpeedKmh: 60, jockeyName: 'An' },
             trainer,
@@ -451,10 +463,10 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
         status: HorseStatus.UNDER_OBSERVATION,
       });
       const heavy = { ...workoutDto, intensity: 'HEAVY' };
-      expect(await codeOf(service.createWorkout('plan-1', heavy, trainer))).toBe(
+      expect(await codeOf(workouts.createWorkout('plan-1', heavy, trainer))).toBe(
         'VET_CONFIRMATION_REQUIRED',
       );
-      const w = await service.createWorkout('plan-1', { ...heavy, vetConsulted: true }, trainer);
+      const w = await workouts.createWorkout('plan-1', { ...heavy, vetConsulted: true }, trainer);
       expect(w.medicalOverride).toBe(true);
     });
 
@@ -463,13 +475,13 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
         ...draftPlan,
         status: PlanStatus.COMPLETED,
       });
-      expect(await codeOf(service.createWorkout('plan-1', workoutDto, trainer))).toBe(
+      expect(await codeOf(workouts.createWorkout('plan-1', workoutDto, trainer))).toBe(
         'PLAN_CLOSED',
       );
 
       prisma.trainingPlan.findUnique.mockResolvedValue(draftPlan);
       prisma.user.findUnique.mockResolvedValue({ id: 'x', role: 'VETERINARIAN', status: 'ACTIVE' });
-      expect(await codeOf(service.createWorkout('plan-1', workoutDto, trainer))).toBe(
+      expect(await codeOf(workouts.createWorkout('plan-1', workoutDto, trainer))).toBe(
         'INVALID_GROOM',
       );
     });
@@ -483,25 +495,25 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
 
     it('requires a phase and a date inside it', async () => {
       expect(
-        await codeOf(service.createWorkout('plan-1', { ...workoutDto, phaseId: 'nope' }, trainer)),
+        await codeOf(workouts.createWorkout('plan-1', { ...workoutDto, phaseId: 'nope' }, trainer)),
       ).toBe('PHASE_REQUIRED');
       prisma.trainingPlan.findUnique.mockResolvedValue({
         ...draftPlan,
         phases: [{ ...phase, endDate: clubDate(today) }],
       });
-      expect(await codeOf(service.createWorkout('plan-1', workoutDto, trainer))).toBe(
+      expect(await codeOf(workouts.createWorkout('plan-1', workoutDto, trainer))).toBe(
         'OUTSIDE_PHASE_DATES',
       );
     });
 
     it('asks to confirm warnings (weekly quota exceeded), then saves on the second click', async () => {
       prisma.workoutSession.findMany.mockResolvedValue([{ distanceMeters: 8500, repetitions: 1 }]);
-      const error = await service.createWorkout('plan-1', workoutDto, trainer).catch((e) => e);
+      const error = await workouts.createWorkout('plan-1', workoutDto, trainer).catch((e) => e);
       expect(error.getResponse().code).toBe('WARNINGS_NEED_CONFIRMATION');
       expect(error.getResponse().data.warnings[0]).toContain('vượt định mức 9000 m');
       expect(prisma.workoutSession.create).not.toHaveBeenCalled();
 
-      await service.createWorkout('plan-1', { ...workoutDto, acknowledgeWarnings: true }, trainer);
+      await workouts.createWorkout('plan-1', { ...workoutDto, acknowledgeWarnings: true }, trainer);
       expect(prisma.workoutSession.create).toHaveBeenCalled();
     });
 
@@ -513,7 +525,7 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
         role: 'GROOM',
         status: 'ACTIVE',
       });
-      const error = await service.createWorkout('plan-1', workoutDto, trainer).catch((e) => e);
+      const error = await workouts.createWorkout('plan-1', workoutDto, trainer).catch((e) => e);
       expect(error.getResponse().data.warnings).toContain(
         'Nhân viên John đã có buổi tập trùng giờ.',
       );
@@ -522,7 +534,7 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
     it('weekly repeat creates the matching days and reports skipped ones', async () => {
       // Ngày đầu đã có 3 buổi -> bị bỏ qua, các ngày còn lại tạo được
       prisma.workoutSession.count.mockResolvedValueOnce(3).mockResolvedValue(0);
-      const res = await service.createRepeatWorkouts(
+      const res = await workouts.createRepeatWorkouts(
         'plan-1',
         { ...workoutDto, weekdays: [1, 2, 3, 4, 5, 6, 7], until: clubDate(addDays(today, 3)) },
         trainer,
@@ -541,7 +553,7 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
       });
       expect(
         await codeOf(
-          service.createRepeatWorkouts(
+          workouts.createRepeatWorkouts(
             'plan-1',
             {
               ...workoutDto,
@@ -575,10 +587,10 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
         trainingPlan: { ...draftPlan, status: PlanStatus.ACTIVE },
       });
       prisma.horse.findUnique.mockResolvedValue({ ...healthyHorse, isMedicalLocked: true });
-      expect(await codeOf(service.restoreWorkout('w-1', {}, trainer))).toBe('MEDICAL_LOCK_ACTIVE');
+      expect(await codeOf(workouts.restoreWorkout('w-1', {}, trainer))).toBe('MEDICAL_LOCK_ACTIVE');
 
       prisma.horse.findUnique.mockResolvedValue(healthyHorse);
-      const restored = await service.restoreWorkout('w-1', {}, trainer);
+      const restored = await workouts.restoreWorkout('w-1', {}, trainer);
       expect(restored.status).toBe(WorkoutStatus.SCHEDULED);
     });
   });
@@ -606,14 +618,14 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
         ...started,
         scheduledDate: tomorrow0630,
       });
-      expect(await codeOf(service.recordResult('w-1', result, trainer))).toBe(
+      expect(await codeOf(workouts.recordResult('w-1', result, trainer))).toBe(
         'WORKOUT_NOT_STARTED',
       );
     });
 
     it('computes average speed and records who saved the result', async () => {
       prisma.workoutSession.findUnique.mockResolvedValue(started);
-      await service.recordResult('w-1', result, trainer);
+      await workouts.recordResult('w-1', result, trainer);
       expect(prisma.workoutSession.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
@@ -630,16 +642,16 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
     it('needs a running time except for walk / swim / treadmill', async () => {
       prisma.workoutSession.findUnique.mockResolvedValue(started);
       const noTime = { ...result, actualTimeSeconds: undefined };
-      expect(await codeOf(service.recordResult('w-1', noTime, trainer))).toBe('TIME_REQUIRED');
+      expect(await codeOf(workouts.recordResult('w-1', noTime, trainer))).toBe('TIME_REQUIRED');
       prisma.workoutSession.findUnique.mockResolvedValue({ ...started, workoutType: 'WALK' });
-      expect(await codeOf(service.recordResult('w-1', noTime, trainer))).toBe('OK');
+      expect(await codeOf(workouts.recordResult('w-1', noTime, trainer))).toBe('OK');
     });
 
     it('recovery heart rate cannot exceed peak heart rate', async () => {
       prisma.workoutSession.findUnique.mockResolvedValue(started);
       expect(
         await codeOf(
-          service.recordResult(
+          workouts.recordResult(
             'w-1',
             { ...result, heartRatePeak: 150, heartRateRecovery: 160 },
             trainer,
@@ -652,10 +664,10 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
       prisma.workoutSession.findUnique.mockResolvedValue(started);
       expect(
         await codeOf(
-          service.recordResult('w-1', { ...result, abnormalSignTypes: ['LAMENESS'] }, trainer),
+          workouts.recordResult('w-1', { ...result, abnormalSignTypes: ['LAMENESS'] }, trainer),
         ),
       ).toBe('ABNORMAL_NOTES_REQUIRED');
-      await service.recordResult(
+      await workouts.recordResult(
         'w-1',
         {
           ...result,
@@ -677,7 +689,7 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
         status: WorkoutStatus.COMPLETED,
         resultRecordedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
       });
-      await service.recordResult('w-1', result, trainer);
+      await workouts.recordResult('w-1', result, trainer);
       expect(prisma.workoutSession.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({ resultUpdatedById: 'trainer-1' }),
@@ -688,7 +700,7 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
         status: WorkoutStatus.COMPLETED,
         resultRecordedAt: new Date(Date.now() - 50 * 60 * 60 * 1000),
       });
-      expect(await codeOf(service.recordResult('w-1', result, trainer))).toBe(
+      expect(await codeOf(workouts.recordResult('w-1', result, trainer))).toBe(
         'RESULT_EDIT_EXPIRED',
       );
     });
@@ -699,7 +711,7 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
         status: WorkoutStatus.MISSED,
         scheduledDate: addDays(today, -10),
       });
-      expect(await codeOf(service.recordResult('w-1', result, trainer))).toBe(
+      expect(await codeOf(workouts.recordResult('w-1', result, trainer))).toBe(
         'LATE_RESULT_EXPIRED',
       );
     });
@@ -707,7 +719,7 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
 
   describe('scoping and automatic jobs', () => {
     it('scopes plans to owned horses for a HORSE_OWNER', async () => {
-      await service.findAllPlans({}, owner);
+      await plans.findAllPlans({}, owner);
       expect(prisma.trainingPlan.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({ horse: { deletedAt: null, ownerId: 'owner-1' } }),
@@ -716,7 +728,7 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
     });
 
     it('marks overdue scheduled workouts as MISSED', async () => {
-      await service.sweepOverdue();
+      await common.sweepOverdue();
       expect(prisma.workoutSession.updateMany).toHaveBeenCalledWith({
         where: { status: WorkoutStatus.SCHEDULED, scheduledDate: { lt: addDays(today, -1) } },
         data: { status: WorkoutStatus.MISSED },
@@ -726,7 +738,7 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
     it('returns no fitness points (instead of made-up data) when nothing is completed', async () => {
       prisma.horse.findUnique.mockResolvedValue(healthyHorse);
       prisma.workoutSession.findMany.mockResolvedValue([]);
-      const res = await service.getFitnessMetrics('horse-1', trainer);
+      const res = await insights.getFitnessMetrics('horse-1', trainer);
       expect(res.points).toEqual([]);
       expect(res.summary.bestAvgSpeed).toBeNull();
     });
@@ -762,7 +774,7 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
       prisma.medicalLock.findMany.mockResolvedValue([
         { lockedAt: addDays(today, -20), unlockedAt: addDays(today, -15) },
       ]);
-      const res = await service.getFitnessMetrics('horse-1', trainer, 4);
+      const res = await insights.getFitnessMetrics('horse-1', trainer, 4);
       expect(res.points.map((p: any) => p.avgSpeedKmh)).toEqual([null, 55.2]);
       expect(res.points.map((p: any) => p.load)).toEqual([2, 4.8]); // 2 km × 1; 0.8 km × 2 × 3
       expect(res.summary.bestAvgSpeed?.value).toBe(55.2);
@@ -793,7 +805,7 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
       prisma.workoutSession.findMany
         .mockResolvedValueOnce([done(30, 2), done(23, 2), done(16, 2), done(9, 2), done(2, 10)])
         .mockResolvedValueOnce([]);
-      const res = await service.getOverview();
+      const res = await insights.getOverview();
       expect(res.rows[0].load7d).toBe(20);
       expect(res.rows[0].loadSpike).toBe(true);
       expect(res.rows[0].currentPhase?.name).toBe('Base');

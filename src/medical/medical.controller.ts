@@ -13,7 +13,11 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, CurrentUserPayload } from '../common/decorators/current-user.decorator';
 import { RequirePermission } from '../common/decorators/require-permission.decorator';
-import { MedicalService } from './medical.service';
+import { InjuriesService } from './injuries.service';
+import { MedicalLocksService } from './medical-locks.service';
+import { HealthOverviewService } from './health-overview.service';
+import { PreventiveCareService } from './preventive-care.service';
+import { MedicalRecordsService } from './medical-records.service';
 import { CreateMedicalRecordDto } from './dto/create-medical-record.dto';
 import { UpdateMedicalRecordDto } from './dto/update-medical-record.dto';
 import { MedicalRecordQueryDto } from './dto/medical-record-query.dto';
@@ -52,7 +56,13 @@ import {
 @ApiBearerAuth('JWT-auth')
 @Controller('medical')
 export class MedicalController {
-  constructor(private readonly medicalService: MedicalService) {}
+  constructor(
+    private readonly injuries: InjuriesService,
+    private readonly locks: MedicalLocksService,
+    private readonly overview: HealthOverviewService,
+    private readonly preventive: PreventiveCareService,
+    private readonly records: MedicalRecordsService,
+  ) {}
 
   // ---------------------------------------------------------------------------
   // HEALTH BOARD & OVERVIEW
@@ -61,15 +71,15 @@ export class MedicalController {
   @Get('health-board')
   @RequirePermission('viewMedical')
   @ApiOperation({ summary: 'Sơ đồ sức khỏe đàn ngựa (thống kê nhóm & danh sách)' })
-  getHealthBoard(@Query() query: HealthBoardQueryDto, @CurrentUser() user?: CurrentUserPayload) {
-    return this.medicalService.getHealthBoard(query, user);
+  getHealthBoard(@Query() query: HealthBoardQueryDto, @CurrentUser() user: CurrentUserPayload) {
+    return this.overview.getHealthBoard(query, user);
   }
 
   @Get('horses/:id')
   @RequirePermission('viewMedical')
   @ApiOperation({ summary: 'Hồ sơ y tế ngựa' })
   getHorseMedicalProfile(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
-    return this.medicalService.getHorseMedicalProfile(id, user);
+    return this.overview.getHorseMedicalProfile(id, user);
   }
 
   @Get('horses/:id/observations')
@@ -80,7 +90,7 @@ export class MedicalController {
     @CurrentUser() user: CurrentUserPayload,
     @Query('urgency') urgency?: string,
   ) {
-    return this.medicalService.getHorseObservations(id, user, urgency);
+    return this.overview.getHorseObservations(id, user, urgency);
   }
 
   // ---------------------------------------------------------------------------
@@ -95,21 +105,21 @@ export class MedicalController {
     @CurrentUser() user: CurrentUserPayload,
     @Query() query: InjuryQueryDto,
   ) {
-    return this.medicalService.getHorseInjuries(horseId, user, query);
+    return this.injuries.getHorseInjuries(horseId, user, query);
   }
 
   @Post('injuries')
   @RequirePermission('viewMedical')
   @ApiOperation({ summary: 'Đánh dấu vị trí chấn thương 2D trên mô hình (API-007 / DL-3.10)' })
   createInjury(@CurrentUser() user: CurrentUserPayload, @Body() dto: CreateInjuryDto) {
-    return this.medicalService.createInjury(user, dto);
+    return this.injuries.createInjury(user, dto);
   }
 
   @Get('injuries/:id')
   @RequirePermission('viewMedical')
   @ApiOperation({ summary: 'Chi tiết điểm chấn thương 2D và lịch sử tiến trình hồi phục' })
   getInjuryDetail(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
-    return this.medicalService.getInjuryDetail(id, user);
+    return this.injuries.getInjuryDetail(id, user);
   }
 
   @Put('injuries/:id')
@@ -120,7 +130,7 @@ export class MedicalController {
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: UpdateInjuryDto,
   ) {
-    return this.medicalService.updateInjury(id, user, dto);
+    return this.injuries.updateInjury(id, user, dto);
   }
 
   @Delete('injuries/:id')
@@ -129,7 +139,7 @@ export class MedicalController {
     summary: 'Xóa điểm chấn thương (chỉ trong 24h và chưa cập nhật hồi phục - BTN-3.37)',
   })
   deleteInjury(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
-    return this.medicalService.deleteInjury(id, user);
+    return this.injuries.deleteInjury(id, user);
   }
 
   @Post('injuries/:id/recovery')
@@ -140,7 +150,7 @@ export class MedicalController {
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: UpdateRecoveryProgressDto,
   ) {
-    return this.medicalService.updateRecoveryProgress(id, user, dto);
+    return this.injuries.updateRecoveryProgress(id, user, dto);
   }
 
   // ---------------------------------------------------------------------------
@@ -151,21 +161,21 @@ export class MedicalController {
   @RequirePermission('viewMedical')
   @ApiOperation({ summary: 'Danh sách Khóa huấn luyện (SC-3.06)' })
   getLocks(@CurrentUser() user: CurrentUserPayload, @Query() query: MedicalLockQueryDto) {
-    return this.medicalService.getMedicalLocks(user, query);
+    return this.locks.getMedicalLocks(user, query);
   }
 
   @Get('locks/:id')
   @RequirePermission('viewMedical')
   @ApiOperation({ summary: 'Chi tiết Khóa huấn luyện' })
   getLockDetail(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
-    return this.medicalService.getMedicalLockDetail(id, user);
+    return this.locks.getMedicalLockDetail(id, user);
   }
 
   @Post('locks')
   @RequirePermission('placeLock')
   @ApiOperation({ summary: 'Đặt Khóa huấn luyện khẩn cấp (DL-3.01 / BTN-3.03)' })
   createLock(@CurrentUser() user: CurrentUserPayload, @Body() dto: CreateMedicalLockDto) {
-    return this.medicalService.createMedicalLock(user, dto);
+    return this.locks.createMedicalLock(user, dto);
   }
 
   @Post('locks/:id/release')
@@ -177,7 +187,7 @@ export class MedicalController {
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: ReleaseMedicalLockDto,
   ) {
-    return this.medicalService.releaseMedicalLock(id, user, dto);
+    return this.locks.releaseMedicalLock(id, user, dto);
   }
 
   @Post('locks/:id/extend')
@@ -189,7 +199,7 @@ export class MedicalController {
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: ExtendMedicalLockDto,
   ) {
-    return this.medicalService.extendMedicalLock(id, user, dto);
+    return this.locks.extendMedicalLock(id, user, dto);
   }
 
   // ---------------------------------------------------------------------------
@@ -200,21 +210,21 @@ export class MedicalController {
   @RequirePermission('viewMedical')
   @ApiOperation({ summary: 'Danh sách bệnh án điện tử' })
   getRecords(@CurrentUser() user: CurrentUserPayload, @Query() query: MedicalRecordQueryDto) {
-    return this.medicalService.getMedicalRecords(user, query);
+    return this.records.getMedicalRecords(user, query);
   }
 
   @Post('records')
   @RequirePermission('viewMedical')
   @ApiOperation({ summary: 'Tạo bệnh án mới (Nháp hoặc Chốt)' })
   createRecord(@CurrentUser() user: CurrentUserPayload, @Body() dto: CreateMedicalRecordDto) {
-    return this.medicalService.createMedicalRecord(user, dto);
+    return this.records.createMedicalRecord(user, dto);
   }
 
   @Get('records/:id')
   @RequirePermission('viewMedical')
   @ApiOperation({ summary: 'Chi tiết bệnh án' })
   getRecordDetail(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
-    return this.medicalService.getMedicalRecordDetail(id, user);
+    return this.records.getMedicalRecordDetail(id, user);
   }
 
   @Put('records/:id')
@@ -225,7 +235,7 @@ export class MedicalController {
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: UpdateMedicalRecordDto,
   ) {
-    return this.medicalService.updateMedicalRecord(id, user, dto);
+    return this.records.updateMedicalRecord(id, user, dto);
   }
 
   @Post('records/:id/finalize')
@@ -237,14 +247,14 @@ export class MedicalController {
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: FinalizeRecordDto,
   ) {
-    return this.medicalService.finalizeMedicalRecord(id, user, dto);
+    return this.records.finalizeMedicalRecord(id, user, dto);
   }
 
   @Delete('records/:id')
   @RequirePermission('viewMedical')
   @ApiOperation({ summary: 'Xóa bản nháp bệnh án' })
   deleteRecord(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
-    return this.medicalService.deleteMedicalRecord(id, user);
+    return this.records.deleteMedicalRecord(id, user);
   }
 
   @Post('records/:id/close')
@@ -256,7 +266,7 @@ export class MedicalController {
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: CloseMedicalRecordDto,
   ) {
-    return this.medicalService.closeMedicalRecord(id, user, dto);
+    return this.records.closeMedicalRecord(id, user, dto);
   }
 
   @Post('records/:id/reopen')
@@ -268,7 +278,7 @@ export class MedicalController {
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: ReopenMedicalRecordDto,
   ) {
-    return this.medicalService.reopenMedicalRecord(id, user, dto);
+    return this.records.reopenMedicalRecord(id, user, dto);
   }
 
   // ---------------------------------------------------------------------------
@@ -283,7 +293,7 @@ export class MedicalController {
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: CreateTreatmentPhaseDto,
   ) {
-    return this.medicalService.addTreatmentPhase(id, user, dto);
+    return this.records.addTreatmentPhase(id, user, dto);
   }
 
   @Put('records/:id/treatment-phases/:phaseId')
@@ -295,7 +305,7 @@ export class MedicalController {
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: UpdateTreatmentPhaseDto,
   ) {
-    return this.medicalService.updateTreatmentPhase(id, phaseId, user, dto);
+    return this.records.updateTreatmentPhase(id, phaseId, user, dto);
   }
 
   @Post('records/:id/prescriptions')
@@ -306,7 +316,7 @@ export class MedicalController {
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: CreatePrescriptionDto,
   ) {
-    return this.medicalService.addPrescription(id, user, dto);
+    return this.records.addPrescription(id, user, dto);
   }
 
   @Put('records/:id/prescriptions/:prescriptionId')
@@ -318,7 +328,7 @@ export class MedicalController {
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: UpdatePrescriptionDto,
   ) {
-    return this.medicalService.updatePrescription(id, prescriptionId, user, dto);
+    return this.records.updatePrescription(id, prescriptionId, user, dto);
   }
 
   @Post('records/:id/prescriptions/:prescriptionId/stop')
@@ -331,7 +341,7 @@ export class MedicalController {
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: StopPrescriptionDto,
   ) {
-    return this.medicalService.stopPrescription(id, prescriptionId, user, dto);
+    return this.records.stopPrescription(id, prescriptionId, user, dto);
   }
 
   @Post('records/:id/follow-ups')
@@ -342,7 +352,7 @@ export class MedicalController {
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: CreateFollowUpDto,
   ) {
-    return this.medicalService.addFollowUp(id, user, dto);
+    return this.records.addFollowUp(id, user, dto);
   }
 
   // ---------------------------------------------------------------------------
@@ -353,7 +363,7 @@ export class MedicalController {
   @RequirePermission('viewMedical')
   @ApiOperation({ summary: 'Lấy danh mục loại chăm sóc định kỳ' })
   getPreventiveCatalogs() {
-    return this.medicalService.getPreventiveCatalogs();
+    return this.preventive.getPreventiveCatalogs();
   }
 
   @Post('preventive/catalogs')
@@ -363,7 +373,7 @@ export class MedicalController {
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: CreatePreventiveTypeCatalogDto,
   ) {
-    return this.medicalService.createPreventiveCatalog(user, dto);
+    return this.preventive.createPreventiveCatalog(user, dto);
   }
 
   @Put('preventive/catalogs/:id')
@@ -374,7 +384,7 @@ export class MedicalController {
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: UpdatePreventiveTypeCatalogDto,
   ) {
-    return this.medicalService.updatePreventiveCatalog(id, user, dto);
+    return this.preventive.updatePreventiveCatalog(id, user, dto);
   }
 
   @Post('preventive/catalogs/:id/toggle-status')
@@ -382,7 +392,7 @@ export class MedicalController {
   @RequirePermission('viewMedical')
   @ApiOperation({ summary: 'Bật/Tắt trạng thái active loại chăm sóc định kỳ' })
   togglePreventiveCatalogStatus(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
-    return this.medicalService.togglePreventiveCatalogStatus(id, user);
+    return this.preventive.togglePreventiveCatalogStatus(id, user);
   }
 
   @Get('preventive/schedules')
@@ -392,7 +402,7 @@ export class MedicalController {
     @CurrentUser() user: CurrentUserPayload,
     @Query() query: PreventiveQueryDto,
   ) {
-    return this.medicalService.getPreventiveSchedules(user, query);
+    return this.preventive.getPreventiveSchedules(user, query);
   }
 
   @Post('preventive/record')
@@ -402,7 +412,7 @@ export class MedicalController {
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: RecordPreventiveCareDto,
   ) {
-    return this.medicalService.recordPreventiveCare(user, dto);
+    return this.preventive.recordPreventiveCare(user, dto);
   }
 
   @Post('preventive/setup')
@@ -412,6 +422,6 @@ export class MedicalController {
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: SetupHorsePreventiveDto,
   ) {
-    return this.medicalService.setupHorsePreventive(user, dto);
+    return this.preventive.setupHorsePreventive(user, dto);
   }
 }

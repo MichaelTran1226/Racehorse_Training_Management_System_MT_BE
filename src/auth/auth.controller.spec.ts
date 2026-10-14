@@ -4,6 +4,7 @@ import { Request } from 'express';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { OtpService } from './otp.service';
+import { AuthThrottlerGuard } from '../common/guards/auth-throttler.guard';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -50,7 +51,10 @@ describe('AuthController', () => {
           useValue: {},
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(AuthThrottlerGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<AuthController>(AuthController);
     service = module.get<AuthService>(AuthService);
