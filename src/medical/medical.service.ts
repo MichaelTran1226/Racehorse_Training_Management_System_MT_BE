@@ -89,12 +89,16 @@ export class MedicalService {
     });
 
     if (!horse) {
-      throw new NotFoundException('Không tìm thấy thông tin chiến mã');
+      throw apiError(HttpStatus.NOT_FOUND, 'HORSE_NOT_FOUND', 'Không tìm thấy thông tin chiến mã');
     }
 
     if (currentUser.role === Role.HORSE_OWNER) {
       if (horse.ownerId !== currentUser.userId) {
-        throw new ForbiddenException('Bạn không có quyền truy cập hồ sơ y tế chiến mã này');
+        throw apiError(
+          HttpStatus.FORBIDDEN,
+          'FORBIDDEN_HORSE_ACCESS',
+          'Bạn không có quyền truy cập hồ sơ y tế chiến mã này',
+        );
       }
       return;
     }
@@ -104,7 +108,11 @@ export class MedicalService {
         (allocation) => allocation.assignedGroomUserId === currentUser.userId,
       );
       if (!isAssigned) {
-        throw new ForbiddenException('Bạn không có quyền xem hồ sơ y tế chiến mã không được giao');
+        throw apiError(
+          HttpStatus.FORBIDDEN,
+          'FORBIDDEN_HORSE_ACCESS',
+          'Bạn không có quyền xem hồ sơ y tế chiến mã không được giao',
+        );
       }
       return;
     }
@@ -2180,11 +2188,24 @@ export class MedicalService {
    * quản lý. Mỗi ngựa kèm đủ dữ liệu cho thẻ, sơ đồ theo chuồng và panel chi tiết. Thẻ đếm tính trên
    * toàn đàn, danh sách trả về đã áp bộ lọc.
    */
-  async getHealthBoard(query: HealthBoardQueryDto) {
+  async getHealthBoard(query: HealthBoardQueryDto, currentUser?: CurrentUserPayload) {
     const now = new Date();
     const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const where: any = { deletedAt: null, status: { not: HorseStatus.RETIRED } };
+    if (currentUser) {
+      if (currentUser.role === Role.HORSE_OWNER) {
+        where.ownerId = currentUser.userId;
+      } else if (currentUser.role === Role.GROOM) {
+        where.stallAllocations = {
+          some: {
+            assignedGroomUserId: currentUser.userId,
+            isActive: true,
+          },
+        };
+      }
+    }
     const horses = await this.prisma.horse.findMany({
-      where: { deletedAt: null, status: { not: HorseStatus.RETIRED } },
+      where,
       orderBy: { name: 'asc' },
       include: {
         medicalLocks: {

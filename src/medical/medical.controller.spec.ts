@@ -71,7 +71,7 @@ describe('MedicalController', () => {
       const query = { search: 'horse-1' };
       const res = await controller.getHealthBoard(query);
       expect(res).toEqual(mockHealthBoard);
-      expect(service.getHealthBoard).toHaveBeenCalledWith(query);
+      expect(service.getHealthBoard).toHaveBeenCalledWith(query, undefined);
     });
   });
 });
