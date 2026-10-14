@@ -105,6 +105,36 @@ describe('MedicalService', () => {
     expect(service).toBeDefined();
   });
 
+  describe('getHealthBoard scope (C-03)', () => {
+    const user = (role: string, userId = 'u-1') => ({
+      userId,
+      role,
+      email: 'a@gmail.com',
+      fullName: 'A',
+    });
+    const whereOf = () => mockPrismaService.horse.findMany.mock.calls[0][0].where;
+
+    beforeEach(() => mockPrismaService.horse.findMany.mockResolvedValue([]));
+
+    it('should limit a Horse Owner to the horses they own', async () => {
+      await service.getHealthBoard({}, user('HORSE_OWNER', 'owner-1'));
+      expect(whereOf().ownerId).toBe('owner-1');
+    });
+
+    it('should limit a Groom to the horses in their care', async () => {
+      await service.getHealthBoard({}, user('GROOM', 'groom-1'));
+      expect(whereOf().stallAllocations).toEqual({
+        some: { isActive: true, assignedGroomUserId: 'groom-1' },
+      });
+    });
+
+    it('should show the whole herd to a Veterinarian', async () => {
+      await service.getHealthBoard({}, user('VETERINARIAN'));
+      expect(whereOf().ownerId).toBeUndefined();
+      expect(whereOf().stallAllocations).toBeUndefined();
+    });
+  });
+
   describe('createMedicalRecord', () => {
     it('should not let a Club Manager create a medical record (VET_ONLY)', async () => {
       const error = await service

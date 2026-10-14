@@ -6,6 +6,13 @@ describe('MedicalController', () => {
   let controller: MedicalController;
   let service: MedicalService;
 
+  const mockUser = {
+    userId: 'vet-1',
+    email: 'vet@gmail.com',
+    role: 'VETERINARIAN',
+    fullName: 'Vet',
+  };
+
   const mockHealthBoard = {
     horse: {
       id: 'horse-1',
@@ -69,9 +76,9 @@ describe('MedicalController', () => {
   describe('getHealthBoard', () => {
     it('should call service.getHealthBoard and return result', async () => {
       const query = { search: 'horse-1' };
-      const res = await controller.getHealthBoard(query);
+      const res = await controller.getHealthBoard(query, mockUser);
       expect(res).toEqual(mockHealthBoard);
-      expect(service.getHealthBoard).toHaveBeenCalledWith(query);
+      expect(service.getHealthBoard).toHaveBeenCalledWith(query, mockUser);
     });
   });
 });

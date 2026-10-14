@@ -19,6 +19,7 @@ import {
   PreventiveType,
   PreventiveStatus,
   WorkoutStatus,
+  Prisma,
 } from '@prisma/client';
 import { HEAVY_WORKOUT_WHERE } from '../training/training-rules';
 import { CreateMedicalRecordDto } from './dto/create-medical-record.dto';
@@ -2241,11 +2242,22 @@ export class MedicalService {
    * quản lý. Mỗi ngựa kèm đủ dữ liệu cho thẻ, sơ đồ theo chuồng và panel chi tiết. Thẻ đếm tính trên
    * toàn đàn, danh sách trả về đã áp bộ lọc.
    */
-  async getHealthBoard(query: HealthBoardQueryDto) {
+  async getHealthBoard(query: HealthBoardQueryDto, currentUser: CurrentUserPayload) {
     const now = new Date();
     const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    // C-03: OWNER chỉ thấy ngựa mình sở hữu, GROOM chỉ thấy ngựa mình đang chăm (giống getMedicalRecords).
+    const scope: Prisma.HorseWhereInput =
+      currentUser.role === Role.HORSE_OWNER
+        ? { ownerId: currentUser.userId }
+        : currentUser.role === Role.GROOM
+          ? {
+              stallAllocations: {
+                some: { isActive: true, assignedGroomUserId: currentUser.userId },
+              },
+            }
+          : {};
     const horses = await this.prisma.horse.findMany({
-      where: { deletedAt: null, status: { not: HorseStatus.RETIRED } },
+      where: { deletedAt: null, status: { not: HorseStatus.RETIRED }, ...scope },
       orderBy: { name: 'asc' },
       include: {
         medicalLocks: {

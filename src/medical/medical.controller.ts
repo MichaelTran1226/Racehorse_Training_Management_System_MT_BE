@@ -61,8 +61,8 @@ export class MedicalController {
   @Get('health-board')
   @RequirePermission('viewMedical')
   @ApiOperation({ summary: 'Sơ đồ sức khỏe đàn ngựa (thống kê nhóm & danh sách)' })
-  getHealthBoard(@Query() query: HealthBoardQueryDto) {
-    return this.medicalService.getHealthBoard(query);
+  getHealthBoard(@Query() query: HealthBoardQueryDto, @CurrentUser() user: CurrentUserPayload) {
+    return this.medicalService.getHealthBoard(query, user);
   }
 
   @Get('horses/:id')
