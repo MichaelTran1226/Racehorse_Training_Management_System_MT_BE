@@ -8,6 +8,7 @@ import { CounterService } from '../audit/counter.service';
 import { HorseCatalogsService } from '../horse-catalogs/horse-catalogs.service';
 import { UserRole } from '../common/enums/role.enum';
 import { CurrentUserPayload } from '../common/decorators/current-user.decorator';
+import { notificationsMock } from '../notifications/notifications.testing';
 
 describe('HorsesService', () => {
   let service: HorsesService;
@@ -92,6 +93,7 @@ describe('HorsesService', () => {
         { provide: AuditService, useValue: audit },
         { provide: CounterService, useValue: counter },
         { provide: HorseCatalogsService, useValue: catalogs },
+        notificationsMock(),
       ],
     }).compile();
 

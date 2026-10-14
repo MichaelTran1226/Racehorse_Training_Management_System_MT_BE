@@ -11,6 +11,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CounterService } from '../audit/counter.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { apiError } from '../common/exceptions/api-error';
 import { UserRole } from '../common/enums/role.enum';
 import { CurrentUserPayload } from '../common/decorators/current-user.decorator';
@@ -152,7 +153,37 @@ export class TrainingService {
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
     private readonly counter: CounterService,
+    private readonly notifications: NotificationsService,
   ) {}
+
+  /** Báo groom được giao buổi tập (FR-2.12, blueprint FR-006). */
+  private async notifyGroomAssigned(
+    groomId: string | null | undefined,
+    horseId: string,
+    count: number,
+    firstDate: Date,
+    user: CurrentUserPayload,
+  ) {
+    if (!groomId || count === 0) return;
+    const horse = await this.prisma.horse.findUnique({
+      where: { id: horseId },
+      select: { name: true },
+    });
+    const name = horse?.name ?? '';
+    await this.notifications.notifyUsers(
+      [groomId],
+      {
+        type: 'WORKOUT_ASSIGNED',
+        category: 'TRAINING',
+        title: 'New workout assigned to you',
+        message: `${count} workout(s) for ${name}, first on ${clubDate(firstDate)}.`,
+        params: { horse: name, count, date: clubDate(firstDate) },
+        link: '/my-training',
+        senderName: user.fullName,
+      },
+      user.userId,
+    );
+  }
 
   /**
    * Checks whether a horse is under an active Medical Lock (RULE-MED-01).
@@ -504,7 +535,7 @@ export class TrainingService {
    * Khóa dòng giáo án và dòng ngựa: Khóa y tế đặt cùng lúc sẽ phải chờ, không lọt qua kiểm tra.
    */
   async changePlanStatus(id: string, dto: ChangePlanStatusDto, user: CurrentUserPayload) {
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT "id" FROM "TrainingPlan" WHERE "id" = ${id} FOR UPDATE`;
       const plan = await tx.trainingPlan.findUnique({ where: { id } });
       if (!plan) {
@@ -603,6 +634,24 @@ export class TrainingService {
 
       return { ...updated, cancelledWorkouts };
     });
+
+    if (dto.status === PlanStatus.ACTIVE) {
+      await this.notifications.notifyHorse(
+        result.horseId,
+        { owner: true },
+        {
+          type: 'PLAN_ACTIVATED',
+          category: 'TRAINING',
+          title: 'Training plan started',
+          message: `Training plan "${result.phaseName}" is now active for ${result.horse?.name ?? 'your horse'}.`,
+          params: { plan: result.phaseName, horse: result.horse?.name ?? '' },
+          link: `/training/plans/${result.id}`,
+          senderName: user.fullName,
+        },
+        user.userId,
+      );
+    }
+    return result;
   }
 
   /** Các dòng ✖ của DL-2.02 (chặn) và dòng ⚠ (cần xác nhận đã trao đổi với VET). */
@@ -1058,7 +1107,7 @@ export class TrainingService {
 
   /** DL-2.01 Thêm buổi tập vào giáo án Nháp / Đang áp dụng (HT). */
   async createWorkout(planId: string, dto: CreateWorkoutSessionDto, user: CurrentUserPayload) {
-    return this.prisma.$transaction(async (tx) => {
+    const session = await this.prisma.$transaction(async (tx) => {
       const plan = await tx.trainingPlan.findUnique({ where: { id: planId } });
       if (!plan) {
         throw apiError(HttpStatus.NOT_FOUND, 'PLAN_NOT_FOUND', 'Training plan not found.');
@@ -1085,6 +1134,14 @@ export class TrainingService {
       );
       return session;
     });
+    await this.notifyGroomAssigned(
+      session.assignedStaffUserId,
+      session.horseId,
+      1,
+      session.scheduledDate,
+      user,
+    );
+    return session;
   }
 
   /**
@@ -1092,7 +1149,7 @@ export class TrainingService {
    * Ngày vướng kiểm tra 1-4 thì bỏ qua và báo lại; cảnh báo (6) không chặn khi lặp.
    */
   async createRepeatWorkouts(planId: string, dto: RepeatWorkoutDto, user: CurrentUserPayload) {
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const plan = await tx.trainingPlan.findUnique({ where: { id: planId } });
       if (!plan) {
         throw apiError(HttpStatus.NOT_FOUND, 'PLAN_NOT_FOUND', 'Training plan not found.');
@@ -1173,13 +1230,29 @@ export class TrainingService {
         },
         tx,
       );
-      return { created: created.length, workoutIds: created, skipped, warnings: allWarnings };
+      return {
+        created: created.length,
+        workoutIds: created,
+        skipped,
+        warnings: allWarnings,
+        horseId: plan.horseId,
+      };
     });
+    const { horseId, ...response } = result;
+    await this.notifyGroomAssigned(
+      dto.assignedStaffUserId,
+      horseId,
+      result.created,
+      new Date(dto.scheduledDate),
+      user,
+    );
+    return response;
   }
 
   /** Sửa buổi tập Đã lên lịch chưa tới giờ (BTN-2.20): gộp với dữ liệu cũ rồi kiểm lại DL-2.01. */
   async updateWorkout(workoutId: string, dto: UpdateWorkoutSessionDto, user: CurrentUserPayload) {
-    return this.prisma.$transaction(async (tx) => {
+    let previousGroomId: string | null = null;
+    const updated = await this.prisma.$transaction(async (tx) => {
       const existing = await tx.workoutSession.findUnique({
         where: { id: workoutId },
         include: { trainingPlan: true },
@@ -1187,6 +1260,7 @@ export class TrainingService {
       if (!existing) {
         throw apiError(HttpStatus.NOT_FOUND, 'WORKOUT_NOT_FOUND', 'Workout session not found.');
       }
+      previousGroomId = existing.assignedStaffUserId;
       if (existing.status !== WorkoutStatus.SCHEDULED || existing.scheduledDate <= new Date()) {
         throw apiError(
           HttpStatus.BAD_REQUEST,
@@ -1250,6 +1324,17 @@ export class TrainingService {
       );
       return updated;
     });
+    // Chỉ báo khi đổi sang groom khác (sửa giờ/cự ly không báo lại).
+    if (updated.assignedStaffUserId !== previousGroomId) {
+      await this.notifyGroomAssigned(
+        updated.assignedStaffUserId,
+        updated.horseId,
+        1,
+        updated.scheduledDate,
+        user,
+      );
+    }
+    return updated;
   }
 
   /**
@@ -1257,7 +1342,7 @@ export class TrainingService {
    * hoặc sửa kết quả trong 48 giờ sau lần lưu đầu. Có dấu hiệu bất thường -> cảnh báo cho VET.
    */
   async recordResult(workoutId: string, dto: RecordWorkoutResultDto, user: CurrentUserPayload) {
-    return this.prisma.$transaction(async (tx) => {
+    const updated = await this.prisma.$transaction(async (tx) => {
       const existing = await tx.workoutSession.findUnique({ where: { id: workoutId } });
       if (!existing) {
         throw apiError(HttpStatus.NOT_FOUND, 'WORKOUT_NOT_FOUND', 'Workout session not found.');
@@ -1372,6 +1457,26 @@ export class TrainingService {
       );
       return updated;
     });
+
+    // BR-2.19: dấu hiệu bất thường mới (VET chưa xem) -> báo VET. Cùng bộ dấu hiệu chỉ báo 1 lần.
+    if (updated.abnormalSigns && !updated.vetAcknowledgedAt) {
+      const signs = ((updated.abnormalSignTypes as string[]) || []).slice().sort();
+      await this.notifications.notifyRoles(
+        [Role.VETERINARIAN],
+        {
+          type: 'WORKOUT_ABNORMAL',
+          category: 'TRAINING',
+          title: 'Abnormal signs after a workout',
+          message: `${updated.horse?.name ?? 'A horse'}: ${signs.join(', ')}. Please review.`,
+          params: { horse: updated.horse?.name ?? '', signs: signs.join(', ') },
+          link: '/alerts',
+          senderName: user.fullName,
+          dedupeKey: `WORKOUT_ABNORMAL:${workoutId}:${signs.join('+')}`,
+        },
+        user.userId,
+      );
+    }
+    return updated;
   }
 
   /** DL-2.05 Hủy buổi tập Đã lên lịch / Bị chặn / Bỏ lỡ (HT). */

@@ -25,11 +25,11 @@ export class LoginDto {
 
   @ApiProperty({
     example: 'EquiFlow@2026',
-    description: 'Account password (minimum 6 characters)',
+    description: 'Account password (minimum 8 characters)',
   })
   @IsNotEmpty({ message: 'Password must not be empty' })
   @IsString({ message: 'Password must be a string' })
-  @MinLength(6, { message: 'Password must be at least 6 characters' })
+  @MinLength(8, { message: 'Password must be at least 8 characters' })
   password: string;
 
   @ApiPropertyOptional({

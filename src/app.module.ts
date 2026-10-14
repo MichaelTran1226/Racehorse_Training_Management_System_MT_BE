@@ -17,6 +17,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { StallsModule } from './stalls/stalls.module';
 import { HorseCatalogsModule } from './horse-catalogs/horse-catalogs.module';
 import { TrainingModule } from './training/training.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { TrainingModule } from './training/training.module';
     HealthModule,
     MailModule,
     AuditModule,
+    NotificationsModule,
     AuthModule,
     AccountsModule,
     MedicalModule,

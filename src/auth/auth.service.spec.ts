@@ -14,6 +14,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { OtpService } from './otp.service';
 import { AuditService } from '../audit/audit.service';
 import { CounterService } from '../audit/counter.service';
+import { notificationsMock } from '../notifications/notifications.testing';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -94,6 +95,7 @@ describe('AuthService', () => {
         { provide: OtpService, useValue: mockOtpService },
         { provide: AuditService, useValue: mockAuditService },
         { provide: CounterService, useValue: mockCounterService },
+        notificationsMock(),
       ],
     }).compile();
 

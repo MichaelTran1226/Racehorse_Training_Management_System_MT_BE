@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { apiError } from '../common/exceptions/api-error';
 import { CurrentUserPayload } from '../common/decorators/current-user.decorator';
 import {
@@ -58,7 +59,22 @@ export class MedicalService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly notifications: NotificationsService,
   ) {}
+
+  /** FR-011: đặt/gỡ khóa báo HT, CM, chủ ngựa và groom đang chăm. */
+  private notifyLockAudience(
+    horseId: string,
+    input: Parameters<NotificationsService['notifyUsers']>[1],
+    actorId: string,
+  ) {
+    return this.notifications.notifyHorse(
+      horseId,
+      { roles: [Role.HEAD_TRAINER, Role.CLUB_MANAGER], owner: true, groom: true },
+      input,
+      actorId,
+    );
+  }
 
   /** Chỉ Bác sĩ thú y được ghi dữ liệu y tế (đã chốt: Club Manager chỉ xem). */
   private assertVet(actor: CurrentUserPayload, action: string): void {
@@ -1719,6 +1735,20 @@ export class MedicalService {
       ],
     };
 
+    await this.notifyLockAudience(
+      horse.id,
+      {
+        type: 'LOCK_PLACED',
+        category: 'LOCK',
+        title: 'Training Lock placed',
+        message: `${horse.name} is under a Training Lock. Heavy workouts are blocked. Reason: ${dto.lockReason}`,
+        params: { horse: horse.name, reason: dto.lockReason },
+        link: '/locks',
+        senderName: actor.fullName,
+      },
+      actor.userId,
+    );
+
     return {
       ...lock,
       impactAssessment,
@@ -1792,6 +1822,20 @@ export class MedicalService {
       return { lock, unlocked };
     });
 
+    await this.notifyLockAudience(
+      lock.horseId,
+      {
+        type: 'LOCK_LIFTED',
+        category: 'LOCK',
+        title: 'Training Lock lifted',
+        message: `${lock.horse.name} was released back to work. Blocked workouts can be restored.`,
+        params: { horse: lock.horse.name },
+        link: '/locks',
+        senderName: actor.fullName,
+      },
+      actor.userId,
+    );
+
     const warnings: string[] = [];
     if (lock.horse?.injuryLogs && lock.horse.injuryLogs.length > 0) {
       warnings.push(`Ngựa còn ${lock.horse.injuryLogs.length} chấn thương ở giai đoạn Cấp tính`);
@@ -1809,7 +1853,7 @@ export class MedicalService {
   async extendMedicalLock(lockId: string, actor: CurrentUserPayload, dto: ExtendMedicalLockDto) {
     this.assertVet(actor, 'extend a training lock');
 
-    return this.prisma.$transaction(async (tx) => {
+    const extended = await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT "id" FROM "MedicalLock" WHERE "id" = ${lockId} FOR UPDATE`;
       const lock = await tx.medicalLock.findUnique({ where: { id: lockId } });
       if (!lock || !lock.isLocked) {
@@ -1900,6 +1944,23 @@ export class MedicalService {
         message: `Đã gia hạn ngày xem xét lại đến ${newRecheckDate.toLocaleDateString()}`,
       };
     });
+
+    const until = extended.recheckDate ? extended.recheckDate.toISOString().slice(0, 10) : '';
+    await this.notifications.notifyHorse(
+      extended.horseId,
+      { roles: [Role.HEAD_TRAINER], owner: true },
+      {
+        type: 'LOCK_EXTENDED',
+        category: 'LOCK',
+        title: 'Training Lock extended',
+        message: `The Training Lock of ${extended.horse?.name ?? 'a horse'} now runs until ${until}.`,
+        params: { horse: extended.horse?.name ?? '', date: until },
+        link: '/locks',
+        senderName: actor.fullName,
+      },
+      actor.userId,
+    );
+    return extended;
   }
 
   async getMedicalLocks(currentUser: CurrentUserPayload, query: MedicalLockQueryDto) {

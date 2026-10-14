@@ -5,6 +5,7 @@ import { AuditService } from '../audit/audit.service';
 import { AuthService } from '../auth/auth.service';
 import { apiError } from '../common/exceptions/api-error';
 import { raw, str } from '../common/utils/input';
+import { fullNameError } from '../common/utils/name';
 import { hashPassword, passwordError, verifyPassword } from '../common/utils/password';
 import { isNotifyLocked, NOTIFY_KEYS, NotifyKey } from '../users/permissions';
 import { notifyOf } from '../users/public-user';
@@ -30,8 +31,8 @@ export class MeService {
   async updateProfile(userId: string, dto: UpdateProfileDto): Promise<User> {
     const user = await this.current(userId);
     const fullName = str(dto.fullName);
-    if (!fullName) {
-      throw apiError(HttpStatus.BAD_REQUEST, 'VALIDATION', 'Full name is required.', {
+    if (fullNameError(fullName)) {
+      throw apiError(HttpStatus.BAD_REQUEST, 'VALIDATION', fullNameError(fullName), {
         field: 'fullName',
       });
     }
@@ -95,7 +96,7 @@ export class MeService {
 
     const updated = await this.prisma.user.update({
       where: { id: user.id },
-      data: { passwordHash: await hashPassword(next) },
+      data: { passwordHash: await hashPassword(next), passwordChangedAt: new Date() },
     });
     await this.auth.revokeAllTokens(user.id);
     await this.audit.record(

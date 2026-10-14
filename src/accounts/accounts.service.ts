@@ -8,6 +8,7 @@ import { AuthService } from '../auth/auth.service';
 import { OtpService, otpTimes } from '../auth/otp.service';
 import { apiError } from '../common/exceptions/api-error';
 import { EMAIL_RE, normEmail, str } from '../common/utils/input';
+import { fullNameError } from '../common/utils/name';
 import { normalizePermissions, PERMISSIONS, ROLE_LABEL, ROLES } from '../users/permissions';
 import { permissionsOf } from '../users/public-user';
 import { InviteAccountDto, ReasonDto, UpdateAccountDto } from './dto/accounts.dto';
@@ -48,7 +49,7 @@ export class AccountsService {
     const email = normEmail(dto.email);
     const fullName = str(dto.fullName);
     const role = dto.role as Role;
-    if (!fullName || !EMAIL_RE.test(email) || !ROLES.includes(role)) {
+    if (fullNameError(fullName) || !EMAIL_RE.test(email) || !ROLES.includes(role)) {
       throw apiError(HttpStatus.BAD_REQUEST, 'VALIDATION', 'Invalid input');
     }
     // Horse Owner tự đăng ký ở trang Sign Up, không được mời.
@@ -94,8 +95,8 @@ export class AccountsService {
   async update(actor: AuditActor, id: string, dto: UpdateAccountDto): Promise<User> {
     const fullName = str(dto.fullName);
     const phone = str(dto.phone);
-    if (!fullName) {
-      throw apiError(HttpStatus.BAD_REQUEST, 'VALIDATION', 'Full name is required.', {
+    if (fullNameError(fullName)) {
+      throw apiError(HttpStatus.BAD_REQUEST, 'VALIDATION', fullNameError(fullName), {
         field: 'fullName',
       });
     }

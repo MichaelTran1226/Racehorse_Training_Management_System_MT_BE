@@ -57,6 +57,7 @@ describe('permissions', () => {
       id: 'u1',
       email: 'a@gmail.com',
       passwordHash: 'secret-hash',
+      passwordChangedAt: null,
       fullName: 'A',
       phoneNumber: null,
       role: Role.GROOM,

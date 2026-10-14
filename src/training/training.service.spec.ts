@@ -18,6 +18,7 @@ import {
   withinTrainingHours,
   workoutLoad,
 } from './training-rules';
+import { notificationsMock } from '../notifications/notifications.testing';
 
 /** Mã lỗi (code) của lời hứa bị từ chối. */
 async function codeOf(p: Promise<unknown>): Promise<string> {
@@ -130,6 +131,7 @@ describe('TrainingService (Flow 2 & RULE-MED-01)', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: audit },
         { provide: CounterService, useValue: { next: jest.fn().mockResolvedValue(45) } },
+        notificationsMock(),
       ],
     }).compile();
     service = module.get<TrainingService>(TrainingService);

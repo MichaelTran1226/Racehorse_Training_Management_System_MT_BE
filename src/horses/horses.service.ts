@@ -14,6 +14,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CounterService } from '../audit/counter.service';
 import { HorseCatalogsService } from '../horse-catalogs/horse-catalogs.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { apiError } from '../common/exceptions/api-error';
 import { UserRole } from '../common/enums/role.enum';
 import { CurrentUserPayload } from '../common/decorators/current-user.decorator';
@@ -38,6 +39,7 @@ export class HorsesService {
     private readonly auditService: AuditService,
     private readonly counter: CounterService,
     private readonly catalogs: HorseCatalogsService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   /**
@@ -565,6 +567,15 @@ export class HorsesService {
         newValues: { ownerId: newOwner.id, ownerName: newOwner.fullName, reason: dto.reason },
       },
     );
+    await this.notifications.notifyUsers([newOwner.id], {
+      type: 'HORSE_OWNER_ASSIGNED',
+      category: 'HORSE',
+      title: 'A horse was assigned to you',
+      message: `You are now the registered owner of ${horse.name}.`,
+      params: { horse: horse.name },
+      link: `/horses/${horse.id}`,
+      senderName: user.fullName,
+    });
 
     return this.applyRolePolicy(updated, user);
   }
@@ -1367,92 +1378,127 @@ export class HorsesService {
    * lý do Đã chết khi đang khóa thì tự kết thúc Khóa huấn luyện.
    */
   async changeStatus(id: string, dto: ChangeHorseStatusDto, user: CurrentUserPayload) {
-    const { updated, effects, oldStatus } = await this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT "id" FROM "Horse" WHERE "id" = ${id} FOR UPDATE`;
-      const horse = await tx.horse.findUnique({ where: { id, deletedAt: null } });
-      if (!horse) {
-        throw apiError(HttpStatus.NOT_FOUND, 'HORSE_NOT_FOUND', 'Horse profile not found.');
-      }
+    const { updated, effects, oldStatus, horseName, previousOwnerId } =
+      await this.prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT "id" FROM "Horse" WHERE "id" = ${id} FOR UPDATE`;
+        const horse = await tx.horse.findUnique({ where: { id, deletedAt: null } });
+        if (!horse) {
+          throw apiError(HttpStatus.NOT_FOUND, 'HORSE_NOT_FOUND', 'Horse profile not found.');
+        }
 
-      assertStatusTransition({
-        role: user.role,
-        from: horse.status,
-        to: dto.status,
-        isMedicalLocked: horse.isMedicalLocked,
-        reason: dto.reason,
-        retireReason: dto.retireReason,
-        currentRetireReason: horse.retireReason,
+        assertStatusTransition({
+          role: user.role,
+          from: horse.status,
+          to: dto.status,
+          isMedicalLocked: horse.isMedicalLocked,
+          reason: dto.reason,
+          retireReason: dto.retireReason,
+          currentRetireReason: horse.retireReason,
+        });
+
+        const effects: string[] = [];
+        const data: Prisma.HorseUpdateInput = { status: dto.status };
+
+        if (dto.status === HorseStatus.RETIRED) {
+          data.retireReason = dto.retireReason;
+
+          const stalls = await this.releaseStalls(tx, id);
+          if (stalls.length > 0) effects.push(`Trả ô chuồng ${stalls.join(', ')}`);
+
+          // Chỉ lý do Đã chết mới qua được luật khi đang khóa.
+          if (horse.isMedicalLocked) {
+            await tx.medicalLock.updateMany({
+              where: { horseId: id, isLocked: true },
+              data: {
+                isLocked: false,
+                unlockedAt: new Date(),
+                unlockReason: 'Ngựa đã chết - tự kết thúc khi Ngừng quản lý',
+              },
+            });
+            data.isMedicalLocked = false;
+            effects.push('Kết thúc Khóa huấn luyện');
+          }
+
+          // Flow 2 §4.1: giáo án Nháp / Đang áp dụng tự hủy, buổi tập chưa diễn ra -> Đã hủy.
+          const plans = await tx.trainingPlan.updateMany({
+            where: { horseId: id, status: { in: [PlanStatus.DRAFT, PlanStatus.ACTIVE] } },
+            data: { status: PlanStatus.CANCELLED, cancelReason: 'Ngựa ngừng quản lý' },
+          });
+          await tx.workoutSession.updateMany({
+            where: { horseId: id, status: { in: PENDING_WORKOUT_STATUSES } },
+            data: { status: WorkoutStatus.CANCELLED, statusReason: 'Ngựa ngừng quản lý' },
+          });
+          if (plans.count > 0)
+            effects.push(`Hủy ${plans.count} giáo án và các buổi tập chưa diễn ra`);
+
+          const ownershipEnds =
+            dto.retireReason === RetireReason.SOLD || dto.retireReason === RetireReason.TRANSFERRED;
+          if (ownershipEnds && horse.ownerId) {
+            data.owner = { disconnect: true };
+            effects.push('Kết thúc sở hữu của 1 chủ sở hữu');
+          }
+        } else if (horse.status === HorseStatus.RETIRED) {
+          // Kích hoạt lại: về Nghỉ ngơi, chưa có ô chuồng và nhân viên chăm sóc.
+          data.retireReason = null;
+        }
+
+        const updated = await tx.horse.update({ where: { id }, data });
+
+        await this.auditService.record(
+          { id: user.userId, name: user.fullName || user.email },
+          'HORSE_STATUS_CHANGED',
+          `Changed status of horse ${horse.name} from ${horse.status} to ${dto.status}. Reason: ${dto.reason || 'None specified'}`,
+          horse.id,
+          {
+            entityName: 'Horse',
+            oldValues: { oldStatus: horse.status, ownerId: horse.ownerId },
+            newValues: {
+              oldStatus: horse.status,
+              newStatus: dto.status,
+              reason: dto.reason ?? null,
+              retireReason: dto.retireReason ?? null,
+              effects,
+            },
+          },
+          tx,
+        );
+
+        return {
+          updated,
+          effects,
+          oldStatus: horse.status,
+          horseName: horse.name,
+          previousOwnerId: horse.ownerId,
+        };
       });
 
-      const effects: string[] = [];
-      const data: Prisma.HorseUpdateInput = { status: dto.status };
-
-      if (dto.status === HorseStatus.RETIRED) {
-        data.retireReason = dto.retireReason;
-
-        const stalls = await this.releaseStalls(tx, id);
-        if (stalls.length > 0) effects.push(`Trả ô chuồng ${stalls.join(', ')}`);
-
-        // Chỉ lý do Đã chết mới qua được luật khi đang khóa.
-        if (horse.isMedicalLocked) {
-          await tx.medicalLock.updateMany({
-            where: { horseId: id, isLocked: true },
-            data: {
-              isLocked: false,
-              unlockedAt: new Date(),
-              unlockReason: 'Ngựa đã chết - tự kết thúc khi Ngừng quản lý',
-            },
-          });
-          data.isMedicalLocked = false;
-          effects.push('Kết thúc Khóa huấn luyện');
-        }
-
-        // Flow 2 §4.1: giáo án Nháp / Đang áp dụng tự hủy, buổi tập chưa diễn ra -> Đã hủy.
-        const plans = await tx.trainingPlan.updateMany({
-          where: { horseId: id, status: { in: [PlanStatus.DRAFT, PlanStatus.ACTIVE] } },
-          data: { status: PlanStatus.CANCELLED, cancelReason: 'Ngựa ngừng quản lý' },
-        });
-        await tx.workoutSession.updateMany({
-          where: { horseId: id, status: { in: PENDING_WORKOUT_STATUSES } },
-          data: { status: WorkoutStatus.CANCELLED, statusReason: 'Ngựa ngừng quản lý' },
-        });
-        if (plans.count > 0)
-          effects.push(`Hủy ${plans.count} giáo án và các buổi tập chưa diễn ra`);
-
-        const ownershipEnds =
-          dto.retireReason === RetireReason.SOLD || dto.retireReason === RetireReason.TRANSFERRED;
-        if (ownershipEnds && horse.ownerId) {
-          data.owner = { disconnect: true };
-          effects.push('Kết thúc sở hữu của 1 chủ sở hữu');
-        }
-      } else if (horse.status === HorseStatus.RETIRED) {
-        // Kích hoạt lại: về Nghỉ ngơi, chưa có ô chuồng và nhân viên chăm sóc.
-        data.retireReason = null;
-      }
-
-      const updated = await tx.horse.update({ where: { id }, data });
-
-      await this.auditService.record(
-        { id: user.userId, name: user.fullName || user.email },
-        'HORSE_STATUS_CHANGED',
-        `Changed status of horse ${horse.name} from ${horse.status} to ${dto.status}. Reason: ${dto.reason || 'None specified'}`,
-        horse.id,
-        {
-          entityName: 'Horse',
-          oldValues: { oldStatus: horse.status, ownerId: horse.ownerId },
-          newValues: {
-            oldStatus: horse.status,
-            newStatus: dto.status,
-            reason: dto.reason ?? null,
-            retireReason: dto.retireReason ?? null,
-            effects,
-          },
-        },
-        tx,
-      );
-
-      return { updated, effects, oldStatus: horse.status };
+    // Báo HT, chủ ngựa (kể cả chủ vừa bị bỏ khi bán/chuyển CLB) và groom đang chăm.
+    const retired = dto.status === HorseStatus.RETIRED;
+    const audience = await this.notifications.horseAudience(id, {
+      roles: [Role.HEAD_TRAINER],
+      owner: true,
+      groom: true,
     });
+    await this.notifications.notifyUsers(
+      [...audience, previousOwnerId],
+      {
+        type: retired ? 'HORSE_RETIRED' : 'HORSE_STATUS_CHANGED',
+        category: 'HORSE',
+        title: retired ? 'Horse no longer managed' : 'Horse status changed',
+        message: retired
+          ? `${horseName} is no longer managed by the club (${dto.retireReason ?? 'retired'}).`
+          : `${horseName}: ${oldStatus} → ${dto.status}.`,
+        params: {
+          horse: horseName,
+          from: oldStatus,
+          to: dto.status,
+          reason: dto.retireReason ?? '',
+        },
+        link: `/horses/${id}`,
+        senderName: user.fullName,
+      },
+      user.userId,
+    );
 
     return {
       success: true,

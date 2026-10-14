@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { Role } from '@prisma/client';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { notificationsMock } from '../notifications/notifications.testing';
 
 describe('MedicalService', () => {
   let service: MedicalService;
@@ -92,6 +93,7 @@ describe('MedicalService', () => {
         MedicalService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: AuditService, useValue: mockAuditService },
+        notificationsMock(),
       ],
     }).compile();
 

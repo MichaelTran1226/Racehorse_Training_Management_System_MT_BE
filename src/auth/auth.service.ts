@@ -21,9 +21,11 @@ import {
 } from './dto/account-flow.dto';
 import { apiError } from '../common/exceptions/api-error';
 import { EMAIL_RE, normEmail, raw, str, yymm } from '../common/utils/input';
+import { fullNameError } from '../common/utils/name';
 import { hashPassword, passwordError, verifyPassword } from '../common/utils/password';
 import { AuditService } from '../audit/audit.service';
 import { CounterService } from '../audit/counter.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { ROLE_LABEL } from '../users/permissions';
 import { toPublicUser } from '../users/public-user';
 import { OTP_TTL, OtpService, otpTimes, sha256 } from './otp.service';
@@ -56,6 +58,7 @@ export class AuthService {
     private readonly otp: OtpService,
     private readonly audit: AuditService,
     private readonly counter: CounterService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   /**
@@ -85,12 +88,17 @@ export class AuthService {
     }
   }
 
-  /** Hồ sơ gửi FE: đủ trường PublicAccount + phoneNumber, dashboardUrl như trước. */
+  /** Hồ sơ gửi FE: đủ trường PublicAccount + phoneNumber, dashboardUrl, và hạn đổi mật khẩu 180 ngày (CL-0.06). */
   toProfile(user: User): UserProfileDto {
+    const lastChange = user.passwordChangedAt || user.createdAt;
+    const nextChangeDue = new Date(lastChange.getTime() + 180 * 24 * 3600 * 1000).toISOString();
+    const isPasswordExpired = Date.now() > new Date(nextChangeDue).getTime();
     return {
       ...toPublicUser(user),
       phoneNumber: user.phoneNumber,
       dashboardUrl: this.getDashboardUrlForRole(user.role),
+      nextChangeDue,
+      passwordExpired: isPasswordExpired,
     };
   }
 
@@ -135,9 +143,22 @@ export class AuthService {
     });
   }
 
-  /** Email đang bị khóa tạm (sai mật khẩu 5 lần) => 429 ATTEMPTS_EXCEEDED kèm thời điểm mở khóa. */
-  async assertNotLockedOut(email: string): Promise<void> {
-    const attempt = await this.prisma.loginAttempt.findUnique({ where: { email } });
+  /**
+   * Tạo khóa đếm lần thử đăng nhập kết hợp email và IP nguồn (CL-0.04).
+   * Nếu có IP thì khóa theo cặp email#IP để kẻ xấu không thể cố tình khóa tài khoản của người khác;
+   * nếu không truyền IP (e.g. test hoặc internal) thì dùng email trực tiếp.
+   */
+  getAttemptKey(email: string, ipAddress?: string): string {
+    return ipAddress ? `${email}#${ipAddress}` : email;
+  }
+
+  /** Email/IP đang bị khóa tạm (sai mật khẩu 5 lần) => 429 ATTEMPTS_EXCEEDED kèm thời điểm mở khóa (CL-0.04). */
+  async assertNotLockedOut(email: string, ipAddress?: string): Promise<void> {
+    const key = this.getAttemptKey(email, ipAddress);
+    let attempt = await this.prisma.loginAttempt.findUnique({ where: { email: key } });
+    if (!attempt && ipAddress) {
+      attempt = await this.prisma.loginAttempt.findUnique({ where: { email } });
+    }
     if (attempt?.lockedUntil && attempt.lockedUntil.getTime() > Date.now()) {
       throw apiError(HttpStatus.TOO_MANY_REQUESTS, 'ATTEMPTS_EXCEEDED', 'Too many attempts', {
         retryAt: attempt.lockedUntil.toISOString(),
@@ -146,37 +167,44 @@ export class AuthService {
   }
 
   /**
-   * Ghi một lần nhập sai mật khẩu (đăng nhập hoặc đổi mật khẩu dùng chung bộ đếm theo email).
+   * Ghi một lần nhập sai mật khẩu (đăng nhập hoặc đổi mật khẩu dùng chung bộ đếm theo cặp email#IP).
    * Đủ 5 lần => khóa 15 phút và trả `lockedUntil`; chưa đủ => trả số lần còn lại.
    * Hết khóa 15 phút thì đếm lại từ đầu.
    */
-  async recordFailedAttempt(email: string): Promise<{ attemptsLeft: number; lockedUntil?: Date }> {
-    const attempt = await this.prisma.loginAttempt.findUnique({ where: { email } });
+  async recordFailedAttempt(
+    email: string,
+    ipAddress?: string,
+  ): Promise<{ attemptsLeft: number; lockedUntil?: Date }> {
+    const key = this.getAttemptKey(email, ipAddress);
+    const attempt = await this.prisma.loginAttempt.findUnique({ where: { email: key } });
     const fails = (attempt && !attempt.lockedUntil ? attempt.fails : 0) + 1;
     if (fails >= LOGIN_MAX_FAILS) {
       const lockedUntil = new Date(Date.now() + LOGIN_LOCK);
       await this.prisma.loginAttempt.upsert({
-        where: { email },
-        create: { email, fails: 0, lockedUntil },
+        where: { email: key },
+        create: { email: key, fails: 0, lockedUntil },
         update: { fails: 0, lockedUntil },
       });
       return { attemptsLeft: 0, lockedUntil };
     }
     await this.prisma.loginAttempt.upsert({
-      where: { email },
-      create: { email, fails },
+      where: { email: key },
+      create: { email: key, fails },
       update: { fails, lockedUntil: null },
     });
     return { attemptsLeft: LOGIN_MAX_FAILS - fails };
   }
 
-  async clearFailedAttempts(email: string): Promise<void> {
-    await this.prisma.loginAttempt.deleteMany({ where: { email } });
+  async clearFailedAttempts(email: string, ipAddress?: string): Promise<void> {
+    const key = this.getAttemptKey(email, ipAddress);
+    await this.prisma.loginAttempt.deleteMany({
+      where: { OR: [{ email: key }, { email }] },
+    });
   }
 
   /**
    * Authenticates user credentials, validates account lifecycle, and issues tokens.
-   * Sai mật khẩu 5 lần => khóa đăng nhập 15 phút theo email (kể cả email không tồn tại).
+   * Sai mật khẩu 5 lần => khóa đăng nhập 15 phút theo cặp email/IP (CL-0.04).
    */
   async login(
     loginDto: LoginDto,
@@ -184,14 +212,17 @@ export class AuthService {
     userAgent?: string,
   ): Promise<AuthResponseDto> {
     const normalizedEmail = normEmail(loginDto.email);
-    await this.assertNotLockedOut(normalizedEmail);
+    await this.assertNotLockedOut(normalizedEmail, ipAddress);
 
     const found = await this.prisma.user.findUnique({
       where: { email: normalizedEmail },
     });
 
     if (!(await verifyPassword(loginDto.password, found?.passwordHash))) {
-      const { attemptsLeft, lockedUntil } = await this.recordFailedAttempt(normalizedEmail);
+      const { attemptsLeft, lockedUntil } = await this.recordFailedAttempt(
+        normalizedEmail,
+        ipAddress,
+      );
       if (lockedUntil) {
         await this.audit.record(
           { id: found?.id, name: normalizedEmail || 'anonymous' },
@@ -213,7 +244,7 @@ export class AuthService {
     }
     // Đến đây mật khẩu đúng nên chắc chắn có tài khoản.
     const user = found as User;
-    await this.clearFailedAttempts(normalizedEmail);
+    await this.clearFailedAttempts(normalizedEmail, ipAddress);
 
     // Lifecycle status checks
     const block = BLOCKED[user.status];
@@ -388,7 +419,7 @@ export class AuthService {
         'Only Horse Owner can self-register',
       );
     }
-    if (!fullName || !EMAIL_RE.test(email) || passwordError(password)) {
+    if (fullNameError(fullName) || !EMAIL_RE.test(email) || passwordError(password)) {
       throw apiError(HttpStatus.BAD_REQUEST, 'VALIDATION', 'Invalid input');
     }
 
@@ -406,6 +437,7 @@ export class AuthService {
           data: {
             fullName,
             passwordHash,
+            passwordChangedAt: new Date(),
             status: UserStatus.PENDING_EMAIL,
             statusReason: null,
             requestedAt: null,
@@ -421,6 +453,7 @@ export class AuthService {
             fullName,
             email,
             passwordHash,
+            passwordChangedAt: new Date(),
             role: Role.HORSE_OWNER,
             status: UserStatus.PENDING_EMAIL,
             requestCode: await this.newRequestCode(),
@@ -454,6 +487,15 @@ export class AuthService {
       'EMAIL_VERIFIED',
       `Request ${user.requestCode} sent for approval`,
     );
+    await this.notifications.notifyRoles([Role.CLUB_MANAGER], {
+      type: 'ACCOUNT_SIGNUP_REQUEST',
+      category: 'ACCOUNT',
+      title: 'New account registration request',
+      message: `${user.fullName} (${ROLE_LABEL[user.role]}) is waiting for approval (${user.requestCode}).`,
+      params: { name: user.fullName, role: user.role, code: user.requestCode ?? '' },
+      link: '/accounts',
+      senderName: user.fullName,
+    });
     return {
       email: user.email,
       fullName: user.fullName,
@@ -541,6 +583,7 @@ export class AuthService {
       where: { id: user.id },
       data: {
         passwordHash: await hashPassword(password),
+        passwordChangedAt: new Date(),
         ...(accepting ? { status: UserStatus.ACTIVE, statusReason: null } : {}),
       },
     });
