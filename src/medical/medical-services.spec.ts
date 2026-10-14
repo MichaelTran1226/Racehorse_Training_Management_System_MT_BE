@@ -10,6 +10,7 @@ import { AuditService } from '../audit/audit.service';
 import { Role } from '@prisma/client';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { notificationsMock } from '../notifications/notifications.testing';
+import { CurrentUserPayload } from '../common/decorators/current-user.decorator';
 
 // Flow 3: các service y tế sau khi tách (C-10), dùng chung một bộ Prisma giả.
 describe('Medical services', () => {
@@ -629,6 +630,57 @@ describe('Medical services', () => {
 
       expect(res.message).toBe('Đã thiết lập lịch chăm sóc định kỳ cho chiến mã thành công');
       expect(mockPrismaService.preventiveSchedule.create).toHaveBeenCalled();
+    });
+  });
+
+  describe('getHealthBoard (FR-3.01)', () => {
+    it('should filter horses by ownerId when user is HORSE_OWNER', async () => {
+      mockPrismaService.horse.findMany.mockResolvedValue([]);
+      const ownerUser: CurrentUserPayload = {
+        userId: 'owner-1',
+        email: 'owner@example.com',
+        role: Role.HORSE_OWNER,
+        fullName: 'Owner User',
+        permissions: { viewMedical: true },
+      };
+
+      await overview.getHealthBoard({}, ownerUser);
+
+      expect(mockPrismaService.horse.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            deletedAt: null,
+            ownerId: 'owner-1',
+          }),
+        }),
+      );
+    });
+
+    it('should filter horses by assigned groom when user is GROOM', async () => {
+      mockPrismaService.horse.findMany.mockResolvedValue([]);
+      const groomUser: CurrentUserPayload = {
+        userId: 'groom-1',
+        email: 'groom@example.com',
+        role: Role.GROOM,
+        fullName: 'Groom User',
+        permissions: { viewMedical: true },
+      };
+
+      await overview.getHealthBoard({}, groomUser);
+
+      expect(mockPrismaService.horse.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            deletedAt: null,
+            stallAllocations: {
+              some: {
+                assignedGroomUserId: 'groom-1',
+                isActive: true,
+              },
+            },
+          }),
+        }),
+      );
     });
   });
 });

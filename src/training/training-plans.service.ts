@@ -42,7 +42,17 @@ export class TrainingPlansService {
 
     const where: Prisma.TrainingPlanWhereInput = { horse: { deletedAt: null } };
     if (horseId) where.horseId = horseId;
-    if (status) where.status = status;
+    if (status) {
+      const parts = status
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => Object.values(PlanStatus).includes(s as PlanStatus)) as PlanStatus[];
+      if (parts.length === 1) {
+        where.status = parts[0];
+      } else if (parts.length > 1) {
+        where.status = { in: parts };
+      }
+    }
     if (user.role === UserRole.HORSE_OWNER) {
       where.horse = { deletedAt: null, ownerId: user.userId };
     }

@@ -30,6 +30,7 @@ describe('Flow 2 training HTTP contract (mock database, real JWT/guards)', () =>
       findMany: jest.fn().mockResolvedValue([]),
       findUnique: jest.fn(),
       updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+      groupBy: jest.fn().mockResolvedValue([]),
     },
     $queryRaw: jest.fn().mockResolvedValue([]),
     $transaction: jest.fn((arg: any) =>
@@ -176,5 +177,34 @@ describe('Flow 2 training HTTP contract (mock database, real JWT/guards)', () =>
       .auth(token(), { type: 'bearer' })
       .send({})
       .expect(403);
+  });
+
+  it('supports filtering plans by multiple comma-separated statuses', async () => {
+    await request(app.getHttpServer())
+      .get('/api/training/plans?status=DRAFT,ACTIVE')
+      .auth(token(), { type: 'bearer' })
+      .expect(200);
+    expect(prisma.trainingPlan.findMany).toHaveBeenCalled();
+    const calls = prisma.trainingPlan.findMany.mock.calls;
+    const planListCall = calls[calls.length - 1][0];
+    expect(planListCall.where.status).toEqual({ in: ['DRAFT', 'ACTIVE'] });
+  });
+
+  it('cloning a plan is restricted to Head Trainer (Groom gets 403)', async () => {
+    user.role = Role.GROOM;
+    await request(app.getHttpServer())
+      .post('/api/training/plans/p-1/clone')
+      .auth(token(), { type: 'bearer' })
+      .send({ startDate: '2026-12-01' })
+      .expect(403);
+  });
+
+  it('Club Manager can view training plans (read-only)', async () => {
+    user.role = Role.CLUB_MANAGER;
+    await request(app.getHttpServer())
+      .get('/api/training/plans')
+      .auth(token(), { type: 'bearer' })
+      .expect(200);
+    expect(prisma.trainingPlan.findMany).toHaveBeenCalled();
   });
 });
