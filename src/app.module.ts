@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD, APP_INTERCEPTOR, APP_FILTER } from '@nestjs/core';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './health/health.module';
@@ -24,6 +25,7 @@ import { TrainingModule } from './training/training.module';
       isGlobal: true,
       envFilePath: ['.env', '.env.local'],
     }),
+    ScheduleModule.forRoot(),
     PrismaModule,
     HealthModule,
     MailModule,

@@ -1,7 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { IsInt, IsOptional, IsString, Min } from 'class-validator';
 import { Type } from 'class-transformer';
-import { PlanStatus } from '@prisma/client';
 
 export class QueryTrainingPlanDto {
   @ApiPropertyOptional({ description: 'Filter by horse UUID' })
@@ -9,10 +8,14 @@ export class QueryTrainingPlanDto {
   @IsString()
   horseId?: string;
 
-  @ApiPropertyOptional({ description: 'Filter by plan lifecycle status', enum: PlanStatus })
+  @ApiPropertyOptional({
+    description:
+      'Filter by plan lifecycle status (single status or comma-separated list, e.g. DRAFT,ACTIVE)',
+    type: String,
+  })
   @IsOptional()
-  @IsEnum(PlanStatus)
-  status?: PlanStatus;
+  @IsString()
+  status?: string;
 
   @ApiPropertyOptional({ description: 'Search query for phase title or horse name' })
   @IsOptional()

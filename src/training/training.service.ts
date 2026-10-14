@@ -1,4 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import {
   HorseStatus,
   PlanStatus,
@@ -188,11 +189,12 @@ export class TrainingService {
   }
 
   /**
-   * Việc "hệ thống tự làm" của Flow 2 (§4.1, §4.2), chạy mỗi lần đọc danh sách:
+   * Việc "hệ thống tự làm" của Flow 2 (§4.1, §4.2):
    * - Buổi Đã lên lịch quá hết ngày hôm sau mà chưa ghi kết quả -> Bỏ lỡ.
    * - Giáo án Đang áp dụng qua ngày kết thúc 1 ngày -> Hoàn thành, buổi chưa diễn ra -> Đã hủy.
-   * Dự án chưa có bộ lập lịch (cron) nên làm "lười" ở đây; kết quả giống nhau dù chạy bao nhiêu lần.
+   * Tự động chạy mỗi ngày lúc 00:00 qua @Cron, đồng thời vẫn có thể gọi trực tiếp.
    */
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async sweepOverdue(now = new Date()): Promise<void> {
     const today = startOfClubDay(now);
     await this.prisma.workoutSession.updateMany({
@@ -254,7 +256,17 @@ export class TrainingService {
 
     const where: Prisma.TrainingPlanWhereInput = { horse: { deletedAt: null } };
     if (horseId) where.horseId = horseId;
-    if (status) where.status = status;
+    if (status) {
+      const parts = status
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => Object.values(PlanStatus).includes(s as PlanStatus)) as PlanStatus[];
+      if (parts.length === 1) {
+        where.status = parts[0];
+      } else if (parts.length > 1) {
+        where.status = { in: parts };
+      }
+    }
     if (user.role === UserRole.HORSE_OWNER) {
       where.horse = { deletedAt: null, ownerId: user.userId };
     }
