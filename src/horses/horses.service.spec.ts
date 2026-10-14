@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { HttpStatus } from '@nestjs/common';
 import { HorseStatus, Role, UserStatus } from '@prisma/client';
 import { HorsesService } from './horses.service';
+import { HorseHistoryService } from './horse-history.service';
+import { HorseLifecycleService } from './horse-lifecycle.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CounterService } from '../audit/counter.service';
@@ -12,6 +14,8 @@ import { notificationsMock } from '../notifications/notifications.testing';
 
 describe('HorsesService', () => {
   let service: HorsesService;
+  let history: HorseHistoryService;
+  let lifecycle: HorseLifecycleService;
   let prisma: any;
   let audit: any;
   let counter: { next: jest.Mock };
@@ -89,6 +93,8 @@ describe('HorsesService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         HorsesService,
+        HorseHistoryService,
+        HorseLifecycleService,
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: audit },
         { provide: CounterService, useValue: counter },
@@ -98,6 +104,8 @@ describe('HorsesService', () => {
     }).compile();
 
     service = module.get<HorsesService>(HorsesService);
+    history = module.get(HorseHistoryService);
+    lifecycle = module.get(HorseLifecycleService);
   });
 
   describe('generateHorseCode', () => {
@@ -508,7 +516,7 @@ describe('HorsesService', () => {
       ]);
       prisma.horse.update.mockResolvedValue({ ...cleanHorse, deletedAt: new Date() });
 
-      const res = await service.remove('h-clean', dto, mockManager);
+      const res = await lifecycle.remove('h-clean', dto, mockManager);
 
       expect(res.success).toBe(true);
       expect(prisma.$queryRaw).toHaveBeenCalled();
@@ -539,7 +547,7 @@ describe('HorsesService', () => {
       prisma.horse.findUnique.mockResolvedValue(cleanHorse);
 
       await expect(
-        service.remove('h-clean', { ...dto, confirmName: 'Other Horse' }, mockManager),
+        lifecycle.remove('h-clean', { ...dto, confirmName: 'Other Horse' }, mockManager),
       ).rejects.toMatchObject({
         status: HttpStatus.BAD_REQUEST,
         response: expect.objectContaining({ code: 'CONFIRM_NAME_MISMATCH' }),
@@ -553,7 +561,7 @@ describe('HorsesService', () => {
         dailyGroomingLogs: [{ id: 'g' }],
       });
 
-      await expect(service.remove('h-clean', dto, mockManager)).rejects.toMatchObject({
+      await expect(lifecycle.remove('h-clean', dto, mockManager)).rejects.toMatchObject({
         status: HttpStatus.BAD_REQUEST,
         response: expect.objectContaining({ code: 'HAS_DEPENDENT_DATA' }),
       });
@@ -562,7 +570,7 @@ describe('HorsesService', () => {
     it('should throw 400 HORSE_LOCKED if horse is medical locked', async () => {
       prisma.horse.findUnique.mockResolvedValue({ ...cleanHorse, isMedicalLocked: true });
 
-      await expect(service.remove('h-clean', dto, mockManager)).rejects.toMatchObject({
+      await expect(lifecycle.remove('h-clean', dto, mockManager)).rejects.toMatchObject({
         status: HttpStatus.BAD_REQUEST,
         response: expect.objectContaining({ code: 'HORSE_LOCKED' }),
       });
@@ -584,7 +592,7 @@ describe('HorsesService', () => {
       prisma.horse.findFirst.mockResolvedValue(null);
       prisma.horse.update.mockResolvedValue({ ...deletedHorse, deletedAt: null });
 
-      const res = await service.restore('h-del', { undo: true }, mockManager);
+      const res = await lifecycle.restore('h-del', { undo: true }, mockManager);
 
       expect(res.success).toBe(true);
       expect(prisma.horse.update).toHaveBeenCalledWith({
@@ -607,7 +615,7 @@ describe('HorsesService', () => {
         deletedAt: new Date(Date.now() - 5 * 60 * 1000),
       });
 
-      await expect(service.restore('h-del', { undo: true }, mockManager)).rejects.toMatchObject({
+      await expect(lifecycle.restore('h-del', { undo: true }, mockManager)).rejects.toMatchObject({
         response: expect.objectContaining({ code: 'UNDO_EXPIRED' }),
       });
     });
@@ -615,7 +623,7 @@ describe('HorsesService', () => {
     it('should require a reason for a normal restore', async () => {
       prisma.horse.findUnique.mockResolvedValue(deletedHorse);
 
-      await expect(service.restore('h-del', {}, mockManager)).rejects.toMatchObject({
+      await expect(lifecycle.restore('h-del', {}, mockManager)).rejects.toMatchObject({
         response: expect.objectContaining({ code: 'REASON_REQUIRED' }),
       });
     });
@@ -625,7 +633,7 @@ describe('HorsesService', () => {
       prisma.horse.findFirst.mockResolvedValue({ id: 'h-other', name: 'sao mai' });
 
       await expect(
-        service.restore('h-del', { reason: 'Xóa nhầm, cần khôi phục lại' }, mockManager),
+        lifecycle.restore('h-del', { reason: 'Xóa nhầm, cần khôi phục lại' }, mockManager),
       ).rejects.toMatchObject({
         status: HttpStatus.CONFLICT,
         response: expect.objectContaining({ code: 'RESTORE_CONFLICT' }),
@@ -636,7 +644,7 @@ describe('HorsesService', () => {
       prisma.horse.findUnique.mockResolvedValue({ ...deletedHorse, deletedAt: null });
 
       await expect(
-        service.restore('h-del', { reason: 'Xóa nhầm, cần khôi phục lại' }, mockManager),
+        lifecycle.restore('h-del', { reason: 'Xóa nhầm, cần khôi phục lại' }, mockManager),
       ).rejects.toMatchObject({ status: HttpStatus.NOT_FOUND });
     });
   });
@@ -654,7 +662,7 @@ describe('HorsesService', () => {
       ]);
       prisma.horse.count.mockResolvedValue(1);
 
-      const res = await service.findDeleted({ from: '2026-10-01', to: '2026-10-01' });
+      const res = await lifecycle.findDeleted({ from: '2026-10-01', to: '2026-10-01' });
 
       expect(res.total).toBe(1);
       expect(res.items[0].deletedBy).toEqual({ id: 'manager-1', fullName: 'Manager User' });
@@ -688,7 +696,7 @@ describe('HorsesService', () => {
       prisma.horse.findUnique.mockResolvedValue(base);
       prisma.horse.update.mockResolvedValue({ ...base, status: HorseStatus.ACTIVE });
 
-      const res = await service.changeStatus('h-1', { status: HorseStatus.ACTIVE }, mockTrainer);
+      const res = await lifecycle.changeStatus('h-1', { status: HorseStatus.ACTIVE }, mockTrainer);
 
       expect(res.success).toBe(true);
       expect(audit.record).toHaveBeenCalledWith(
@@ -708,7 +716,7 @@ describe('HorsesService', () => {
       prisma.horse.findUnique.mockResolvedValue(base);
 
       await expect(
-        service.changeStatus(
+        lifecycle.changeStatus(
           'h-1',
           { status: HorseStatus.RESTING, reason: 'Cho ngựa nghỉ một tuần' },
           mockManager,
@@ -723,7 +731,7 @@ describe('HorsesService', () => {
       ]);
       prisma.horse.update.mockResolvedValue({ ...base, status: HorseStatus.RETIRED });
 
-      const res = await service.changeStatus(
+      const res = await lifecycle.changeStatus(
         'h-1',
         { status: HorseStatus.RETIRED, retireReason: 'SOLD', reason: 'Đã bán cho CLB Phú Thọ' },
         mockManager,
@@ -742,7 +750,7 @@ describe('HorsesService', () => {
       prisma.trainingPlan.updateMany.mockResolvedValue({ count: 1 });
       prisma.horse.update.mockResolvedValue({ ...base, status: HorseStatus.RETIRED });
 
-      const res = await service.changeStatus(
+      const res = await lifecycle.changeStatus(
         'h-1',
         { status: HorseStatus.RETIRED, retireReason: 'RETIRED', reason: 'Giải nghệ sau mùa giải' },
         mockManager,
@@ -767,7 +775,7 @@ describe('HorsesService', () => {
       });
       prisma.horse.update.mockResolvedValue({ ...base, status: HorseStatus.RETIRED });
 
-      await service.changeStatus(
+      await lifecycle.changeStatus(
         'h-1',
         {
           status: HorseStatus.RETIRED,
@@ -795,7 +803,7 @@ describe('HorsesService', () => {
       });
       prisma.horse.update.mockResolvedValue({ ...base, status: HorseStatus.RESTING });
 
-      await service.changeStatus(
+      await lifecycle.changeStatus(
         'h-1',
         { status: HorseStatus.RESTING, reason: 'Ngựa quay lại thi đấu mùa sau' },
         mockManager,
@@ -811,7 +819,7 @@ describe('HorsesService', () => {
       prisma.horse.findUnique.mockResolvedValue(null);
 
       await expect(
-        service.changeStatus('h-1', { status: HorseStatus.ACTIVE }, mockTrainer),
+        lifecycle.changeStatus('h-1', { status: HorseStatus.ACTIVE }, mockTrainer),
       ).rejects.toMatchObject({ status: HttpStatus.NOT_FOUND });
       expect(prisma.horse.findUnique).toHaveBeenCalledWith({
         where: { id: 'h-1', deletedAt: null },
@@ -905,7 +913,7 @@ describe('HorsesService', () => {
         },
       ]);
 
-      const result = await service.getHistory('h-1', mockManager);
+      const result = await history.getHistory('h-1', mockManager);
       expect(result).toBeDefined();
       expect(result.horse.name).toBe('Thunderbolt Swift');
       // Lịch sử trạng thái lấy từ nhật ký của ngựa; lần đổi do Khóa huấn luyện có nguồn riêng (CL-1.08).
@@ -944,14 +952,14 @@ describe('HorsesService', () => {
         tournamentRegistrations: [],
       });
 
-      const result = await service.getHistory('h-1', mockOwner);
+      const result = await history.getHistory('h-1', mockOwner);
       expect(result.timeline.some((t) => t.category === 'STALL')).toBe(false);
       expect(result.stallHistory).toEqual([]);
     });
 
     it('should throw 404 HORSE_NOT_FOUND if horse does not exist', async () => {
       prisma.horse.findUnique.mockResolvedValue(null);
-      await expect(service.getHistory('non-existent', mockManager)).rejects.toMatchObject({
+      await expect(history.getHistory('non-existent', mockManager)).rejects.toMatchObject({
         status: HttpStatus.NOT_FOUND,
       });
     });

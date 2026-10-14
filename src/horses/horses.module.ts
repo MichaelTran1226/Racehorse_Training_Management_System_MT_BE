@@ -4,11 +4,13 @@ import { AuditModule } from '../audit/audit.module';
 import { HorseCatalogsModule } from '../horse-catalogs/horse-catalogs.module';
 import { HorsesController } from './horses.controller';
 import { HorsesService } from './horses.service';
+import { HorseHistoryService } from './horse-history.service';
+import { HorseLifecycleService } from './horse-lifecycle.service';
 
 @Module({
   imports: [PrismaModule, AuditModule, HorseCatalogsModule],
   controllers: [HorsesController],
-  providers: [HorsesService],
-  exports: [HorsesService],
+  providers: [HorsesService, HorseHistoryService, HorseLifecycleService],
+  exports: [HorsesService, HorseHistoryService, HorseLifecycleService],
 })
 export class HorsesModule {}

@@ -33,7 +33,9 @@ class OptionalEnumPipe<T extends object> implements PipeTransform {
     return this.pipe.transform(value, metadata);
   }
 }
-import { TrainingService } from './training.service';
+import { TrainingInsightsService } from './training-insights.service';
+import { TrainingPlansService } from './training-plans.service';
+import { WorkoutsService } from './workouts.service';
 import { CreateTrainingPlanDto } from './dto/create-training-plan.dto';
 import { UpdateTrainingPlanDto } from './dto/update-training-plan.dto';
 import { QueryTrainingPlanDto } from './dto/query-training-plan.dto';
@@ -57,13 +59,17 @@ import {
 @ApiBearerAuth('JWT-auth')
 @Controller('training')
 export class TrainingController {
-  constructor(private readonly trainingService: TrainingService) {}
+  constructor(
+    private readonly insights: TrainingInsightsService,
+    private readonly plans: TrainingPlansService,
+    private readonly workouts: WorkoutsService,
+  ) {}
 
   @Get('overview')
   @Roles(UserRole.CLUB_MANAGER, UserRole.HEAD_TRAINER, UserRole.VETERINARIAN)
   @ApiOperation({ summary: 'SC-2.01 Tổng quan huấn luyện: 4 thẻ chỉ số + bảng ngựa' })
   async getOverview() {
-    return this.trainingService.getOverview();
+    return this.insights.getOverview();
   }
 
   // ------------------------------------------------------------ Giáo án
@@ -75,14 +81,14 @@ export class TrainingController {
     @Query() query: QueryTrainingPlanDto,
     @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.trainingService.findAllPlans(query, user);
+    return this.plans.findAllPlans(query, user);
   }
 
   @Get('plans/:id')
   @Roles(UserRole.CLUB_MANAGER, UserRole.HEAD_TRAINER, UserRole.VETERINARIAN, UserRole.HORSE_OWNER)
   @ApiOperation({ summary: 'SC-2.04 Chi tiết giáo án kèm buổi tập' })
   async findPlanById(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
-    return this.trainingService.findPlanById(id, user);
+    return this.plans.findPlanById(id, user);
   }
 
   @Post('plans')
@@ -91,7 +97,7 @@ export class TrainingController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'SC-2.03 Tạo giáo án (luôn ở Nháp) - HT' })
   async createPlan(@Body() dto: CreateTrainingPlanDto, @CurrentUser() user: CurrentUserPayload) {
-    return this.trainingService.createPlan(dto, user);
+    return this.plans.createPlan(dto, user);
   }
 
   @Put('plans/:id')
@@ -103,7 +109,7 @@ export class TrainingController {
     @Body() dto: UpdateTrainingPlanDto,
     @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.trainingService.updatePlan(id, dto, user);
+    return this.plans.updatePlan(id, dto, user);
   }
 
   @Patch('plans/:id/status')
@@ -115,7 +121,7 @@ export class TrainingController {
     @Body() dto: ChangePlanStatusDto,
     @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.trainingService.changePlanStatus(id, dto, user);
+    return this.plans.changePlanStatus(id, dto, user);
   }
 
   @Post('plans/:id/clone')
@@ -128,7 +134,7 @@ export class TrainingController {
     @Body() dto: ClonePlanDto,
     @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.trainingService.clonePlan(id, dto, user);
+    return this.plans.clonePlan(id, dto, user);
   }
 
   @Delete('plans/:id')
@@ -136,7 +142,7 @@ export class TrainingController {
   @Roles(UserRole.HEAD_TRAINER)
   @ApiOperation({ summary: 'Xóa giáo án Nháp chưa có buổi hoàn thành - HT' })
   async deletePlan(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
-    return this.trainingService.deletePlan(id, user);
+    return this.plans.deletePlan(id, user);
   }
 
   // ------------------------------------------------------------ Buổi tập
@@ -152,7 +158,7 @@ export class TrainingController {
     @Query('to') to?: string,
     @Query('status', new OptionalEnumPipe(WorkoutStatus)) status?: WorkoutStatus,
   ) {
-    return this.trainingService.findAllWorkouts({ planId, horseId, date, from, to, status }, user);
+    return this.workouts.findAllWorkouts({ planId, horseId, date, from, to, status }, user);
   }
 
   @Get('trial-runs')
@@ -163,14 +169,14 @@ export class TrainingController {
     @Query('from') from?: string,
     @Query('to') to?: string,
   ) {
-    return this.trainingService.findTrialRuns({ from, to }, user);
+    return this.workouts.findTrialRuns({ from, to }, user);
   }
 
   @Get('grooms')
   @Roles(UserRole.HEAD_TRAINER)
   @ApiOperation({ summary: 'Nhân viên chăm sóc đang hoạt động để phân công buổi tập - HT' })
   async findGrooms() {
-    return this.trainingService.findGrooms();
+    return this.workouts.findGrooms();
   }
 
   @Post('plans/:id/workouts')
@@ -183,7 +189,7 @@ export class TrainingController {
     @Body() dto: CreateWorkoutSessionDto,
     @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.trainingService.createWorkout(planId, dto, user);
+    return this.workouts.createWorkout(planId, dto, user);
   }
 
   @Post('plans/:id/workouts/repeat')
@@ -196,13 +202,13 @@ export class TrainingController {
     @Body() dto: RepeatWorkoutDto,
     @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.trainingService.createRepeatWorkouts(planId, dto, user);
+    return this.workouts.createRepeatWorkouts(planId, dto, user);
   }
 
   @Get('workouts/:id')
   @ApiOperation({ summary: 'Chi tiết buổi tập (theo phạm vi vai trò)' })
   async findWorkoutById(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
-    return this.trainingService.findWorkoutById(id, user);
+    return this.workouts.findWorkoutById(id, user);
   }
 
   @Patch('workouts/:id')
@@ -214,7 +220,7 @@ export class TrainingController {
     @Body() dto: UpdateWorkoutSessionDto,
     @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.trainingService.updateWorkout(workoutId, dto, user);
+    return this.workouts.updateWorkout(workoutId, dto, user);
   }
 
   @Post('workouts/:id/result')
@@ -227,7 +233,7 @@ export class TrainingController {
     @Body() dto: RecordWorkoutResultDto,
     @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.trainingService.recordResult(workoutId, dto, user);
+    return this.workouts.recordResult(workoutId, dto, user);
   }
 
   @Post('workouts/:id/cancel')
@@ -240,7 +246,7 @@ export class TrainingController {
     @Body() dto: CancelWorkoutDto,
     @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.trainingService.cancelWorkout(workoutId, dto, user);
+    return this.workouts.cancelWorkout(workoutId, dto, user);
   }
 
   @Post('workouts/:id/restore')
@@ -253,7 +259,7 @@ export class TrainingController {
     @Body() dto: RestoreWorkoutDto,
     @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.trainingService.restoreWorkout(workoutId, dto, user);
+    return this.workouts.restoreWorkout(workoutId, dto, user);
   }
 
   // ------------------------------------------------------------ Cảnh báo & thể lực
@@ -262,7 +268,7 @@ export class TrainingController {
   @Roles(UserRole.HEAD_TRAINER, UserRole.VETERINARIAN)
   @ApiOperation({ summary: 'Buổi tập có dấu hiệu bất thường (FR-2.14)' })
   async findAlerts() {
-    return this.trainingService.findAlerts();
+    return this.insights.findAlerts();
   }
 
   @Patch('alerts/:id')
@@ -274,7 +280,7 @@ export class TrainingController {
     @Body() dto: AcknowledgeAlertDto,
     @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.trainingService.acknowledgeAlert(workoutId, dto, user);
+    return this.insights.acknowledgeAlert(workoutId, dto, user);
   }
 
   @Get('horses/:horseId/fitness-metrics')
@@ -287,6 +293,6 @@ export class TrainingController {
   ) {
     // BTN-2.34: 4 / 12 / 26 tuần, mặc định 12.
     const w = [4, 12, 26].includes(Number(weeks)) ? Number(weeks) : 12;
-    return this.trainingService.getFitnessMetrics(horseId, user, w);
+    return this.insights.getFitnessMetrics(horseId, user, w);
   }
 }

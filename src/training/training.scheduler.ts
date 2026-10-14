@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { TrainingService } from './training.service';
+import { TrainingCommonService } from './training-common.service';
 
 /**
  * C-02: "Hệ thống tự làm" chạy theo giờ, không còn phụ thuộc người mở màn hình.
@@ -11,12 +11,12 @@ import { TrainingService } from './training.service';
 export class TrainingScheduler {
   private readonly logger = new Logger(TrainingScheduler.name);
 
-  constructor(private readonly training: TrainingService) {}
+  constructor(private readonly common: TrainingCommonService) {}
 
   @Cron('5 0 * * *', { name: 'training-sweep', timeZone: 'Asia/Ho_Chi_Minh' })
   async nightlySweep(): Promise<void> {
     try {
-      await this.training.sweepOverdue();
+      await this.common.sweepOverdue();
     } catch (err) {
       this.logger.error(`Nightly training sweep failed: ${(err as Error).message}`);
     }
