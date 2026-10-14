@@ -95,6 +95,23 @@
     "testEnvironment": "node",
     "moduleNameMapper": {
       "^src/(.*)$": "<rootDir>/$1"
+    },
+    "coverageThreshold": {
+      "global": {
+        "lines": 55,
+        "statements": 55,
+        "functions": 45,
+        "branches": 42
+      },
+      "./src/training/training-rules.ts": {
+        "lines": 90
+      },
+      "./src/horses/horse-rules.ts": {
+        "lines": 90
+      },
+      "./src/common/guards/permissions.guard.ts": {
+        "lines": 90
+      }
     }
   }
 }
