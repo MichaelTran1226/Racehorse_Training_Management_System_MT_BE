@@ -1,4 +1,5 @@
 import {
+  ArgumentMetadata,
   Body,
   Controller,
   Delete,
@@ -7,9 +8,11 @@ import {
   HttpStatus,
   Param,
   Patch,
+  PipeTransform,
   Post,
   Put,
   Query,
+  ParseEnumPipe,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, CurrentUserPayload } from '../common/decorators/current-user.decorator';
@@ -17,6 +20,19 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { RequirePermission } from '../common/decorators/require-permission.decorator';
 import { UserRole } from '../common/enums/role.enum';
 import { WorkoutStatus } from '@prisma/client';
+
+class OptionalEnumPipe<T extends object> implements PipeTransform {
+  private readonly pipe: ParseEnumPipe<T>;
+  constructor(enumType: T) {
+    this.pipe = new ParseEnumPipe(enumType, { optional: true });
+  }
+  transform(value: any, metadata: ArgumentMetadata) {
+    if (value === '' || value === undefined || value === null) {
+      return undefined;
+    }
+    return this.pipe.transform(value, metadata);
+  }
+}
 import { TrainingService } from './training.service';
 import { CreateTrainingPlanDto } from './dto/create-training-plan.dto';
 import { UpdateTrainingPlanDto } from './dto/update-training-plan.dto';
@@ -134,7 +150,7 @@ export class TrainingController {
     @Query('date') date?: string,
     @Query('from') from?: string,
     @Query('to') to?: string,
-    @Query('status') status?: WorkoutStatus,
+    @Query('status', new OptionalEnumPipe(WorkoutStatus)) status?: WorkoutStatus,
   ) {
     return this.trainingService.findAllWorkouts({ planId, horseId, date, from, to, status }, user);
   }
