@@ -104,6 +104,7 @@ describe('Authentication & Session Flow (e2e)', () => {
     },
     loginAttempt: {
       findUnique: jest.fn().mockResolvedValue(null),
+      findMany: jest.fn().mockResolvedValue([]),
       upsert: jest.fn().mockResolvedValue({}),
       deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
     },
