@@ -4,157 +4,183 @@
 [![NestJS](https://img.shields.io/badge/NestJS-11.x-E0234E?logo=nestjs)](https://nestjs.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8%2B-3178C6?logo=typescript)](https://www.typescriptlang.org/)
 [![Prisma](https://img.shields.io/badge/Prisma-6.x-2D3748?logo=prisma)](https://www.prisma.io/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supabase-336791?logo=postgresql)](https://supabase.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Docker%2016-336791?logo=postgresql)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?logo=docker)](https://www.docker.com/)
 
-Hệ thống quản lý chuồng trại, y tế chuyên sâu, lập giáo án huấn luyện đỉnh cao và quản trị tài chính minh bạch cho các câu lạc bộ ngựa đua chuyên nghiệp.
-
-> **Thành viên mới:** đọc [docs/HUONG_DAN_GITHUB.md](docs/HUONG_DAN_GITHUB.md) (clone, chạy, tạo nhánh, mở PR qua bot CI). Task + đặc tả: [Project 2](https://github.com/users/MichaelTran1226/projects/2) · [tasks/](tasks/) · [docs/specs/](docs/specs/).
-
----
-
-## 1. Công nghệ & Kiến trúc (Tech Stack - Decision D-01)
-
-- **Runtime:** Node.js `>= 20.19.0` (Active LTS)
-- **Framework:** NestJS `^11.x` (`@nestjs/core`, `@nestjs/common`, `@nestjs/swagger`)
-- **Language:** TypeScript `~5.8` / `ES2022`
-- **ORM & Database:** Prisma ORM `^6.x` + PostgreSQL (Hỗ trợ Supabase qua Transaction Pooler & Direct URL, hoặc Local PostgreSQL)
-- **Security & Validation:** Helmet, class-validator, class-transformer, bcryptjs, Passport JWT
-- **Testing:** Jest + Supertest (White-box Unit Tests + Black-box API E2E)
-- **API Documentation:** Swagger / OpenAPI 3.0 tự động tại `/api/docs`
-- **Health Check Probe:** Endpoint `/api/health` kiểm tra uptime và kết nối database
+Hệ thống quản lý chuồng trại, chăm sóc y tế chuyên sâu, lập giáo án huấn luyện đỉnh cao và quản trị tài chính minh bạch cho các câu lạc bộ ngựa đua chuyên nghiệp (Đồ án SWP391).
 
 ---
 
-## 2. Kiến trúc Thư mục (Directory Structure)
+## 1. Khởi động Nhanh với Docker (Quick Start - Recommended ⭐)
 
-```text
-Racehorse_Training_Management_System_MT_BE/
-├── .github/
-│   └── workflows/ci.yml       # GitHub Actions CI/CD Pipeline
-├── docs/
-│   ├── blueprint.md           # Toàn bộ thiết kế hệ thống & 22 FR
-│   ├── srs.txt                # Đặc tả yêu cầu phần mềm
-│   └── DECISIONS.md           # Nhật ký quyết định kiến trúc D-01 -> D-05
-├── prisma/
-│   ├── schema.prisma          # PostgreSQL schema (20 models & enums)
-│   └── seed.ts                # Seeding 5 vai trò mẫu và dữ liệu cơ sở
-├── src/
-│   ├── common/
-│   │   ├── decorators/        # @Roles, @Public, @CurrentUser
-│   │   ├── filters/           # AllExceptionsFilter (JSON chuẩn hóa)
-│   │   ├── guards/            # RolesGuard (RBAC 5 vai trò)
-│   │   ├── interceptors/      # TransformInterceptor, LoggingInterceptor
-│   │   └── enums/             # Role, Status enums
-│   ├── health/                # Health check service & controller (/api/health)
-│   ├── prisma/                # PrismaClient lifecycle service & module
-│   ├── app.module.ts          # Root module
-│   └── main.ts                # Application bootstrap
-├── test/
-│   ├── jest-e2e.json          # Cấu hình Jest E2E
-│   └── health.e2e-spec.ts     # Black-box API E2E test cho probe
-├── .env.example               # Mẫu cấu hình biến môi trường
-├── package.json
-└── tsconfig.json
+Nếu máy tính của bạn đã cài đặt **Docker Desktop**, bạn có thể khởi chạy toàn bộ Cơ sở dữ liệu và Backend chỉ với **3 bước đơn giản**:
+
+```bash
+# 1. Cài đặt các thư viện
+npm install
+
+# 2. Khởi động PostgreSQL 16 bằng Docker
+docker compose up -d
+
+# 3. Đồng bộ bảng & nạp 100% dữ liệu mẫu (20 ô chuồng, 9 ngựa, hồ sơ y tế, giáo án)
+npm run db:setup
+
+# 4. Khởi động Backend Server
+npm run start:dev
+```
+
+Server Backend sẽ lắng nghe tại: **`http://localhost:3000`** (API prefix: `/api`).  
+Kiểm tra sức khỏe hệ thống: `GET http://localhost:3000/api/health` -> `{"status":"ok","database":{"connected":true}}`.
+
+---
+
+## 2. Hướng dẫn Thiết lập Chi tiết
+
+### 2.1. Cấu hình biến môi trường (`.env`)
+Sao chép file `.env.example` thành `.env`:
+```powershell
+# Windows PowerShell
+Copy-Item .env.example .env
+
+# Linux / macOS
+cp .env.example .env
+```
+
+Nội dung chuẩn của `.env` khi chạy với Docker cục bộ và gửi OTP qua Gmail:
+
+```env
+# 1. Cấu hình Server
+PORT=3000
+NODE_ENV=development
+API_PREFIX=/api
+CORS_ORIGIN=http://localhost:5173
+APP_URL=http://localhost:5173
+
+# 2. Cấu hình Database PostgreSQL Docker Local
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/equiflow?schema=public"
+DIRECT_URL="postgresql://postgres:postgres@localhost:5432/equiflow?schema=public"
+
+# 3. Cấu hình Authentication & JWT Token
+JWT_SECRET="equiflow-secure-jwt-secret-replace-in-production-2026"
+JWT_EXPIRES_IN="15m"
+JWT_REFRESH_SECRET="equiflow-secure-refresh-jwt-secret-2026"
+JWT_REFRESH_EXPIRES_IN="7d"
+
+# 4. Cấu hình Gửi Email OTP thật qua Google SMTP
+EMAIL_PROVIDER="smtp"
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT=587
+SMTP_USER="tmec8386@gmail.com"
+SMTP_PASS="dvmltzcfkshuttno"
+EMAIL_FROM="EquiFlow System <tmec8386@gmail.com>"
+
+# 5. Cờ kiểm thử OTP
+# false = Gửi mã OTP ngẫu nhiên thật về hòm thư Gmail
+# true  = Mọi mã OTP luôn là 123456 (tiện test nhanh không cần mở email)
+DEV_FIXED_OTP=false
 ```
 
 ---
 
-## 3. Năm vai trò người dùng (RBAC - Decision D-02)
+### 2.2. Hai cách quản lý Database PostgreSQL bằng Docker
 
-1. **Club Manager (`CLUB_MANAGER`):** Quản trị danh mục ngựa, mời nhân sự, phân quyền RBAC, kiểm toán hệ thống (`AuditLog`).
-2. **Head Trainer (`HEAD_TRAINER`):** Lập giáo án theo giai đoạn, xếp lịch tập, ghi nhận kết quả, đăng ký giải đua (tự động chặn khi có Medical Lock).
-3. **Veterinarian (`VETERINARIAN`):** Chẩn đoán bệnh án, đánh dấu chấn thương trên ảnh giải phẫu 2D, ban hành và mở lệnh Medical Lock.
-4. **Groom / Stable Hand (`GROOM`):** Theo dõi ô chuồng, khẩu phần dinh dưỡng theo bữa, xác nhận checklist chăm sóc ca trực.
-5. **Horse Owner (`HORSE_OWNER`):** Theo dõi ngựa thuộc quyền sở hữu, lịch sử tập luyện, nhật ký sức khỏe và hóa đơn tài chính định kỳ.
+#### Cách 1: Dùng Docker Compose (Tiện lợi nhất)
+Trong thư mục `Racehorse_Training_Management_System_MT_BE`:
+```bash
+# Bật database chạy nền
+docker compose up -d
 
----
+# Tắt database khi không sử dụng
+docker compose down
+```
 
-## 4. Hướng dẫn Cài đặt & Khởi động (Getting Started)
-
-### 4.1. Yêu cầu môi trường
-- Node.js `>= 20.19.0`
-- npm `>= 10.x`
-- PostgreSQL Database (hoặc tài khoản Supabase)
-
-### 4.2. Các bước thiết lập
-1. **Cài đặt thư viện dependencies:**
-   ```bash
-   npm install
-   ```
-
-2. **Cấu hình biến môi trường:**
-   ```bash
-   cp .env.example .env
-   ```
-   *Cập nhật `DATABASE_URL` và `DIRECT_URL` theo kết nối PostgreSQL của bạn.*
-
-3. **Khởi tạo Prisma Client:**
-   ```bash
-   npm run prisma:generate
-   ```
-
-4. **Thực thi Database Migration:**
-   ```bash
-   npm run prisma:migrate
-   # hoặc cho môi trường staging/production:
-   npm run db:migrate
-   ```
-
-5. **Nạp dữ liệu mẫu (Seed Data):**
-   ```bash
-   npm run db:seed
-   ```
-   *Lệnh này tạo 5 tài khoản mẫu cho 5 vai trò (mật khẩu mặc định: `EquiFlow@2026`).*
-
-6. **Khởi động Server chế độ phát triển:**
-   ```bash
-   npm run start:dev
-   ```
-   Server chạy tại: `http://localhost:3000`
+#### Cách 2: Dùng lệnh `docker run` trực tiếp
+Nếu không muốn dùng compose, bạn có thể chạy 1 dòng lệnh:
+```powershell
+docker run -d --name equiflow-postgres -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=equiflow -p 5432:5432 -v equiflow_pg_data:/var/lib/postgresql/data postgres:16-alpine
+```
 
 ---
 
-## 5. Danh mục Lệnh Kiểm thử & Chất lượng Code (Quality Gates)
+### 2.3. Xem và quản lý dữ liệu bằng Prisma Studio (GUI)
+Để xem toàn bộ bảng biểu trực quan trên trình duyệt (thay thế cho pgAdmin hoặc DBeaver):
+```bash
+npm run db:studio
+# hoặc: npx prisma studio
+```
+Trình duyệt sẽ tự động mở tại **`http://localhost:5555`**.
 
-| Lệnh | Mục đích |
-|---|---|
-| `npm run lint` | Chạy ESLint kiểm tra cú pháp và quy chuẩn mã nguồn |
-| `npm run typecheck` | Chạy TypeScript compiler kiểm tra tính toàn vẹn kiểu dữ liệu |
-| `npm test` hoặc `npm run test:unit` | Chạy White-box Unit Tests (Jest) |
-| `npm run test:e2e` | Chạy Black-box API E2E Contract Tests (Supertest) |
+---
+
+## 3. Danh sách Tài khoản Kiểm thử (Demo Accounts)
+
+Mật khẩu mặc định cho tất cả các tài khoản: **`EquiFlow@2026`**
+
+| Vai trò (Role) | Email | Họ và tên | Trạng thái | Nghiệp vụ chính |
+| :--- | :--- | :--- | :--- | :--- |
+| **Club Manager** | `manager@gmail.com` | Michael Tran | `ACTIVE` | Quản trị tài khoản, phân quyền, sơ đồ chuồng, xem audit log |
+| **Head Trainer** | `trainer@gmail.com` | David Nguyen | `ACTIVE` | Lập giáo án huấn luyện, xếp lịch bài tập, ghi nhận kết quả |
+| **Veterinarian** | `vet@gmail.com` | Dr. Sarah Connor | `ACTIVE` | Khám lâm sàng, đặt/mở Khóa Y Tế, chấm chấn thương 2D |
+| **Groom Hand 1** | `groom@gmail.com` | John Smith | `ACTIVE` | Chăm sóc chuồng Barn 1 (A01-A03), thực hiện bài tập nhẹ |
+| **Groom Hand 2** | `groom2@gmail.com` | Lê Văn Phúc | `ACTIVE` | Chăm sóc chuồng Barn 2 & Khu cách ly |
+| **Horse Owner 1** | `owner@gmail.com` | Robert Sterling | `ACTIVE` | Chủ sở hữu Thunderbolt Swift, Pegasus Dream, Midnight Mirage |
+| **Horse Owner 2** | `owner2@gmail.com` | Phan Đức Long | `ACTIVE` | Chủ sở hữu Northern Dancer Legacy, Shadowfax Wonder |
+| **Pending User** | `pending.groom@gmail.com`| Trần Văn Nam | `PENDING_APPROVAL`| Tài khoản chờ duyệt để test chức năng Approve / Reject của Manager |
+| **Invited User** | `invited.vet@gmail.com` | Dr. Alexander Bell | `INVITED` | Bác sĩ được mời qua email, test tính năng Resend / Cancel Invite |
+| **Locked User** | `locked.user@gmail.com` | Đặng Tuấn Kiệt | `LOCKED` | Tài khoản bị khóa, test tính năng Mở khóa (Unlock) |
+
+---
+
+## 4. Dữ liệu Mẫu Toàn Diện Có Sẵn (Seeded Dataset)
+
+Dữ liệu nạp bởi `npm run db:seed` bao quát 100% các tình huống nghiệp vụ:
+
+### 4.1. Hệ thống Chuồng Trại (3 Khu - 20 Ô chuồng)
+* **Zone A - Barn 1 (Lưới 2x4 = 8 ô):** `STALL-A01` đến `STALL-A04` (`OCCUPIED`), `STALL-A05` đến `STALL-A08` (`AVAILABLE`).
+* **Zone B - Barn 2 (Lưới 2x4 = 8 ô):** `STALL-B01` đến `STALL-B03` (`OCCUPIED`), `STALL-B04` đến `STALL-B07` (`AVAILABLE`), `STALL-B08` (`MAINTENANCE`).
+* **Zone C - Isolation (Lưới 1x4 = 4 ô):** `STALL-C01` (`OCCUPIED`), `STALL-C02` đến `STALL-C03` (`AVAILABLE`), `STALL-C04` (`INACTIVE` - ngừng dùng).
+
+### 4.2. Đàn Ngựa Đua (9 Cá thể đầy đủ RFID & 7 Trạng thái)
+1. `HR-000001` - **Thunderbolt Swift** (`ACTIVE`): Chuồng A01, giáo án thi đấu Derby 2026.
+2. `HR-000002` - **Northern Dancer Legacy** (`INJURED`): Chuồng A02, **Khóa Y Tế đang bật**, chặn bài tập nặng.
+3. `HR-000003` - **Shadowfax Wonder** (`UNDER_OBSERVATION`): Chuồng B01, chấn thương gân SDFT 2D đang hồi phục.
+4. `HR-000004` - **Pegasus Dream** (`ACTIVE`): Chuồng A03, điều hòa thể lực đường trường.
+5. `HR-000005` - **Golden Eclipse** (`IN_TRAINING`): Chuồng A04, chu kỳ tập luyện cơ bản.
+6. `HR-000006` - **Storm Runner** (`IN_TRAINING`): Chuồng B02, ngựa đực thuần chủng Thoroughbred.
+7. `HR-000007` - **Midnight Mirage** (`ISOLATED`): Chuồng C01, **Khóa Y Tế cách ly** theo dõi cúm EHV-1.
+8. `HR-000008` - **Red Velvet** (`RESTING`): Chuồng B03, nghỉ dưỡng sau giải đua.
+9. `HR-000009` - **Silver Comet** (`RETIRED`): Ngựa giải nghệ vinh danh sau chức vô địch 2024 (lưu trữ mềm).
+
+### 4.3. Hồ sơ Bệnh án & Y tế (Flow 3)
+* **Bệnh án:** Có sẵn bệnh án khám thể lực `BA-2610-001` (`OPEN`), chấn thương cấp tính `BA-2610-002` (`OPEN`), bệnh án viêm phế quản cũ đã chữa khỏi `BA-2609-001` (`CLOSED` - test Reopen), và bệnh án nháp `BA-2610-DRAFT` (`DRAFT`).
+* **Khóa Y Tế:** 2 ca đang khóa (`isLocked: true`) và 1 ca lịch sử đã mở khóa (`isLocked: false` - test tab Lịch sử).
+* **Bản đồ chấn thương 2D:** 1 ca đang điều trị (`ACTIVE`) và 1 ca đã lành (`RESOLVED`).
+* **Lịch chăm sóc định kỳ:** Đầy đủ tiêm phòng, tẩy giun, mài răng và đóng móng (kèm 1 ca quá hạn `OVERDUE` để kiểm tra cảnh báo).
+
+### 4.4. Kế hoạch Huấn luyện & Bài tập (Flow 2)
+* **Giáo án:** Có giáo án đang áp dụng (`ACTIVE`), giáo án nháp (`DRAFT`), và giáo án hoàn thành (`COMPLETED`).
+* **Bài tập:** Bài tập đã hoàn thành (`COMPLETED` kèm telemetry), bài tập lên lịch (`SCHEDULED`), bài tập bị chặn bởi Khóa Y Tế (`BLOCKED` - **RULE-MED-01**), và bài tập bị bỏ lỡ (`MISSED`).
+
+---
+
+## 5. Danh mục Lệnh Phát Triển & Kiểm Thử
+
+| Lệnh | Ý nghĩa |
+| :--- | :--- |
+| `npm run start:dev` | Khởi động server NestJS chế độ Hot-reload |
+| `npm run db:up` | Khởi chạy PostgreSQL container bằng Docker Compose |
+| `npm run db:down` | Dừng và tắt PostgreSQL container |
+| `npm run db:setup` | Đẩy bảng Prisma và nạp toàn bộ 100% dữ liệu mẫu |
+| `npm run db:seed` | Chỉ chạy lại script nạp dữ liệu mẫu |
+| `npm run db:studio` | Mở giao diện trực quan Prisma Studio tại port 5555 |
+| `npm run typecheck` | Kiểm tra tính toàn vẹn kiểu dữ liệu TypeScript (`tsc --noEmit`) |
+| `npm run test:unit` | Chạy 100% Unit test suite bằng Jest (28 suites, 267 tests) |
 | `npm run build` | Biên dịch toàn bộ dự án NestJS ra thư mục `/dist` |
-| `npm run format` | Tự động định dạng mã nguồn theo Prettier |
+| `npm run lint` | Chạy ESLint kiểm tra quy chuẩn mã nguồn |
 
 ---
 
-## 6. Endpoints Mẫu & OpenAPI Documentation
+## 6. Tài liệu & OpenAPI Swagger
 
-- **Swagger UI Interactive Documentation:** `http://localhost:3000/api/docs`
-- **Health Check Probe:** `GET http://localhost:3000/api/health`
-  ```json
-  {
-    "statusCode": 200,
-    "success": true,
-    "data": {
-      "status": "ok",
-      "service": "EquiFlow Racehorse Training Management API",
-      "version": "0.1.0",
-      "uptime": 45,
-      "timestamp": "2026-09-28T03:30:00.000Z",
-      "database": {
-        "connected": true,
-        "provider": "postgresql"
-      }
-    },
-    "timestamp": "2026-09-28T03:30:00.000Z"
-  }
-  ```
-
----
-
-## 7. Kế hoạch Phục hồi & Rollback (Rollback Plan)
-
-1. **Rollback Migration cơ sở dữ liệu:**
-   - Sử dụng Prisma Migrate rollback: `npx prisma migrate resolve --rolled-back <migration_name>` hoặc khôi phục snapshot database từ Supabase Point-in-time Recovery (PITR).
-2. **Rollback Application Binary:**
-   - Trong trường hợp deploy thất bại, hoàn nguyên git commit: `git revert <commit_hash>` và deploy phiên bản tag ổn định trước đó.
+* **Swagger UI Interactive Documentation:** `http://localhost:3000/api/docs`
+* **Health Check Probe:** `GET http://localhost:3000/api/health`

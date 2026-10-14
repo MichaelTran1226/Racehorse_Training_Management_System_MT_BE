@@ -24,7 +24,11 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "db:migrate": "prisma migrate deploy",
-    "db:seed": "ts-node prisma/seed.ts"
+    "db:seed": "ts-node prisma/seed.ts",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:setup": "npx prisma db push && npm run db:seed",
+    "db:studio": "npx prisma studio"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.11",
