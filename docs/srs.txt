@@ -2,12 +2,11 @@ Project ID: 2
 Project Code: RACEHORSE_TRAINING
 Project Name: Hệ thống Quản lý Huấn luyện Ngựa đua
 English Name: Racehorse Training & Management System
-Lecturer: NhanDT35 (Giảng viên phụ trách)
 
 
 1. TỔNG QUAN DỰ ÁN
 
-Hệ thống quản lý và huấn luyện ngựa đua thông minh (Horse Training and Stable Management System) hỗ trợ quản lý toàn diện các hoạt động vận hành chuồng trại, chăm sóc dinh dưỡng, theo dõi y tế, lập giáo án huấn luyện, đăng ký thi đấu, quản lý tài chính/chi phí và phân tích hỗ trợ AI cho câu lạc bộ ngựa đua. Hệ thống hướng tới việc tối ưu hóa quy trình vận hành chuồng trại, nâng cao phong độ và thể lực thi đấu của chiến mã, đảm bảo phúc lợi và an toàn y tế động vật, đồng thời cung cấp trải nghiệm quản lý minh bạch, gắn kết chặt chẽ giữa 5 tác nhân chính: Quản lý câu lạc bộ (Club Manager), Huấn luyện viên trưởng (Head Trainer), Bác sĩ thú y (Veterinarian), Nhân viên chăm sóc (Groom / Stable Hand) và Chủ sở hữu ngựa (Horse Owner).
+Hệ thống Quản lý và Huấn luyện Ngựa đua (Racehorse Training & Management System) là nền tảng số hóa toàn diện hỗ trợ các hoạt động vận hành chuồng trại, chăm sóc dinh dưỡng, theo dõi y tế và chấn thương, lập giáo án huấn luyện, đăng ký thi đấu, quản lý tài chính/chi phí và phân tích nâng cao cho câu lạc bộ ngựa đua. Hệ thống hướng tới việc tối ưu hóa quy trình vận hành chuồng trại, nâng cao phong độ và thể lực thi đấu của chiến mã, đảm bảo tối đa phúc lợi và an toàn y tế động vật, đồng thời cung cấp trải nghiệm quản lý minh bạch, gắn kết chặt chẽ giữa 5 tác nhân chính: Quản lý câu lạc bộ (Club Manager), Huấn luyện viên trưởng (Head Trainer), Bác sĩ thú y (Veterinarian), Nhân viên chăm sóc (Groom / Stable Hand) và Chủ sở hữu ngựa (Horse Owner).
 
 
 2. CÁC VAI TRÒ NGƯỜI DÙNG & TÍNH NĂNG CHÍNH (ACTORS & MAIN FEATURES)
@@ -23,7 +22,7 @@ Head Trainer (Huấn luyện viên Trưởng)
 Veterinarian (Bác sĩ Thú y)
  - Xem sơ đồ trạng thái sức khỏe (Đủ điều kiện, Cần theo dõi, Chấn thương, Cách ly) của toàn bộ đàn ngựa trên giao diện chuồng trại.
  - Ghi nhận hồ sơ khám bệnh, chẩn đoán chi tiết và cập nhật phác đồ điều trị/đơn thuốc.
- - Đánh dấu vị trí chấn thương trên mô hình cơ/xương 2D của ngựa để theo dõi diễn biến phục hồi.
+ - Đánh dấu vị trí chấn thương trên mô hình cơ/xương 2D của ngựa để theo dõi diễn biến phục hồi (mô hình 3D sẽ phát triển ở giai đoạn sau).
  - Đặt lệnh "Khóa huấn luyện" khẩn cấp đối với ngựa chấn thương để ngăn chặn xếp lịch bài tập nặng.
  - Theo dõi và nhận thông báo tự động về lịch tiêm phòng, tẩy giun, kiểm tra móng (Farrier) định kỳ.
 
@@ -31,13 +30,13 @@ Groom / Stable Hand (Nhân viên Chăm sóc & Chuồng trại)
  - Xem sơ đồ phân bổ vị trí chuồng trại và lịch trình sinh hoạt hàng ngày của từng con ngựa.
  - Xem chi tiết khẩu phần ăn (ngũ cốc, cỏ, vitamin) được duyệt cho từng bữa trong ngày.
  - Đánh dấu xác nhận hoàn thành công việc (Cho ăn, Vệ sinh chuồng, Tắm rửa, Ngâm chân nước đá).
- - Gửi báo cáo sự cố đột xuất tại chuồng (Ngựa bỏ ăn, Có dấu hiệu đau bụng/sốt, Móng bị xước) dạng văn bản chi tiết trong ca trực.
+ - Gửi báo cáo sự cố đột xuất tại chuồng (Ngựa bỏ ăn, Có dấu hiệu đau bụng/sốt, Móng bị xước).
  - Theo dõi danh sách vật tư (Thức ăn, Thuốc, Dụng cụ) tại khu vực phụ trách để đề xuất bổ sung.
 
 Horse Owner (Chủ sở hữu Ngựa)
- - Xem hồ sơ lý lịch và lịch sử thành tích thi đấu của ngựa thuộc sở hữu.
+ - Xem hồ sơ lý lịch, dòng dõi (Pedigree) và lịch sử thành tích thi đấu của ngựa thuộc sở hữu.
  - Theo dõi chỉ số sức khỏe, cân nặng và trạng thái sẵn sàng thi đấu theo thời gian thực.
- - Xem lịch trình tập luyện và nhật ký nhận xét chuyên môn từ HLV Trưởng sau mỗi buổi tập.
+ - Xem lịch trình tập luyện, dữ liệu các buổi đua thử và nhật ký nhận xét từ HLV Trưởng.
  - Nhận báo cáo tổng hợp chi phí nuôi dưỡng, y tế và doanh thu tiền thưởng định kỳ.
 
 Club Manager (Quản lý Câu lạc bộ)
@@ -51,45 +50,46 @@ Club Manager (Quản lý Câu lạc bộ)
 
 A. CÁC LUỒNG BẮT BUỘC (MUST HAVE / REQUIRED FLOWS)
 
-Flow 1: Horse profile and identification management - Quản lý Hồ sơ & Định danh Ngựa (required)
- - Tạo mới, cập nhật và quản lý hồ sơ định danh chi tiết của ngựa (tên, giống loài, ngày sinh, giới tính, màu lông, số vi mạch/microchip).
+Flow 1: Luồng Quản lý Hồ sơ & Lý lịch Ngựa (Horse Profile & Pedigree Management - REQUIRED)
+ - Tạo mới, cập nhật và quản lý hồ sơ định danh chi tiết của ngựa (tên, giống loài, ngày sinh, giới tính, màu lông, số vi mạch/microchip, RFID).
+ - Quản lý thông tin dòng dõi, phả hệ (Pedigree: cha Sire, mẹ Dam, dòng giống) và thông tin chủ sở hữu (Horse Owner).
  - Quản lý trạng thái vòng đời của ngựa (Sẵn sàng thi đấu, Đang tập luyện, Cần theo dõi, Chấn thương, Cách ly, Nghỉ ngơi).
  - Phân bổ vị trí ô chuồng trại (stall), gắn kết lịch trình sinh hoạt và phân công nhân viên chăm sóc phụ trách.
  - Lưu trữ và truy xuất toàn bộ lịch sử y tế, quá trình huấn luyện và thành tích thi đấu trong suốt vòng đời của ngựa.
 
-Flow 2: Training plan and workout execution - Lập & Thực hiện Giáo án Huấn luyện (required)
- - Huấn luyện viên trưởng lập kế hoạch huấn luyện chi tiết theo từng giai đoạn (cự ly, khối lượng bài tập, tốc độ mục tiêu, loại mặt sân: cỏ, cát, hỗn hợp) cho từng con ngựa.
+Flow 2: Luồng Lập & Thực hiện Giáo án Huấn luyện (Training Plan & Workout Execution - REQUIRED)
+ - Huấn luyện viên trưởng lập kế hoạch huấn luyện chi tiết (cự ly, khối lượng, mặt sân: cỏ, cát, hỗn hợp) theo từng giai đoạn cho từng con ngựa.
  - Hệ thống tự động kiểm tra trạng thái sức khỏe của ngựa trước khi áp dụng giáo án; lập tức chặn xếp lịch nếu ngựa đang có lệnh "Khóa huấn luyện" từ Bác sĩ thú y.
- - Phân công lịch tập luyện hàng ngày cho nhân viên chăm sóc, nài ngựa và điều phối các lượt chạy thử.
- - Hiển thị cảnh báo vượt ngưỡng thể lực hoặc nguy cơ chấn thương dựa trên dữ liệu nhịp tim và vận tốc realtime trong/sau buổi tập.
- - Huấn luyện viên trưởng đánh giá phong độ, ghi nhận xét chuyên môn và hệ thống tự động cập nhật biểu đồ thể lực của ngựa.
+ - Phân công lịch tập luyện hàng ngày cho đội ngũ chăm sóc và quản lý lượt chạy thử.
+ - Theo dõi và hiển thị cảnh báo vượt ngưỡng thể lực hoặc nguy cơ chấn thương dựa trên dữ liệu nhịp tim/vận tốc realtime trong và sau buổi tập.
+ - Huấn luyện viên trưởng đánh giá phong độ, ghi nhận chỉ số buổi tập, nhận xét chuyên môn và hệ thống tự động cập nhật biểu đồ thể lực của ngựa; lưu trữ dữ liệu buổi đua thử.
 
-Flow 3: Veterinary and injury management - Quản lý Y tế & Xử lý Chấn thương (required)
+Flow 3: Luồng Quản lý Y tế & Xử lý Chấn thương (Veterinary & Injury Management - REQUIRED)
  - Hiển thị trực quan sơ đồ trạng thái sức khỏe toàn bộ đàn ngựa theo mã màu (Đủ điều kiện, Cần theo dõi, Chấn thương, Cách ly) trên giao diện chuồng trại.
- - Ghi nhận bệnh án điện tử, kết quả chẩn đoán lâm sàng/cận lâm sàng, thiết lập phác đồ điều trị và kê đơn thuốc chi tiết.
- - Đánh dấu trực quan vị trí tổn thương trên mô hình giải phẫu cơ/xương 2D và theo dõi tiến trình hồi phục theo từng giai đoạn điều trị.
- - Kích hoạt lệnh "Khóa huấn luyện" (Medical Lock) khẩn cấp để tự động vô hiệu hóa việc xếp lịch tập nặng hoặc đăng ký thi đấu cho ngựa chấn thương.
- - Quản lý lịch trình, cảnh báo và gửi thông báo tự động về lịch tiêm phòng, tẩy giun định kỳ và kiểm tra chăm sóc móng (Farrier).
+ - Ghi nhận hồ sơ khám bệnh, bệnh án điện tử, chẩn đoán chi tiết và cập nhật phác đồ điều trị/đơn thuốc.
+ - Đánh dấu trực quan vị trí chấn thương trên mô hình cơ/xương 2D của ngựa để theo dõi diễn biến và tiến trình phục hồi (mô hình 3D sẽ triển khai ở giai đoạn sau).
+ - Đặt lệnh "Khóa huấn luyện" (Medical Lock) khẩn cấp đối với ngựa chấn thương để tự động vô hiệu hóa việc xếp lịch bài tập nặng hoặc đăng ký thi đấu.
+ - Quản lý lịch trình, cảnh báo và gửi thông báo tự động về lịch tiêm phòng, tẩy giun, kiểm tra móng (Farrier) định kỳ.
 
 B. CÁC LUỒNG MỞ RỘNG (NICE TO HAVE / OPTIONAL FLOWS)
 
-Flow 4: Daily stable care and nutrition management - Chăm sóc Chuồng trại & Dinh dưỡng Hàng ngày (optional)
- - Quản lý sơ đồ phân bổ vị trí chuồng trại, phân chia ca trực và danh sách ngựa phụ trách cho đội ngũ nhân viên chăm sóc.
- - Thiết lập và duyệt định mức khẩu phần dinh dưỡng chi tiết (cỏ khô, ngũ cốc, vitamin, khoáng chất, chất điện giải) cho từng bữa trong ngày.
- - Nhân viên chăm sóc thực hiện công việc và đánh dấu xác nhận hoàn thành theo checklist (cho ăn, vệ sinh chuồng, tắm rửa, ngâm chân nước đá phục hồi).
- - Ghi nhận báo cáo sự cố đột xuất tại chuồng (ngựa bỏ ăn, có dấu hiệu đau bụng/sốt, móng bị xước) dạng văn bản quan sát chi tiết trong ca trực gửi đến Quản lý và Bác sĩ thú y.
- - Theo dõi mức tiêu hao và số lượng tồn kho vật tư (thức ăn, thuốc men cơ bản, dụng cụ) tại từng khu vực chuồng, tạo đề xuất bổ sung vật tư đến Quản lý câu lạc bộ.
+Flow 4: Luồng Chăm sóc Chuồng trại & Dinh dưỡng Hàng ngày (Daily Stable Care & Nutrition Management - OPTIONAL)
+ - Quản lý sơ đồ phân bổ vị trí chuồng trại, phân chia ca trực và lịch trình sinh hoạt hàng ngày của từng con ngựa.
+ - Xem và thiết lập chi tiết định mức khẩu phần ăn (ngũ cốc, cỏ, vitamin, khoáng chất) được duyệt cho từng bữa trong ngày.
+ - Nhân viên chăm sóc thực hiện công việc và đánh dấu xác nhận hoàn thành (Cho ăn, Vệ sinh chuồng, Tắm rửa, Ngâm chân nước đá).
+ - Gửi báo cáo sự cố đột xuất tại chuồng (Ngựa bỏ ăn, Có dấu hiệu đau bụng/sốt, Móng bị xước).
+ - Theo dõi danh sách vật tư (Thức ăn, Thuốc, Dụng cụ) tại khu vực phụ trách để đề xuất bổ sung vật tư đến Quản lý câu lạc bộ.
 
-Flow 5: Tournament registration and performance reporting - Đăng ký Thi đấu & Báo cáo Thành tích (optional)
+Flow 5: Luồng Đăng ký Thi đấu & Báo cáo Thành tích (Tournament Registration & Performance Reporting - OPTIONAL)
  - Quản lý danh mục các giải đua, tiêu chuẩn điều kiện tham gia, điều lệ cự ly, thời hạn đăng ký và cơ cấu giải thưởng.
- - Huấn luyện viên trưởng rà soát chỉ số thể lực, lịch sử phong độ và trạng thái sẵn sàng để lựa chọn chiến mã đủ điều kiện và đăng ký tham gia thi đấu.
+ - Huấn luyện viên trưởng rà soát chỉ số thể lực, lịch sử phong độ và trạng thái sẵn sàng để lựa chọn chiến mã phù hợp và đăng ký tham gia các giải đua.
  - Ghi nhận kết quả thi đấu chính thức (cự ly hoàn thành, thời gian chạy, tốc độ trung bình, thứ hạng đạt được, danh hiệu và tiền thưởng).
  - Tự động cập nhật thành tích vào lý lịch ngựa và xuất báo cáo kết quả thi đấu định kỳ gửi Chủ sở hữu ngựa và Quản lý câu lạc bộ.
- - Quản lý báo cáo tài chính liên quan đến chi phí tham dự giải, chi phí chăm sóc huấn luyện và doanh thu chia thưởng từ giải đua.
+ - Tổng hợp và cung cấp báo cáo chi phí nuôi dưỡng, y tế và doanh thu tiền thưởng định kỳ cho Chủ sở hữu ngựa và Quản lý câu lạc bộ.
 
 C. TÍNH NĂNG MỞ RỘNG HỖ TRỢ AI (AI ASSISTANCE & INSIGHTS - OPTIONAL / BONUS)
 
-Flow 6: AI training recommendation and health insights - Đề xuất Huấn luyện & Phân tích Sức khỏe bằng AI (optional)
+Flow 6: Đề xuất Huấn luyện & Phân tích Sức khỏe bằng AI (AI Training Recommendation & Health Insights - OPTIONAL)
  - Hệ thống AI phân tích dữ liệu lịch sử bài tập, nhịp tim, tốc độ hồi phục và đặc điểm thể trạng để gợi ý giáo án huấn luyện tối ưu cho từng con ngựa.
  - Phân tích và dự báo nguy cơ chấn thương dựa trên dữ liệu tải trọng luyện tập (training load), phát hiện sớm các dấu hiệu quá tải thể lực.
  - Trợ lý ảo AI (AI Assistant) hỗ trợ giải đáp thắc mắc, tra cứu thông tin dinh dưỡng, y tế và tự động tóm tắt nhật ký sức khỏe, báo cáo tuần/tháng cho Quản lý và Chủ sở hữu ngựa.
@@ -97,22 +97,22 @@ Flow 6: AI training recommendation and health insights - Đề xuất Huấn luy
 
 4. YÊU CẦU CHÍNH CỦA HỆ THỐNG
 
-- Hệ thống phải hỗ trợ quản lý người dùng theo nhiều vai trò khác nhau với quyền truy cập (RBAC) nghiêm ngặt tương ứng với 5 tác nhân chính: Club Manager, Head Trainer, Veterinarian, Groom / Stable Hand và Horse Owner.
-- Quản lý câu lạc bộ (Club Manager) phải có khả năng quản lý danh mục tổng, theo dõi toàn cảnh hoạt động, báo cáo tài chính doanh thu/chi phí và giám sát nhật ký thao tác (Audit Log) để đảm bảo an toàn thông tin và tính minh bạch.
-- Huấn luyện viên trưởng (Head Trainer) phải có khả năng lập giáo án chi tiết theo giai đoạn, phân công lịch tập, giám sát lượt chạy thử, xem cảnh báo ngưỡng thể lực hoặc nguy cơ chấn thương realtime dựa trên nhịp tim/vận tốc, đánh giá phong độ và đăng ký tham gia giải đua phù hợp.
-- Bác sĩ thú y (Veterinarian) phải có công cụ theo dõi trạng thái sức khỏe đàn ngựa trực quan, quản lý bệnh án/đơn thuốc, đánh dấu chấn thương trên mô hình 2D để theo dõi phục hồi và đặt lệnh "Khóa huấn luyện" khẩn cấp có độ ưu tiên cao nhất.
-- Nhân viên chăm sóc chuồng trại (Groom / Stable Hand) phải dễ dàng theo dõi lịch sinh hoạt, khẩu phần ăn theo bữa, xác nhận hoàn thành công việc theo checklist và ghi nhận báo cáo sự cố đột xuất tại chuồng dạng văn bản chi tiết.
-- Chủ sở hữu ngựa (Horse Owner) phải có thể theo dõi lý lịch, chỉ số sức khỏe/cân nặng/sẵn sàng thi đấu realtime, nhật ký tập luyện & nhận xét từ HLV Trưởng và nhận báo cáo tài chính chi phí/tiền thưởng định kỳ một cách minh bạch.
-- Hệ thống cần có khả năng lưu trữ, phân tích và truy xuất dữ liệu lịch tập, bệnh án, chỉ số thể lực, kết quả giải đấu và hóa đơn chi phí theo thời gian.
-- Các tính năng AI đóng vai trò như một công cụ hỗ trợ phân tích dữ liệu, gợi ý giáo án và cảnh báo nguy cơ sớm, không thay thế quyết định chuyên môn của Huấn luyện viên trưởng và Bác sĩ thú y.
+- Hệ thống hỗ trợ quản lý người dùng theo mô hình phân quyền (RBAC) nghiêm ngặt tương ứng với 5 tác nhân chính: Club Manager, Head Trainer, Veterinarian, Groom / Stable Hand và Horse Owner.
+- Quản lý câu lạc bộ (Club Manager) có khả năng quản lý danh mục tổng (ngựa, nhân sự, vật tư), phân quyền RBAC, theo dõi toàn cảnh hiệu suất huấn luyện, chi phí vận hành chuồng trại, doanh thu giải đấu và giám sát nhật ký thao tác (Audit Log) để đảm bảo an toàn thông tin và tính minh bạch.
+- Huấn luyện viên trưởng (Head Trainer) có khả năng lập giáo án chi tiết theo từng giai đoạn, phân công lịch tập, giám sát lượt chạy thử, xem cảnh báo ngưỡng thể lực hoặc nguy cơ chấn thương realtime dựa trên nhịp tim/vận tốc, đánh giá phong độ, ghi nhận dữ liệu buổi đua thử và đăng ký tham gia các giải đua phù hợp.
+- Bác sĩ thú y (Veterinarian) có công cụ theo dõi trạng thái sức khỏe đàn ngựa trên giao diện chuồng trại, quản lý hồ sơ khám bệnh/phác đồ thuốc, đánh dấu chấn thương trên mô hình cơ/xương 2D của ngựa để theo dõi phục hồi, đặt lệnh "Khóa huấn luyện" khẩn cấp có độ ưu tiên cao nhất và theo dõi lịch tiêm phòng/tẩy giun/móng định kỳ.
+- Nhân viên chăm sóc chuồng trại (Groom / Stable Hand) dễ dàng theo dõi lịch sinh hoạt, khẩu phần ăn theo bữa, xác nhận hoàn thành công việc theo checklist, gửi báo cáo sự cố đột xuất tại chuồng và theo dõi đề xuất bổ sung vật tư.
+- Chủ sở hữu ngựa (Horse Owner) có thể theo dõi hồ sơ lý lịch, dòng dõi (Pedigree), lịch sử thành tích, chỉ số sức khỏe/cân nặng/sẵn sàng thi đấu realtime, lịch trình tập luyện, dữ liệu các buổi đua thử, nhật ký nhận xét từ HLV Trưởng và nhận báo cáo tổng hợp chi phí nuôi dưỡng/y tế/tiền thưởng định kỳ minh bạch.
+- Hệ thống có khả năng lưu trữ, phân tích và truy xuất dữ liệu lịch tập, bệnh án, chỉ số thể lực, kết quả giải đấu và hóa đơn chi phí theo thời gian.
+- Các tính năng AI đóng vai trò công cụ hỗ trợ phân tích dữ liệu, gợi ý giáo án và cảnh báo nguy cơ sớm, không thay thế quyết định chuyên môn của Huấn luyện viên trưởng và Bác sĩ thú y.
 
 
 5. MỤC TIÊU CHÍNH
 
 - Tăng hiệu quả quản lý câu lạc bộ, số hóa toàn diện quy trình vận hành chuồng trại và giảm thiểu các thao tác thủ công, sai sót giấy tờ.
 - Nâng cao chất lượng huấn luyện và tối ưu hóa phong độ thi đấu của chiến mã thông qua giáo án khoa học, cảnh báo thể lực/vận tốc realtime và theo dõi chỉ số liên tục.
-- Đảm bảo tối đa an toàn và sức khỏe động vật nhờ cơ chế cảnh báo sớm, mô hình hóa chấn thương 2D và lệnh khóa huấn luyện y tế kịp thời.
-- Tăng cường tính minh bạch, sự tin tưởng và trải nghiệm của chủ sở hữu ngựa đối với câu lạc bộ qua theo dõi sức khỏe realtime, báo cáo tài chính chi phí và doanh thu tiền thưởng rõ ràng.
+- Đảm bảo tối đa an toàn và sức khỏe động vật nhờ cơ chế cảnh báo sớm, mô hình hóa chấn thương cơ/xương 2D trực quan và lệnh khóa huấn luyện y tế kịp thời.
+- Tăng cường tính minh bạch, sự tin tưởng và trải nghiệm của chủ sở hữu ngựa đối với câu lạc bộ qua dòng dõi Pedigree, dữ liệu phân tích buổi đua thử, báo cáo tài chính chi phí/tiền thưởng rõ ràng.
 - Hỗ trợ ban huấn luyện và ban quản lý câu lạc bộ đưa ra quyết định nhanh chóng, chính xác dựa trên phân tích dữ liệu thực tế và đề xuất thông minh từ AI.
 
 
@@ -121,12 +121,12 @@ Flow 6: AI training recommendation and health insights - Đề xuất Huấn luy
 - Hệ thống yêu cầu cơ sở dữ liệu tập trung, an toàn và bảo mật cao để lưu trữ thông tin ngựa, bệnh án y tế, giáo án huấn luyện, kết quả thi đấu và hóa đơn chi phí.
 - Mỗi người dùng phải có thông tin xác thực danh tính và phân quyền thao tác rõ ràng theo đúng vị trí chức danh (RBAC).
 - Lệnh "Khóa huấn luyện" (Medical Lock) từ Bác sĩ thú y có quyền ưu tiên cao nhất trên hệ thống, tự động chặn mọi thao tác xếp lịch tập nặng hoặc đăng ký thi đấu cho đến khi có xác nhận mở khóa y tế.
-- Kiến trúc nền tảng: Phát triển 100% Web Application (hỗ trợ Responsive trên Desktop, Tablet, Mobile Browser), không phát triển Native Mobile App (iOS/Android).
-- Ranh giới phạm vi (Scope Boundary): Không bao gồm phả hệ đa thế hệ (Sire/Dam Pedigree Tree), không bao gồm video ghi hình các buổi đua thử và không bao gồm chức năng upload ảnh chụp thực tế trong báo cáo sự cố của Groom (Groom thực hiện ghi nhận ghi chú quan sát sức khỏe ca trực bằng text trong nhật ký chăm sóc hàng ngày).
-- Mô hình chấn thương y tế: Cung cấp giao diện trực quan hóa giải phẫu cơ/xương 2D để Bác sĩ thú y định vị vị trí tổn thương và theo dõi phục hồi.
-- Các tiện ích AI cần dựa trên tập dữ liệu lịch sử huấn luyện, hồ sơ bệnh án, thể trạng sinh học và kết quả thi đấu thực tế để đưa ra gợi ý và dự báo chính xác.
+- Kiến trúc nền tảng: Phát triển Web Application.
+- Hồ sơ lý lịch ngựa: Hỗ trợ lưu trữ thông tin dòng dõi, phả hệ (Pedigree: Sire, Dam) cơ bản của chiến mã.
+- Mô hình chấn thương y tế: Trong giai đoạn hiện tại (đồ án SWP391), hệ thống triển khai mô hình cơ/xương 2D tương tác trực quan để Bác sĩ thú y định vị vị trí tổn thương và theo dõi phục hồi; mô hình cơ/xương 3D sẽ được nghiên cứu và phát triển ở giai đoạn sau.
+- Các tiện ích AI dựa trên tập dữ liệu lịch sử huấn luyện, hồ sơ bệnh án, thể trạng sinh học và kết quả thi đấu thực tế để đưa ra gợi ý và dự báo chính xác.
 
 
 7. KẾT LUẬN
 
-Hệ thống quản lý và huấn luyện ngựa đua thông minh (AI Horse Training and Stable Management System) là giải pháp toàn diện hỗ trợ toàn bộ vòng đời vận hành của câu lạc bộ ngựa đua từ quản lý lý lịch, chăm sóc chuồng trại & dinh dưỡng, giám sát y tế & chấn thương 2D, lập giáo án huấn luyện & cảnh báo realtime, thi đấu giải đến phân tích nâng cao bằng AI. Với sự phối hợp nhịp nhàng giữa 5 tác nhân chính là Club Manager, Head Trainer, Veterinarian, Groom / Stable Hand và Horse Owner, hệ thống giúp tối ưu hóa hiệu quả vận hành, bảo vệ sức khỏe chiến mã và nâng cao thành tích thi đấu của toàn câu lạc bộ theo đúng chuẩn yêu cầu môn học SWP391 của Giảng viên NhanDT35.
+Hệ thống Quản lý và Huấn luyện Ngựa đua (Racehorse Training & Management System) là giải pháp toàn diện hỗ trợ toàn bộ vòng đời vận hành của câu lạc bộ ngựa đua từ quản lý lý lịch và dòng dõi (Pedigree), chăm sóc chuồng trại & dinh dưỡng, giám sát y tế & chấn thương trên mô hình 2D, lập giáo án huấn luyện & cảnh báo realtime, đăng ký thi đấu giải đến phân tích nâng cao bằng AI. Với sự phối hợp nhịp nhàng giữa 5 tác nhân chính là Club Manager, Head Trainer, Veterinarian, Groom / Stable Hand và Horse Owner, hệ thống giúp tối ưu hóa hiệu quả vận hành, bảo vệ sức khỏe chiến mã và nâng cao thành tích thi đấu của toàn câu lạc bộ theo đúng chuẩn yêu cầu môn học SWP391.
