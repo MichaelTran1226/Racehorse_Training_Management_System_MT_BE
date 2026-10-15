@@ -20,3 +20,4 @@ services:
 volumes:
   equiflow_pg_data:
     name: equiflow_pg_data
+    external: true
