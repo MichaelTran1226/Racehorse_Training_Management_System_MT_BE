@@ -48,7 +48,7 @@ export class CreateInjuryDto {
   })
   @IsOptional()
   @IsString()
-  @IsIn(['MUSCLE', 'BONE', 'TENDON_LIGAMENT'], {
+  @IsIn(['MUSCLE', 'BONE', 'TENDON_LIGAMENT', 'SKELETON'], {
     message: 'layer must be MUSCLE, BONE or TENDON_LIGAMENT',
   })
   layer?: string;
