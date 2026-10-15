@@ -25,8 +25,7 @@ export class CreateTreatmentPhaseDto {
 
   @IsOptional()
   @IsArray()
-  @IsString({ each: true })
-  careInstructions?: string[];
+  careInstructions?: any[];
 }
 
 export class UpdateTreatmentPhaseDto {
@@ -56,6 +55,5 @@ export class UpdateTreatmentPhaseDto {
 
   @IsOptional()
   @IsArray()
-  @IsString({ each: true })
-  careInstructions?: string[];
+  careInstructions?: any[];
 }

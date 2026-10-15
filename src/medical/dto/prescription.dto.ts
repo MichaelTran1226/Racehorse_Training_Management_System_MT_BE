@@ -4,8 +4,8 @@ export class CreatePrescriptionDto {
   @IsString()
   medicationName: string;
 
-  @IsString()
-  dosage: string;
+  @IsOptional()
+  dosage?: any;
 
   @IsOptional()
   @IsString()
@@ -18,8 +18,9 @@ export class CreatePrescriptionDto {
   @IsString()
   startDate: string;
 
+  @IsOptional()
   @IsString()
-  endDate: string;
+  endDate?: string;
 
   @IsOptional()
   @IsNumber()
@@ -87,4 +88,16 @@ export class StopPrescriptionDto {
   @IsOptional()
   @IsString()
   reason?: string;
+
+  @IsOptional()
+  @IsString()
+  stoppedReason?: string;
+
+  @IsOptional()
+  @IsString()
+  stopNotes?: string;
+
+  @IsOptional()
+  @IsString()
+  stoppedDate?: string;
 }

@@ -13,8 +13,15 @@ export class CloseMedicalRecordDto {
 }
 
 export class ReopenMedicalRecordDto {
+  @IsOptional()
   @IsString()
-  @MinLength(10)
-  @MaxLength(500)
-  reason: string;
+  @MinLength(10, { message: 'Reason for reopening must be at least 10 characters' })
+  @MaxLength(500, { message: 'Reason for reopening cannot exceed 500 characters' })
+  reason?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(10, { message: 'Reason for reopening must be at least 10 characters' })
+  @MaxLength(500, { message: 'Reason for reopening cannot exceed 500 characters' })
+  reopenReason?: string;
 }

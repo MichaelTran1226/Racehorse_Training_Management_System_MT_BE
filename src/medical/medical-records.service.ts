@@ -612,6 +612,15 @@ export class MedicalRecordsService {
   async reopenMedicalRecord(id: string, actor: CurrentUserPayload, dto: ReopenMedicalRecordDto) {
     this.access.assertVet(actor, 'reopen medical records');
 
+    const effectiveReason = (dto.reason || dto.reopenReason || '').trim();
+    if (!effectiveReason || effectiveReason.length < 10) {
+      throw apiError(
+        HttpStatus.BAD_REQUEST,
+        'VALIDATION',
+        'Reason for reopening must be at least 10 characters.',
+      );
+    }
+
     const record = await this.prisma.medicalRecord.findUnique({ where: { id } });
     if (!record) {
       throw apiError(HttpStatus.NOT_FOUND, 'RECORD_NOT_FOUND', 'Medical record not found.');
@@ -643,17 +652,17 @@ export class MedicalRecordsService {
     const updated = await this.prisma.medicalRecord.update({
       where: { id },
       data: {
-        treatmentProtocol: `${record.treatmentProtocol}\n[MỞ LẠI]: ${dto.reason}`,
+        treatmentProtocol: `${record.treatmentProtocol}\n[MỞ LẠI]: ${effectiveReason}`,
         status: 'OPEN',
         reopenedAt: now,
-        reopenReason: dto.reason,
+        reopenReason: effectiveReason,
       },
     });
 
     await this.audit.record(
       { id: actor.userId, name: actor.fullName },
       'REOPEN_MEDICAL_RECORD',
-      `Medical record ${id} reopened with reason: ${dto.reason}`,
+      `Medical record ${id} reopened with reason: ${effectiveReason}`,
       id,
       { entityName: 'MedicalRecord' },
     );
@@ -870,17 +879,25 @@ export class MedicalRecordsService {
     const adminRoute = dto.administrationRoute || dto.route || '';
     const freq = dto.frequency || (dto.frequencyPerDay ? `${dto.frequencyPerDay} lần/ngày` : '');
 
+    let effectiveEndDate = dto.endDate;
+    if (!effectiveEndDate) {
+      const s = new Date(dto.startDate || Date.now());
+      const days = Number(dto.daysCount) > 0 ? Number(dto.daysCount) : 1;
+      effectiveEndDate = new Date(s.getTime() + (days - 1) * 86400000).toISOString().split('T')[0];
+    }
+    const dosageStr = String(dto.dosage ?? '1');
+
     const newPrescription = {
       id: `rx-${Date.now()}`,
       medicationName: dto.medicationName,
-      dosage: dto.dosage,
+      dosage: dosageStr,
       unit: dto.unit || '',
       route: adminRoute,
       administrationRoute: adminRoute,
       frequencyPerDay: dto.frequencyPerDay || dto.frequency,
       frequency: freq,
       startDate: dto.startDate,
-      endDate: dto.endDate,
+      endDate: effectiveEndDate,
       daysCount: dto.daysCount || 0,
       withdrawalDays: dto.withdrawalDays || 0,
       notes: dto.notes || '',
@@ -1004,7 +1021,9 @@ export class MedicalRecordsService {
     }
 
     rx.status = 'STOPPED';
-    rx.stoppedReason = dto.reason || 'Bác sĩ yêu cầu dừng thuốc';
+    rx.stoppedReason = dto.stoppedReason || dto.reason || 'Bác sĩ yêu cầu dừng thuốc';
+    rx.stopNotes = dto.stopNotes || '';
+    rx.stoppedDate = dto.stoppedDate || new Date().toISOString().split('T')[0];
     rx.stoppedAt = new Date().toISOString();
 
     // Cập nhật trạng thái dừng đơn thuốc vào cột prescriptions trong Database

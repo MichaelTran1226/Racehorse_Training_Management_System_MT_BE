@@ -23,41 +23,41 @@ export class LabTestDto {
   datePerformed: string;
 
   @IsString()
-  @MinLength(5)
-  @MaxLength(2000)
+  @MinLength(5, { message: 'Lab test result must be at least 5 characters' })
+  @MaxLength(2000, { message: 'Lab test result cannot exceed 2000 characters' })
   result: string;
 }
 
 export class VitalsDto {
-  @IsNumber()
-  @Min(35.0)
-  @Max(43.0)
+  @IsNumber({}, { message: 'Body temperature must be a valid number' })
+  @Min(35.0, { message: 'Body temperature must be between 35.0°C and 43.0°C' })
+  @Max(43.0, { message: 'Body temperature must be between 35.0°C and 43.0°C' })
   temperature: number;
 
-  @IsNumber()
-  @Min(20)
-  @Max(120)
+  @IsNumber({}, { message: 'Resting heart rate must be a valid number' })
+  @Min(20, { message: 'Resting heart rate must be between 20 and 120 bpm' })
+  @Max(120, { message: 'Resting heart rate must be between 20 and 120 bpm' })
   restingHeartRate: number;
 
-  @IsNumber()
-  @Min(4)
-  @Max(60)
+  @IsNumber({}, { message: 'Respiratory rate must be a valid number' })
+  @Min(4, { message: 'Respiratory rate must be between 4 and 60 breaths/min' })
+  @Max(60, { message: 'Respiratory rate must be between 4 and 60 breaths/min' })
   respiratoryRate: number;
 
   @IsOptional()
-  @IsNumber()
-  @Min(200)
-  @Max(800)
+  @IsNumber({}, { message: 'Weight must be a valid number' })
+  @Min(200, { message: 'Horse weight must be between 200 and 800 kg' })
+  @Max(800, { message: 'Horse weight must be between 200 and 800 kg' })
   weightKg?: number;
 
   @IsString()
-  @MinLength(10)
-  @MaxLength(4000)
+  @MinLength(10, { message: 'Clinical examination notes must be at least 10 characters' })
+  @MaxLength(4000, { message: 'Clinical examination notes cannot exceed 4000 characters' })
   clinicalExamination: string;
 }
 
 export class CreateMedicalRecordDto {
-  @IsUUID()
+  @IsUUID('4', { message: 'Please select a valid horse' })
   horseId: string;
 
   @IsOptional()
@@ -68,13 +68,13 @@ export class CreateMedicalRecordDto {
   examinationType: string;
 
   @IsString()
-  @MinLength(5)
-  @MaxLength(500)
+  @MinLength(5, { message: 'Reason for examination must be at least 5 characters' })
+  @MaxLength(500, { message: 'Reason for examination cannot exceed 500 characters' })
   reason: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(2000)
+  @MaxLength(2000, { message: 'Symptoms cannot exceed 2000 characters' })
   symptoms?: string;
 
   @IsOptional()
@@ -94,8 +94,8 @@ export class CreateMedicalRecordDto {
 
   @IsOptional()
   @IsString()
-  @MinLength(5)
-  @MaxLength(1000)
+  @MinLength(5, { message: 'Definitive diagnosis must be at least 5 characters' })
+  @MaxLength(1000, { message: 'Definitive diagnosis cannot exceed 1000 characters' })
   diagnosis?: string;
 
   @IsOptional()
