@@ -31,14 +31,14 @@ export class HorsesService {
     private readonly counter: CounterService,
     private readonly catalogs: HorseCatalogsService,
     private readonly notifications: NotificationsService,
-  ) { }
+  ) {}
 
   /**
    * Sinh mã ngựa HR-XXXXXX từ bảng Counter (tăng nguyên tử nên 2 người tạo cùng lúc không trùng mã).
    * Dữ liệu cũ sinh mã bằng "đếm + 1" nên bộ đếm có thể đi sau: gặp mã đã có thì lấy số tiếp theo.
    */
   async generateHorseCode(): Promise<string> {
-    for (; ;) {
+    for (;;) {
       const candidate = `HR-${String(await this.counter.next('horse_code')).padStart(6, '0')}`;
       const taken = await this.prisma.horse.findUnique({ where: { horseCode: candidate } });
       if (!taken) return candidate;
@@ -259,14 +259,14 @@ export class HorsesService {
           avatarUrl: dto.avatarUrl || null,
           ...(dto.stallId
             ? {
-              stallAllocations: {
-                create: {
-                  stallId: dto.stallId,
-                  startDate: now,
-                  isActive: true,
+                stallAllocations: {
+                  create: {
+                    stallId: dto.stallId,
+                    startDate: now,
+                    isActive: true,
+                  },
                 },
-              },
-            }
+              }
             : {}),
         },
         include: {
@@ -425,9 +425,9 @@ export class HorsesService {
         ...(color ? { color } : {}),
         ...(dto.microchip
           ? {
-            microchip: dto.microchip,
-            microchipRfid: dto.microchip,
-          }
+              microchip: dto.microchip,
+              microchipRfid: dto.microchip,
+            }
           : {}),
         ...(dto.rfid !== undefined ? { rfid: dto.rfid ? dto.rfid.toUpperCase() : null } : {}),
         ...(dto.ownerId !== undefined ? { ownerId: dto.ownerId || null } : {}),

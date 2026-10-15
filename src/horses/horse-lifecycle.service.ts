@@ -31,7 +31,7 @@ export class HorseLifecycleService {
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
     private readonly notifications: NotificationsService,
-  ) { }
+  ) {}
 
   /**
    * Kết thúc phân bổ ô chuồng đang hiệu lực của ngựa và trả ô về AVAILABLE
