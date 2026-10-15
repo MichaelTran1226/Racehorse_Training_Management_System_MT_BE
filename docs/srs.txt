@@ -2,7 +2,6 @@ Project ID: 2
 Project Code: RACEHORSE_TRAINING
 Project Name: Hệ thống Quản lý Huấn luyện Ngựa đua
 English Name: Racehorse Training & Management System
-Lecturer: NhanDT35 (Giảng viên phụ trách)
 
 
 1. TỔNG QUAN DỰ ÁN
