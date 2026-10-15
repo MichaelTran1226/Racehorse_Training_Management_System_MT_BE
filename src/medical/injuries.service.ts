@@ -175,7 +175,7 @@ export class InjuriesService {
         coordinateX: dto.coordinateX,
         coordinateY: dto.coordinateY,
         viewSide: dto.viewSide || 'LEFT',
-        layer: dto.layer === 'SKELETON' ? 'BONE' : (dto.layer || 'MUSCLE'),
+        layer: dto.layer === 'SKELETON' ? 'BONE' : dto.layer || 'MUSCLE',
         anatomicalZone: dto.anatomicalZone,
         bodySide: dto.bodySide || BodySide.LEFT,
         injuryType: dto.injuryType,
