@@ -311,5 +311,104 @@ describe('NutritionService', () => {
         status: HttpStatus.FORBIDDEN,
       });
     });
+
+    it('creates draft and submitted plans', async () => {
+      prismaMock.horse.findUnique.mockResolvedValue(mockHorse);
+      prismaMock.nutritionPlan.create.mockResolvedValue({
+        id: 'plan-1',
+        planCode: 'NP-001',
+        status: NutritionPlanStatus.DRAFT,
+        horse: { name: 'Thunderbolt' },
+        createdBy: mockTrainerUser,
+      });
+
+      const res = await service.create(
+        {
+          horseId: 'horse-1',
+          meals: [],
+        },
+        mockTrainerUser,
+      );
+      expect(res).toBeDefined();
+
+      const submitted = await service.create(
+        {
+          horseId: 'horse-1',
+          meals: [],
+          submitImmediately: true,
+        },
+        mockTrainerUser,
+      );
+      expect(submitted).toBeDefined();
+    });
+
+    it('updates plan successfully', async () => {
+      prismaMock.nutritionPlan.findUnique.mockResolvedValue({
+        id: 'plan-1',
+        horseId: 'horse-1',
+        status: NutritionPlanStatus.DRAFT,
+        createdById: mockTrainerUser.userId,
+        horse: { name: 'Thunderbolt' },
+      });
+      prismaMock.horse.findUnique.mockResolvedValue(mockHorse);
+      prismaMock.nutritionPlan.update.mockResolvedValue({
+        id: 'plan-1',
+        status: NutritionPlanStatus.DRAFT,
+        horse: { name: 'Thunderbolt' },
+      });
+      const res = await service.update('plan-1', { meals: [] }, mockTrainerUser);
+      expect(res).toBeDefined();
+    });
+
+    it('submits plan for approval', async () => {
+      prismaMock.nutritionPlan.findUnique.mockResolvedValue({
+        id: 'plan-1',
+        horseId: 'horse-1',
+        status: NutritionPlanStatus.DRAFT,
+        createdById: mockTrainerUser.userId,
+        horse: { name: 'Thunderbolt' },
+      });
+      prismaMock.nutritionPlan.update.mockResolvedValue({
+        id: 'plan-1',
+        status: NutritionPlanStatus.PENDING_APPROVAL,
+      });
+      const res = await service.submitForApproval('plan-1', mockTrainerUser);
+      expect(res).toBeDefined();
+    });
+
+    it('removes draft plan', async () => {
+      prismaMock.nutritionPlan.findUnique.mockResolvedValue({
+        id: 'plan-1',
+        status: NutritionPlanStatus.DRAFT,
+        createdById: mockTrainerUser.userId,
+        horse: { name: 'Thunderbolt' },
+      });
+      prismaMock.nutritionPlan.delete.mockResolvedValue({});
+      const res = await service.remove('plan-1', mockTrainerUser);
+      expect(res).toEqual({ success: true, message: 'Đã xóa khẩu phần ăn.' });
+    });
+
+    it('finds all plans with RBAC filtering', async () => {
+      prismaMock.nutritionPlan.findMany.mockResolvedValue([]);
+      prismaMock.nutritionPlan.count.mockResolvedValue(0);
+      const res = await service.findAll({}, mockTrainerUser);
+      expect(res.items).toEqual([]);
+
+      const groomRes = await service.findAll({}, mockGroomUser);
+      expect(groomRes.items).toEqual([]);
+    });
+
+    it('retrieves active plan for horse', async () => {
+      prismaMock.nutritionPlan.findFirst.mockResolvedValue({
+        id: 'plan-active',
+        status: NutritionPlanStatus.APPROVED,
+      });
+      const res = await service.getActivePlanForHorse('horse-1', mockTrainerUser);
+      expect(res).toBeDefined();
+
+      prismaMock.nutritionPlan.findFirst.mockResolvedValue(null);
+      const none = await service.getActivePlanForHorse('horse-2', mockTrainerUser);
+      expect(none).toBeNull();
+    });
   });
 });

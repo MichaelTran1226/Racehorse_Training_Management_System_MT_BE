@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { DailyTaskType, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -17,7 +17,7 @@ describe('DailyTasksService', () => {
   beforeEach(async () => {
     prisma = {
       horse: { findMany: jest.fn(), findUnique: jest.fn() },
-      shiftRoster: { findMany: jest.fn() },
+      shiftRoster: { findMany: jest.fn().mockResolvedValue([]) },
       dailyCareTask: {
         findMany: jest.fn(),
         findFirst: jest.fn(),
@@ -35,6 +35,7 @@ describe('DailyTasksService', () => {
     };
     inventoryService = {
       deductStockForFeedingTask: jest.fn().mockResolvedValue(undefined),
+      restoreStockForFeeding: jest.fn().mockResolvedValue(undefined),
       restoreStockForFeedingTask: jest.fn().mockResolvedValue(undefined),
     };
 
@@ -242,6 +243,134 @@ describe('DailyTasksService', () => {
       await expect(service.uncompleteTask('task-1', anotherGroom)).rejects.toThrow(
         ForbiddenException,
       );
+    });
+
+    it('allows Club Manager to uncomplete task even after 15 minutes window', async () => {
+      const pastUndo = new Date(Date.now() - 30 * 60 * 1000);
+      const mockTask = {
+        id: 'task-feed',
+        taskCode: 'TSK-002',
+        isCompleted: true,
+        taskType: DailyTaskType.FEEDING,
+        stallZoneId: 'zone-1',
+        itemsSnapshotJson: [{ supplyId: 's1', amount: 2 }],
+        completedById: 'groom-1',
+        undoUntil: pastUndo,
+        horse: { name: 'Flash' },
+      };
+
+      prisma.dailyCareTask.findUnique.mockResolvedValue(mockTask);
+      prisma.dailyCareTask.update.mockResolvedValue({ ...mockTask, isCompleted: false });
+
+      const manager = { userId: 'mgr-1', role: Role.CLUB_MANAGER, fullName: 'Manager' } as any;
+      const res = await service.uncompleteTask('task-feed', manager);
+
+      expect(res.isCompleted).toBe(false);
+      expect(inventoryService.restoreStockForFeeding).toHaveBeenCalledWith(
+        'zone-1',
+        mockTask.itemsSnapshotJson,
+      );
+    });
+
+    it('returns task directly if already not completed', async () => {
+      const mockTask = { id: 'task-incomplete', isCompleted: false };
+      prisma.dailyCareTask.findUnique.mockResolvedValue(mockTask);
+
+      const res = await service.uncompleteTask('task-incomplete', {
+        userId: 'u1',
+        role: Role.CLUB_MANAGER,
+      } as any);
+      expect(res).toBe(mockTask);
+    });
+
+    it('throws NotFoundException if task does not exist on uncompleteTask', async () => {
+      prisma.dailyCareTask.findUnique.mockResolvedValue(null);
+      await expect(
+        service.uncompleteTask('not-found', { userId: 'u1', role: Role.CLUB_MANAGER } as any),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('completeTask', () => {
+    it('returns task directly if already completed', async () => {
+      const mockTask = { id: 'task-completed', isCompleted: true };
+      prisma.dailyCareTask.findUnique.mockResolvedValue(mockTask);
+
+      const res = await service.completeTask('task-completed', {}, {
+        userId: 'u1',
+        role: Role.GROOM,
+      } as any);
+      expect(res).toBe(mockTask);
+    });
+
+    it('throws NotFoundException if task does not exist on completeTask', async () => {
+      prisma.dailyCareTask.findUnique.mockResolvedValue(null);
+      await expect(
+        service.completeTask('not-found', {}, { userId: 'u1', role: Role.GROOM } as any),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('findAll', () => {
+    it('queries tasks for a date with filtering and groom shift zones', async () => {
+      prisma.dailyCareTask.count.mockResolvedValueOnce(5); // existing count > 0
+      prisma.shiftRoster.findMany.mockResolvedValue([{ zoneId: 'zone-1' }]);
+
+      const mockTasks = [
+        { id: 't1', isCompleted: true, isMedicalLocked: false, scheduledTime: '07:00' },
+        { id: 't2', isCompleted: false, isMedicalLocked: true, scheduledTime: '09:00' },
+      ];
+      prisma.dailyCareTask.findMany.mockResolvedValue(mockTasks);
+      prisma.dailyCareTask.count.mockResolvedValueOnce(2);
+
+      const user = { userId: 'groom-1', role: Role.GROOM, fullName: 'Groom 1' } as any;
+      const res = await service.findAll(
+        {
+          date: '2026-10-18',
+          zoneId: 'zone-1',
+          horseId: 'horse-1',
+          taskType: DailyTaskType.CLEANING,
+          isCompleted: false,
+          onlyMine: true,
+        },
+        user,
+      );
+
+      expect(res.stats.total).toBe(2);
+      expect(res.stats.completed).toBe(1);
+      expect(res.stats.pending).toBe(1);
+      expect(res.stats.medicalLockedCount).toBe(1);
+    });
+  });
+
+  describe('generateDailyTasksForDate edge cases', () => {
+    it('generates recovery ice boot tasks for medical locked horse and fallback feeding meals', async () => {
+      const mockHorse = {
+        id: 'horse-med',
+        name: 'Injured Star',
+        deletedAt: null,
+        isMedicalLocked: true,
+        stallAllocations: [
+          {
+            isActive: true,
+            assignedGroomUserId: 'groom-2',
+            stall: { id: 'stall-2', zoneId: 'zone-2' },
+          },
+        ],
+        medicalLocks: [{ reason: 'Khớp gối sưng phù, cần chườm đá' }],
+        nutritionPlans: [], // Không có kế hoạch dinh dưỡng chi tiết -> fallback tiêu chuẩn
+      };
+
+      prisma.horse.findMany.mockResolvedValue([mockHorse]);
+      prisma.dailyCareTask.findFirst.mockResolvedValue(null);
+      prisma.dailyCareTask.create.mockResolvedValue({ id: 'task-created' });
+
+      const res = await service.generateDailyTasksForDate(
+        new Date('2026-10-18T00:00:00Z'),
+        'zone-2',
+      );
+      expect(res.horsesProcessed).toBe(1);
+      expect(res.totalGenerated).toBeGreaterThanOrEqual(4);
     });
   });
 });
