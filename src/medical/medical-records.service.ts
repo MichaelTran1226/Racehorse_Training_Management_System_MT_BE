@@ -142,7 +142,7 @@ export class MedicalRecordsService {
   }
 
   async getMedicalRecords(currentUser: CurrentUserPayload, query: MedicalRecordQueryDto) {
-    const { horseId, startDate, endDate, search, page = '1', limit = '10' } = query;
+    const { horseId, status, startDate, endDate, search, page = '1', limit = '10' } = query;
     const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);
     const take = parseInt(limit, 10);
 
@@ -164,17 +164,25 @@ export class MedicalRecordsService {
       };
     }
 
+    if (status) {
+      where.status = status;
+    }
+
     if (startDate || endDate) {
       where.examinationDate = {};
       if (startDate) where.examinationDate.gte = new Date(startDate);
       if (endDate) where.examinationDate.lte = new Date(endDate);
     }
 
-    if (search) {
+    if (search && search.trim()) {
+      const term = search.trim();
       where.OR = [
-        { symptoms: { contains: search, mode: 'insensitive' } },
-        { clinicalDiagnosis: { contains: search, mode: 'insensitive' } },
-        { horse: { name: { contains: search, mode: 'insensitive' } } },
+        { recordNumber: { contains: term, mode: 'insensitive' } },
+        { symptoms: { contains: term, mode: 'insensitive' } },
+        { clinicalDiagnosis: { contains: term, mode: 'insensitive' } },
+        { clinicalExamination: { contains: term, mode: 'insensitive' } },
+        { horse: { name: { contains: term, mode: 'insensitive' } } },
+        { horse: { horseCode: { contains: term, mode: 'insensitive' } } },
       ];
     }
 

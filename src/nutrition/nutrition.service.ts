@@ -116,9 +116,7 @@ export class NutritionService {
     const where: Prisma.NutritionPlanWhereInput = {};
 
     // Phân quyền theo vai trò
-    if (currentUser.role === UserRole.GROOM) {
-      where.status = NutritionPlanStatus.APPROVED;
-    } else if (currentUser.role === UserRole.HORSE_OWNER) {
+    if (currentUser.role === UserRole.HORSE_OWNER) {
       where.status = NutritionPlanStatus.APPROVED;
       where.horse = { ownerId: currentUser.userId };
     } else if (query.status && query.status !== 'ALL') {
@@ -253,14 +251,6 @@ export class NutritionService {
         HttpStatus.NOT_FOUND,
         'NUTRITION_PLAN_NOT_FOUND',
         'Khẩu phần ăn không tồn tại.',
-      );
-    }
-
-    if (currentUser.role === UserRole.GROOM && item.status !== NutritionPlanStatus.APPROVED) {
-      throw apiError(
-        HttpStatus.FORBIDDEN,
-        'FORBIDDEN_GROOM',
-        'Groom chỉ được xem khẩu phần đã duyệt.',
       );
     }
 

@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
   IsDateString,
@@ -36,7 +36,11 @@ export class QueryDailyTasksDto {
 
   @ApiPropertyOptional({ description: 'Lọc công việc đã xong / chưa xong' })
   @IsOptional()
-  @Type(() => Boolean)
+  @Transform(({ value }) => {
+    if (value === 'true' || value === true) return true;
+    if (value === 'false' || value === false) return false;
+    return undefined;
+  })
   @IsBoolean()
   isCompleted?: boolean;
 
@@ -44,7 +48,11 @@ export class QueryDailyTasksDto {
     description: 'Chỉ lấy công việc được phân công cho tôi hoặc trong ca của tôi',
   })
   @IsOptional()
-  @Type(() => Boolean)
+  @Transform(({ value }) => {
+    if (value === 'true' || value === true) return true;
+    if (value === 'false' || value === false) return false;
+    return undefined;
+  })
   @IsBoolean()
   onlyMine?: boolean;
 
@@ -52,7 +60,11 @@ export class QueryDailyTasksDto {
     description: 'Chỉ lấy công việc được phân công cho tôi hoặc trong ca của tôi (alias onlyMine)',
   })
   @IsOptional()
-  @Type(() => Boolean)
+  @Transform(({ value }) => {
+    if (value === 'true' || value === true) return true;
+    if (value === 'false' || value === false) return false;
+    return undefined;
+  })
   @IsBoolean()
   onlyMyTasks?: boolean;
 
