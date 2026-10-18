@@ -22,6 +22,13 @@ import { TrainingModule } from './training/training.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { TournamentsModule } from './tournaments/tournaments.module';
 import { FinancialModule } from './financial/financial.module';
+import { SuppliesModule } from './supplies/supplies.module';
+import { ShiftsModule } from './shifts/shifts.module';
+import { ShiftRostersModule } from './shift-rosters/shift-rosters.module';
+import { NutritionModule } from './nutrition/nutrition.module';
+import { DailyTasksModule } from './daily-tasks/daily-tasks.module';
+import { IncidentsModule } from './incidents/incidents.module';
+import { InventoryModule } from './inventory/inventory.module';
 
 @Module({
   imports: [
@@ -49,6 +56,13 @@ import { FinancialModule } from './financial/financial.module';
     TrainingModule,
     TournamentsModule,
     FinancialModule,
+    SuppliesModule,
+    ShiftsModule,
+    ShiftRostersModule,
+    NutritionModule,
+    DailyTasksModule,
+    IncidentsModule,
+    InventoryModule,
   ],
   controllers: [],
   providers: [
