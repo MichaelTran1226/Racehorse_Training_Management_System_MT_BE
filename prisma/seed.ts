@@ -16,6 +16,8 @@ import {
   RetireReason,
   InjuryStatus,
   BodySide,
+  SupplyCategory,
+  SupplyUnit,
 } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
@@ -1167,6 +1169,227 @@ async function main() {
     await prisma.auditLog.create({ data: a });
   }
   console.log(`[8/9] Seeded Audit Trail Records`);
+
+  // ----------------------------------------------------------------
+  // Flow 4 Phase 1: Danh mục Ca trực (ShiftCatalog)
+  // ----------------------------------------------------------------
+  const shiftDefs = [
+    {
+      code: 'SHIFT_MORNING',
+      name: 'Ca Sáng (05:00 - 13:00)',
+      startTime: '05:00',
+      endTime: '13:00',
+      isOvernight: false,
+      sortOrder: 1,
+      description: 'Ca sáng: Cho ăn bữa 1, dọn chuồng, chuẩn bị ngựa tập buổi sáng',
+    },
+    {
+      code: 'SHIFT_AFTERNOON',
+      name: 'Ca Chiều (13:00 - 21:00)',
+      startTime: '13:00',
+      endTime: '21:00',
+      isOvernight: false,
+      sortOrder: 2,
+      description: 'Ca chiều: Tắm rửa, chải lông, ngâm chân đá, cho ăn bữa chiều',
+    },
+    {
+      code: 'SHIFT_NIGHT',
+      name: 'Ca Đêm (21:00 - 05:00)',
+      startTime: '21:00',
+      endTime: '05:00',
+      isOvernight: true,
+      sortOrder: 3,
+      description: 'Ca đêm: Trực tuần tra an ninh chuồng trại, kiểm tra sức khỏe đột xuất',
+    },
+  ];
+
+  const shiftIds: Record<string, string> = {};
+  for (const s of shiftDefs) {
+    const shift = await prisma.shiftCatalog.upsert({
+      where: { code: s.code },
+      update: { name: s.name, startTime: s.startTime, endTime: s.endTime, isOvernight: s.isOvernight, sortOrder: s.sortOrder, description: s.description },
+      create: s,
+    });
+    shiftIds[s.code] = shift.id;
+  }
+  console.log(`[*] Seeded 3 Standard Shift Catalogs (Morning, Afternoon, Night)`);
+
+  // ----------------------------------------------------------------
+  // Flow 4 Phase 1: Danh mục Vật tư & Y tế (SupplyCatalog)
+  // ----------------------------------------------------------------
+  const supplyDefs = [
+    {
+      code: 'SUP_HAY_ALFALFA',
+      name: 'Cỏ khô Alfalfa (Lục lăng cao cấp)',
+      category: SupplyCategory.FEED_HAY,
+      unit: SupplyUnit.KG,
+      unitPrice: 45000,
+      description: 'Cỏ Alfalfa giàu đạm và canxi cho ngựa đua đang trong chu kỳ tải cao',
+    },
+    {
+      code: 'SUP_HAY_TIMOTHY',
+      name: 'Cỏ khô Timothy nhập khẩu',
+      category: SupplyCategory.FEED_HAY,
+      unit: SupplyUnit.KG,
+      unitPrice: 55000,
+      description: 'Cỏ Timothy chất xơ cao, lượng đường thấp, cân bằng tiêu hóa',
+    },
+    {
+      code: 'SUP_GRAIN_OATS',
+      name: 'Yến mạch cán vỡ tiêu hóa nhanh',
+      category: SupplyCategory.FEED_GRAIN,
+      unit: SupplyUnit.KG,
+      unitPrice: 38000,
+      description: 'Ngũ cốc cung cấp carbohydrate chuyển hóa nhanh cho buổi tập cường độ cao',
+    },
+    {
+      code: 'SUP_GRAIN_BARLEY',
+      name: 'Đại mạch hấp cán mỏng',
+      category: SupplyCategory.FEED_GRAIN,
+      unit: SupplyUnit.KG,
+      unitPrice: 42000,
+      description: 'Cung cấp năng lượng bền bỉ và tạo cơ bắp',
+    },
+    {
+      code: 'SUP_VIT_E_SELENIUM',
+      name: 'Vitamin E & Selenium EquiMuscle',
+      category: SupplyCategory.SUPPLEMENT_VITAMIN,
+      unit: SupplyUnit.PACKET,
+      unitPrice: 120000,
+      description: 'Chống oxy hóa, bảo vệ tế bào cơ bắp sau các bài phi nước đại',
+    },
+    {
+      code: 'SUP_ELECTROLYTE_PLUS',
+      name: 'Bột điện giải bù khoáng HydratePlus',
+      category: SupplyCategory.SUPPLEMENT_ELECTROLYTE,
+      unit: SupplyUnit.PACKET,
+      unitPrice: 85000,
+      description: 'Bù nước, Natri, Kali, Magie ngay sau khi hoàn thành buổi tập',
+    },
+    {
+      code: 'SUP_PROBIOTIC_PASTE',
+      name: 'Men vi sinh đường ruột EquiFlora dạng ống',
+      category: SupplyCategory.SUPPLEMENT_GENERAL,
+      unit: SupplyUnit.VIAL,
+      unitPrice: 150000,
+      description: 'Ổn định hệ vi sinh vật manh tràng, giảm nguy cơ đau bụng colics',
+    },
+    {
+      code: 'SUP_MED_PHENYLBUTAZONE',
+      name: 'Phenylbutazone 20% dung dịch tiêm',
+      category: SupplyCategory.MEDICINE,
+      unit: SupplyUnit.BOTTLE,
+      unitPrice: 320000,
+      withdrawalDays: 7,
+      description: 'Kháng viêm giảm đau NSAID cho chấn thương gân cơ',
+    },
+    {
+      code: 'SUP_MED_FLUNIXIN',
+      name: 'Flunixin Meglumine 50mg/ml',
+      category: SupplyCategory.MEDICINE,
+      unit: SupplyUnit.BOTTLE,
+      unitPrice: 410000,
+      withdrawalDays: 5,
+      description: 'Hạ sốt, giảm đau nội tạng và đau bụng cấp tính',
+    },
+    {
+      code: 'SUP_DEWORM_IVERMECTIN',
+      name: 'Thuốc tẩy giun Ivermectin Paste 1.87%',
+      category: SupplyCategory.DEWORMER,
+      unit: SupplyUnit.VIAL,
+      unitPrice: 180000,
+      withdrawalDays: 0,
+      description: 'Tẩy ký sinh trùng đường ruột định kỳ',
+    },
+    {
+      code: 'SUP_TOOL_LEG_WRAP',
+      name: 'Bộ băng quấn ống chân bảo vệ gân',
+      category: SupplyCategory.TOOL_EQUIPMENT,
+      unit: SupplyUnit.SET,
+      unitPrice: 250000,
+      description: 'Dụng cụ bảo vệ khớp cổ chân và gân chuối',
+    },
+    {
+      code: 'SUP_CLEAN_BETADINE',
+      name: 'Dung dịch sát trùng Povidone Iodine 10%',
+      category: SupplyCategory.CLEANING_SUPPLY,
+      unit: SupplyUnit.BOTTLE,
+      unitPrice: 95000,
+      description: 'Sát trùng vết trầy xước và vệ sinh móng chân',
+    },
+  ];
+
+  for (const sup of supplyDefs) {
+    await prisma.supplyCatalog.upsert({
+      where: { code: sup.code },
+      update: { name: sup.name, category: sup.category, unit: sup.unit, unitPrice: sup.unitPrice, withdrawalDays: sup.withdrawalDays, description: sup.description },
+      create: sup,
+    });
+  }
+  console.log(`[*] Seeded 12 Comprehensive Supply Catalog Items across Feeds, Supplements, Medicine & Tools`);
+
+  // ----------------------------------------------------------------
+  // Flow 4 Phase 1: Phân ca trực mẫu (ShiftRoster) cho tuần hiện tại
+  // ----------------------------------------------------------------
+  const today = new Date();
+  const currentMonday = new Date(today);
+  const dayOfWeek = currentMonday.getDay(); // 0 is Sunday
+  const diffToMonday = (dayOfWeek === 0 ? -6 : 1) - dayOfWeek;
+  currentMonday.setDate(currentMonday.getDate() + diffToMonday);
+  currentMonday.setHours(0, 0, 0, 0);
+
+  const zoneAId = zoneIds['Zone A - Barn 1'];
+  const zoneBId = zoneIds['Zone B - Barn 2'];
+
+  if (zoneAId && zoneBId && shiftIds['SHIFT_MORNING'] && shiftIds['SHIFT_AFTERNOON']) {
+    for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
+      const rosterDate = new Date(currentMonday);
+      rosterDate.setDate(rosterDate.getDate() + dayOffset);
+
+      // Groom 1 trực Ca Sáng Khu A
+      await prisma.shiftRoster.upsert({
+        where: {
+          date_shiftId_zoneId_groomUserId: {
+            date: rosterDate,
+            shiftId: shiftIds['SHIFT_MORNING'],
+            zoneId: zoneAId,
+            groomUserId: groom1.id,
+          },
+        },
+        update: {},
+        create: {
+          date: rosterDate,
+          shiftId: shiftIds['SHIFT_MORNING'],
+          zoneId: zoneAId,
+          groomUserId: groom1.id,
+          createdById: manager.id,
+          notes: 'Phân ca định kỳ đầu tuần',
+        },
+      });
+
+      // Groom 2 trực Ca Chiều Khu A
+      await prisma.shiftRoster.upsert({
+        where: {
+          date_shiftId_zoneId_groomUserId: {
+            date: rosterDate,
+            shiftId: shiftIds['SHIFT_AFTERNOON'],
+            zoneId: zoneAId,
+            groomUserId: groom2.id,
+          },
+        },
+        update: {},
+        create: {
+          date: rosterDate,
+          shiftId: shiftIds['SHIFT_AFTERNOON'],
+          zoneId: zoneAId,
+          groomUserId: groom2.id,
+          createdById: manager.id,
+          notes: 'Phân ca định kỳ đầu tuần',
+        },
+      });
+    }
+    console.log(`[*] Seeded 14 Shift Roster Allocations for current week across Zone A`);
+  }
 
   console.log('[9/9] --- Comprehensive EquiFlow Database Seeding Completed 100%! ---');
 }
