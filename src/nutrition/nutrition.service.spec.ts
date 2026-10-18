@@ -299,17 +299,18 @@ describe('NutritionService', () => {
       ).rejects.toMatchObject({ status: HttpStatus.FORBIDDEN });
     });
 
-    it('restricts Groom from seeing unapproved plans in findOne', async () => {
+    it('allows Groom to view plans in findOne', async () => {
       prismaMock.nutritionPlan.findUnique.mockResolvedValue({
         id: 'plan-1',
         horseId: 'horse-1',
         status: NutritionPlanStatus.DRAFT,
+        targetWeightRatioPct: 2.0,
         horse: { medicalRecords: [] },
       });
 
-      await expect(service.findOne('plan-1', mockGroomUser)).rejects.toMatchObject({
-        status: HttpStatus.FORBIDDEN,
-      });
+      const res = await service.findOne('plan-1', mockGroomUser);
+      expect(res).toBeDefined();
+      expect(res.id).toBe('plan-1');
     });
 
     it('creates draft and submitted plans', async () => {

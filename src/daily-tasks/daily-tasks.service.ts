@@ -62,6 +62,7 @@ export class DailyTasksService {
       include: {
         stallAllocations: {
           where: { isActive: true },
+          orderBy: { createdAt: 'desc' },
           include: {
             stall: {
               include: { zoneRef: true },
@@ -258,6 +259,22 @@ export class DailyTasksService {
             },
           });
           totalGenerated++;
+        } else if (
+          !existing.isCompleted &&
+          (existing.stallZoneId !== zoneId ||
+            existing.stallId !== stallId ||
+            (assignedGroomUserId && existing.assignedGroomUserId !== assignedGroomUserId))
+        ) {
+          await this.prisma.dailyCareTask.update({
+            where: { id: existing.id },
+            data: {
+              stallZoneId: zoneId,
+              stallId,
+              assignedGroomUserId: assignedGroomUserId || existing.assignedGroomUserId,
+              isMedicalLocked: isLocked,
+              medicalLockNotes: lockNotes,
+            },
+          });
         }
       }
     }
@@ -286,16 +303,50 @@ export class DailyTasksService {
     });
     if (existingCount === 0) {
       await this.generateDailyTasksForDate(dayDate, query.zoneId);
+    } else {
+      // Tự động đồng bộ zone/stall của các task chưa hoàn thành theo phân bổ chuồng mới nhất của ngựa
+      const horsesWithStall = await this.prisma.horse.findMany({
+        where: { deletedAt: null },
+        select: {
+          id: true,
+          stallAllocations: {
+            where: { isActive: true },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: {
+              assignedGroomUserId: true,
+              stall: { select: { id: true, zoneId: true } },
+            },
+          },
+        },
+      });
+
+      for (const h of horsesWithStall || []) {
+        const activeAlloc = h.stallAllocations[0];
+        if (activeAlloc?.stall) {
+          await this.prisma.dailyCareTask.updateMany({
+            where: {
+              date: dayDate,
+              horseId: h.id,
+              isCompleted: false,
+              OR: [
+                { stallZoneId: { not: activeAlloc.stall.zoneId } },
+                { stallId: { not: activeAlloc.stall.id } },
+              ],
+            },
+            data: {
+              stallZoneId: activeAlloc.stall.zoneId,
+              stallId: activeAlloc.stall.id,
+            },
+          });
+        }
+      }
     }
 
     const where: any = {
       date: dayDate,
       horse: { deletedAt: null },
     };
-
-    if (query.zoneId) {
-      where.stallZoneId = query.zoneId;
-    }
 
     if (query.horseId) {
       where.horseId = query.horseId;
@@ -309,11 +360,13 @@ export class DailyTasksService {
       where.isCompleted = query.isCompleted;
     }
 
-    // Nếu người dùng là Groom và bật cờ "Chỉ việc của tôi" (hoặc là Groom mặc định)
+    // Nếu người dùng bật cờ "Chỉ việc của tôi" hoặc là Groom xem mặc định (khi cả onlyMine và onlyMyTasks chưa được truyền)
     const isOnlyMine =
-      query.onlyMine ||
-      query.onlyMyTasks ||
-      (currentUser.role === Role.GROOM && query.onlyMine !== false && query.onlyMyTasks !== false);
+      query.onlyMine === true ||
+      query.onlyMyTasks === true ||
+      (currentUser.role === Role.GROOM &&
+        query.onlyMine === undefined &&
+        query.onlyMyTasks === undefined);
 
     if (isOnlyMine && currentUser.userId) {
       const myRosters = await this.prisma.shiftRoster.findMany({
@@ -325,11 +378,27 @@ export class DailyTasksService {
       });
       const myZoneIds = myRosters.map((r) => r.zoneId);
 
-      where.OR = [
+      const groomOrConditions: any[] = [
         { assignedGroomUserId: currentUser.userId },
         { completedById: currentUser.userId },
-        ...(myZoneIds.length > 0 ? [{ stallZoneId: { in: myZoneIds } }] : []),
       ];
+      if (myZoneIds.length > 0) {
+        groomOrConditions.push({ stallZoneId: { in: myZoneIds } });
+      }
+
+      if (query.zoneId) {
+        where.stallZoneId = query.zoneId;
+        if (!myZoneIds.includes(query.zoneId)) {
+          where.OR = [
+            { assignedGroomUserId: currentUser.userId },
+            { completedById: currentUser.userId },
+          ];
+        }
+      } else {
+        where.OR = groomOrConditions;
+      }
+    } else if (query.zoneId) {
+      where.stallZoneId = query.zoneId;
     }
 
     const [items, total] = await Promise.all([
