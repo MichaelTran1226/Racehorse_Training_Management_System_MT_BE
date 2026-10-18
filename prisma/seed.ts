@@ -16,6 +16,9 @@ import {
   RetireReason,
   InjuryStatus,
   BodySide,
+  TournamentStatus,
+  RegistrationStatus,
+  InvoiceStatus,
 } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
@@ -1168,7 +1171,141 @@ async function main() {
   }
   console.log(`[8/9] Seeded Audit Trail Records`);
 
-  console.log('[9/9] --- Comprehensive EquiFlow Database Seeding Completed 100%! ---');
+  // 14. Flow 5: Tournaments, Registrations, Results & Financial Invoices
+  const t1 = await prisma.tournament.upsert({
+    where: { id: 'seed-tourn-1' },
+    update: {},
+    create: {
+      id: 'seed-tourn-1',
+      name: 'Grand Autumn Cup 2026',
+      raceDate: new Date('2026-10-10'),
+      location: 'Saigon Racecourse - Track A',
+      distanceMeters: 2400,
+      trackType: TrackSurface.TURF,
+      prizePool: 500000000,
+      registrationDeadline: new Date('2026-10-01'),
+      status: TournamentStatus.COMPLETED,
+    },
+  });
+
+  await prisma.tournament.upsert({
+    where: { id: 'seed-tourn-2' },
+    update: {},
+    create: {
+      id: 'seed-tourn-2',
+      name: 'Saigon Spring Sprint 2026',
+      raceDate: new Date('2026-11-15'),
+      location: 'Saigon Racecourse - Sprint Track',
+      distanceMeters: 1200,
+      trackType: TrackSurface.SYNTHETIC,
+      prizePool: 200000000,
+      registrationDeadline: new Date('2026-11-05'),
+      status: TournamentStatus.OPEN_REGISTRATION,
+    },
+  });
+
+  await prisma.tournament.upsert({
+    where: { id: 'seed-tourn-3' },
+    update: {},
+    create: {
+      id: 'seed-tourn-3',
+      name: 'National Endurance Derby 2026',
+      raceDate: new Date('2026-12-20'),
+      location: 'Da Lat Highland Turf Club',
+      distanceMeters: 3200,
+      trackType: TrackSurface.DIRT,
+      prizePool: 750000000,
+      registrationDeadline: new Date('2026-12-05'),
+      status: TournamentStatus.UPCOMING,
+    },
+  });
+
+  // Registrations & Results for t1
+  const reg1 = await prisma.tournamentRegistration.upsert({
+    where: { tournamentId_horseId: { tournamentId: t1.id, horseId: horse1.id } },
+    update: {},
+    create: {
+      id: 'seed-reg-1',
+      tournamentId: t1.id,
+      horseId: horse1.id,
+      registeredByTrainerId: trainer.id,
+      status: RegistrationStatus.CONFIRMED,
+      registrationDate: new Date('2026-09-28'),
+      notes: 'Peak fitness for Autumn Cup',
+    },
+  });
+
+  await prisma.tournamentResult.upsert({
+    where: { registrationId: reg1.id },
+    update: {},
+    create: {
+      id: 'seed-res-1',
+      registrationId: reg1.id,
+      finalRank: 1,
+      finishTimeSeconds: 142.5,
+      avgSpeedKmh: 60.63,
+      prizeMoneyWon: 71428571.43,
+      officialNotes: 'Champion of Grand Autumn Cup 2026 - Outstanding finish',
+    },
+  });
+
+  // Financial Invoices (Flow 5 Ledger)
+  await prisma.financialInvoice.upsert({
+    where: { id: 'seed-inv-1' },
+    update: {},
+    create: {
+      id: 'seed-inv-1',
+      horseId: horse1.id,
+      ownerId: owner1.id,
+      billingPeriod: '2026-10',
+      boardingFee: 15000000,
+      medicalFee: 8500000,
+      trainingFee: 12000000,
+      prizeCredit: 50000000, // 70% of ~71.4M VND
+      netAmount: -14500000, // Negative means Club Payout to Owner!
+      status: InvoiceStatus.PAID,
+      invoiceUrl: '/invoices/INV-2026-10-HR-000001.pdf',
+    },
+  });
+
+  await prisma.financialInvoice.upsert({
+    where: { id: 'seed-inv-2' },
+    update: {},
+    create: {
+      id: 'seed-inv-2',
+      horseId: horse1.id,
+      ownerId: owner1.id,
+      billingPeriod: '2026-09',
+      boardingFee: 15000000,
+      medicalFee: 3200000,
+      trainingFee: 12000000,
+      prizeCredit: 0,
+      netAmount: 30200000,
+      status: InvoiceStatus.PAID,
+      invoiceUrl: '/invoices/INV-2026-09-HR-000001.pdf',
+    },
+  });
+
+  await prisma.financialInvoice.upsert({
+    where: { id: 'seed-inv-3' },
+    update: {},
+    create: {
+      id: 'seed-inv-3',
+      horseId: horse1.id,
+      ownerId: owner1.id,
+      billingPeriod: '2026-11',
+      boardingFee: 15000000,
+      medicalFee: 1500000,
+      trainingFee: 12000000,
+      prizeCredit: 0,
+      netAmount: 28500000,
+      status: InvoiceStatus.DRAFT,
+      invoiceUrl: null,
+    },
+  });
+
+  console.log(`[9/10] Seeded Flow 5 Tournaments, Results & Financial Invoices`);
+  console.log('[10/10] --- Comprehensive EquiFlow Database Seeding Completed 100%! ---');
 }
 
 main()
