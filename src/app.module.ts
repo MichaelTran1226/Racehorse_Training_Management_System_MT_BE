@@ -20,6 +20,7 @@ import { StallsModule } from './stalls/stalls.module';
 import { HorseCatalogsModule } from './horse-catalogs/horse-catalogs.module';
 import { TrainingModule } from './training/training.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { TournamentsModule } from './tournaments/tournaments.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     StallsModule,
     HorseCatalogsModule,
     TrainingModule,
+    TournamentsModule,
   ],
   controllers: [],
   providers: [
