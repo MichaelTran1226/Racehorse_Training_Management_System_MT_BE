@@ -21,6 +21,7 @@ import { HorseCatalogsModule } from './horse-catalogs/horse-catalogs.module';
 import { TrainingModule } from './training/training.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { TournamentsModule } from './tournaments/tournaments.module';
+import { FinancialModule } from './financial/financial.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { TournamentsModule } from './tournaments/tournaments.module';
     HorseCatalogsModule,
     TrainingModule,
     TournamentsModule,
+    FinancialModule,
   ],
   controllers: [],
   providers: [
