@@ -43,7 +43,8 @@ export class TournamentsController {
   @Get(':id/eligibility')
   @Roles(UserRole.HEAD_TRAINER, UserRole.CLUB_MANAGER)
   @ApiOperation({
-    summary: 'Rà soát điều kiện tham gia giải đua của đàn ngựa (SC-5.02: Khóa y tế, Thể lực, Số buổi tập)',
+    summary:
+      'Rà soát điều kiện tham gia giải đua của đàn ngựa (SC-5.02: Khóa y tế, Thể lực, Số buổi tập)',
   })
   async getEligibility(@Param('id') id: string) {
     return this.tournamentsService.getEligibility(id);

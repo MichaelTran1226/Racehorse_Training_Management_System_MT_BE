@@ -18,7 +18,10 @@ export class CreateTournamentDto {
   @IsNotEmpty()
   name: string;
 
-  @ApiProperty({ description: 'Ngày diễn ra giải đua (ISO string)', example: '2026-11-20T08:00:00Z' })
+  @ApiProperty({
+    description: 'Ngày diễn ra giải đua (ISO string)',
+    example: '2026-11-20T08:00:00Z',
+  })
   @IsDateString()
   @IsNotEmpty()
   raceDate: string;
@@ -34,12 +37,20 @@ export class CreateTournamentDto {
   @Max(3600)
   distanceMeters: number;
 
-  @ApiPropertyOptional({ description: 'Loại mặt sân', enum: TrackSurface, default: TrackSurface.TURF })
+  @ApiPropertyOptional({
+    description: 'Loại mặt sân',
+    enum: TrackSurface,
+    default: TrackSurface.TURF,
+  })
   @IsEnum(TrackSurface)
   @IsOptional()
   trackType?: TrackSurface = TrackSurface.TURF;
 
-  @ApiPropertyOptional({ description: 'Tổng quỹ tiền thưởng (VNĐ)', example: 100000000, default: 0 })
+  @ApiPropertyOptional({
+    description: 'Tổng quỹ tiền thưởng (VNĐ)',
+    example: 100000000,
+    default: 0,
+  })
   @IsNumber()
   @Min(0)
   @IsOptional()
@@ -50,7 +61,11 @@ export class CreateTournamentDto {
   @IsNotEmpty()
   registrationDeadline: string;
 
-  @ApiPropertyOptional({ description: 'Trạng thái giải đấu', enum: TournamentStatus, default: TournamentStatus.UPCOMING })
+  @ApiPropertyOptional({
+    description: 'Trạng thái giải đấu',
+    enum: TournamentStatus,
+    default: TournamentStatus.UPCOMING,
+  })
   @IsEnum(TournamentStatus)
   @IsOptional()
   status?: TournamentStatus = TournamentStatus.UPCOMING;

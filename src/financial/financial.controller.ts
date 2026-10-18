@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Patch,
-  Post,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { InvoiceStatus } from '@prisma/client';
 import { CurrentUser, CurrentUserPayload } from '../common/decorators/current-user.decorator';
@@ -24,7 +16,9 @@ export class FinancialController {
   constructor(private readonly financialService: FinancialService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Lấy danh sách hóa đơn sổ tài chính (Chủ ngựa chỉ thấy hóa đơn của mình)' })
+  @ApiOperation({
+    summary: 'Lấy danh sách hóa đơn sổ tài chính (Chủ ngựa chỉ thấy hóa đơn của mình)',
+  })
   async findAll(@Query() query: QueryInvoiceDto, @CurrentUser() user: CurrentUserPayload) {
     return this.financialService.findAll(query, {
       id: user.userId,
@@ -34,7 +28,9 @@ export class FinancialController {
   }
 
   @Get('owner-summary')
-  @ApiOperation({ summary: 'Tổng hợp báo cáo tài chính & doanh thu giải đua cho Chủ ngựa (SC-5.06)' })
+  @ApiOperation({
+    summary: 'Tổng hợp báo cáo tài chính & doanh thu giải đua cho Chủ ngựa (SC-5.06)',
+  })
   async getOwnerSummary(
     @CurrentUser() user: CurrentUserPayload,
     @Query('ownerId') queryOwnerId?: string,
@@ -68,7 +64,9 @@ export class FinancialController {
 
   @Post('generate-monthly')
   @Roles(UserRole.CLUB_MANAGER)
-  @ApiOperation({ summary: 'Tự động sinh hóa đơn định kỳ đầu tháng cho toàn bộ Chủ ngựa (Chỉ Club Manager)' })
+  @ApiOperation({
+    summary: 'Tự động sinh hóa đơn định kỳ đầu tháng cho toàn bộ Chủ ngựa (Chỉ Club Manager)',
+  })
   async generateMonthly(
     @Body('billingPeriod') billingPeriod: string,
     @CurrentUser() user: CurrentUserPayload,

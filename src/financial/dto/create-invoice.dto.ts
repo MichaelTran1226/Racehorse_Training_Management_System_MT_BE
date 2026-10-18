@@ -34,7 +34,10 @@ export class CreateInvoiceDto {
   @IsOptional()
   boardingFee?: number = 0;
 
-  @ApiPropertyOptional({ description: 'Phí thuốc, điều trị thú y & chăm sóc sức khỏe (VNĐ)', default: 0 })
+  @ApiPropertyOptional({
+    description: 'Phí thuốc, điều trị thú y & chăm sóc sức khỏe (VNĐ)',
+    default: 0,
+  })
   @IsNumber()
   @Min(0)
   @IsOptional()
@@ -46,13 +49,20 @@ export class CreateInvoiceDto {
   @IsOptional()
   trainingFee?: number = 0;
 
-  @ApiPropertyOptional({ description: 'Tiền thưởng giải đua được khấu trừ cho Chủ ngựa (VNĐ)', default: 0 })
+  @ApiPropertyOptional({
+    description: 'Tiền thưởng giải đua được khấu trừ cho Chủ ngựa (VNĐ)',
+    default: 0,
+  })
   @IsNumber()
   @Min(0)
   @IsOptional()
   prizeCredit?: number = 0;
 
-  @ApiPropertyOptional({ description: 'Trạng thái hóa đơn', enum: InvoiceStatus, default: InvoiceStatus.DRAFT })
+  @ApiPropertyOptional({
+    description: 'Trạng thái hóa đơn',
+    enum: InvoiceStatus,
+    default: InvoiceStatus.DRAFT,
+  })
   @IsEnum(InvoiceStatus)
   @IsOptional()
   status?: InvoiceStatus = InvoiceStatus.DRAFT;

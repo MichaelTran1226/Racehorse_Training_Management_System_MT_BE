@@ -1,5 +1,5 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { InvoiceStatus, Prisma, Role } from '@prisma/client';
+import { InvoiceStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -185,10 +185,13 @@ export class FinancialService {
       );
     }
 
-    const boardingFee = dto.boardingFee !== undefined ? dto.boardingFee : Number(existing.boardingFee);
+    const boardingFee =
+      dto.boardingFee !== undefined ? dto.boardingFee : Number(existing.boardingFee);
     const medicalFee = dto.medicalFee !== undefined ? dto.medicalFee : Number(existing.medicalFee);
-    const trainingFee = dto.trainingFee !== undefined ? dto.trainingFee : Number(existing.trainingFee);
-    const prizeCredit = dto.prizeCredit !== undefined ? dto.prizeCredit : Number(existing.prizeCredit);
+    const trainingFee =
+      dto.trainingFee !== undefined ? dto.trainingFee : Number(existing.trainingFee);
+    const prizeCredit =
+      dto.prizeCredit !== undefined ? dto.prizeCredit : Number(existing.prizeCredit);
     const netAmount = boardingFee + medicalFee + trainingFee - prizeCredit;
 
     const updated = await this.prisma.financialInvoice.update({
@@ -246,7 +249,11 @@ export class FinancialService {
       'INVOICE_STATUS_CHANGED',
       `Changed invoice ${id} status from ${existing.status} to ${status}`,
       id,
-      { entityName: 'FinancialInvoice', oldValues: { status: existing.status }, newValues: { status } },
+      {
+        entityName: 'FinancialInvoice',
+        oldValues: { status: existing.status },
+        newValues: { status },
+      },
     );
 
     // Nếu phát hành hóa đơn (SENT), gửi thông báo cho Chủ ngựa

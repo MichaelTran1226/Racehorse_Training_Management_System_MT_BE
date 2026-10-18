@@ -14,7 +14,10 @@ import {
 } from 'class-validator';
 
 export class SingleResultDto {
-  @ApiProperty({ description: 'ID đăng ký tham gia giải (registrationId)', example: 'uuid-reg-123' })
+  @ApiProperty({
+    description: 'ID đăng ký tham gia giải (registrationId)',
+    example: 'uuid-reg-123',
+  })
   @IsUUID()
   @IsNotEmpty()
   registrationId: string;
@@ -30,7 +33,8 @@ export class SingleResultDto {
   finishTimeSeconds: number;
 
   @ApiPropertyOptional({
-    description: 'Tốc độ trung bình (km/h). Nếu để trống, hệ thống tự động tính = (distanceMeters / finishTimeSeconds) * 3.6',
+    description:
+      'Tốc độ trung bình (km/h). Nếu để trống, hệ thống tự động tính = (distanceMeters / finishTimeSeconds) * 3.6',
     example: 58.5,
   })
   @IsNumber()
@@ -58,7 +62,8 @@ export class BatchRecordResultsDto {
   results: SingleResultDto[];
 
   @ApiPropertyOptional({
-    description: 'Nếu true, Club Manager chốt luôn kết quả (Lock Results), chuyển giải sang COMPLETED và chia thưởng',
+    description:
+      'Nếu true, Club Manager chốt luôn kết quả (Lock Results), chuyển giải sang COMPLETED và chia thưởng',
     default: false,
   })
   @IsBoolean()

@@ -130,9 +130,9 @@ describe('TournamentsService', () => {
 
       const actor = { id: 'u2', name: 'Trainer', role: 'HEAD_TRAINER' };
 
-      await expect(
-        service.registerHorse('t-1', { horseId: 'h-locked' }, actor),
-      ).rejects.toThrow('Medical Lock is currently in force');
+      await expect(service.registerHorse('t-1', { horseId: 'h-locked' }, actor)).rejects.toThrow(
+        'Medical Lock is currently in force',
+      );
     });
   });
 

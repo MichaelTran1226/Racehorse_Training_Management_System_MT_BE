@@ -271,7 +271,11 @@ export class TournamentsService {
       'TOURNAMENT_STATUS_CHANGED',
       `Changed tournament ${existing.name} status from ${existing.status} to ${dto.status}${dto.reason ? ` (${dto.reason})` : ''}`,
       id,
-      { entityName: 'Tournament', oldValues: { status: existing.status }, newValues: { status: dto.status } },
+      {
+        entityName: 'Tournament',
+        oldValues: { status: existing.status },
+        newValues: { status: dto.status },
+      },
     );
 
     return {
@@ -333,7 +337,11 @@ export class TournamentsService {
     });
 
     if (!tournament) {
-      throw apiError(HttpStatus.NOT_FOUND, 'TOURNAMENT_NOT_FOUND', `Tournament ${tournamentId} not found`);
+      throw apiError(
+        HttpStatus.NOT_FOUND,
+        'TOURNAMENT_NOT_FOUND',
+        `Tournament ${tournamentId} not found`,
+      );
     }
 
     const registeredHorseMap = new Map(tournament.registrations.map((r) => [r.horseId, r.id]));
@@ -389,7 +397,9 @@ export class TournamentsService {
       // Đánh giá thể lực (số buổi tập gần đây)
       const completedWorkouts = h.workoutSessions ? h.workoutSessions.length : 0;
       if (completedWorkouts < 4) {
-        reasons.push(`Insufficient recent training sessions (${completedWorkouts}/4 required in past 30 days)`);
+        reasons.push(
+          `Insufficient recent training sessions (${completedWorkouts}/4 required in past 30 days)`,
+        );
       }
 
       const horseData = {
@@ -442,7 +452,11 @@ export class TournamentsService {
     });
 
     if (!tournament) {
-      throw apiError(HttpStatus.NOT_FOUND, 'TOURNAMENT_NOT_FOUND', `Tournament ${tournamentId} not found`);
+      throw apiError(
+        HttpStatus.NOT_FOUND,
+        'TOURNAMENT_NOT_FOUND',
+        `Tournament ${tournamentId} not found`,
+      );
     }
 
     if (
@@ -587,7 +601,9 @@ export class TournamentsService {
       where: { id: registrationId },
       data: {
         status: RegistrationStatus.SCRATCHED_MEDICAL,
-        notes: registration.notes ? `${registration.notes} | Scratched: ${reason}` : `Scratched: ${reason}`,
+        notes: registration.notes
+          ? `${registration.notes} | Scratched: ${reason}`
+          : `Scratched: ${reason}`,
       },
     });
 
@@ -612,7 +628,11 @@ export class TournamentsService {
     });
 
     if (!tournament) {
-      throw apiError(HttpStatus.NOT_FOUND, 'TOURNAMENT_NOT_FOUND', `Tournament ${tournamentId} not found`);
+      throw apiError(
+        HttpStatus.NOT_FOUND,
+        'TOURNAMENT_NOT_FOUND',
+        `Tournament ${tournamentId} not found`,
+      );
     }
 
     if (tournament.status === TournamentStatus.COMPLETED) {
@@ -640,7 +660,7 @@ export class TournamentsService {
       const calculatedSpeed =
         item.avgSpeedKmh && item.avgSpeedKmh > 0
           ? item.avgSpeedKmh
-          : Math.round(((tournament.distanceMeters / item.finishTimeSeconds) * 3.6) * 100) / 100;
+          : Math.round((tournament.distanceMeters / item.finishTimeSeconds) * 3.6 * 100) / 100;
 
       const res = await this.prisma.tournamentResult.upsert({
         where: { registrationId: item.registrationId },
@@ -721,7 +741,11 @@ export class TournamentsService {
     });
 
     if (!tournament) {
-      throw apiError(HttpStatus.NOT_FOUND, 'TOURNAMENT_NOT_FOUND', `Tournament ${tournamentId} not found`);
+      throw apiError(
+        HttpStatus.NOT_FOUND,
+        'TOURNAMENT_NOT_FOUND',
+        `Tournament ${tournamentId} not found`,
+      );
     }
 
     if (tournament.status === TournamentStatus.COMPLETED) {
@@ -733,7 +757,8 @@ export class TournamentsService {
     }
 
     const activeRegs = tournament.registrations.filter(
-      (r) => r.status === RegistrationStatus.REGISTERED || r.status === RegistrationStatus.CONFIRMED,
+      (r) =>
+        r.status === RegistrationStatus.REGISTERED || r.status === RegistrationStatus.CONFIRMED,
     );
 
     if (activeRegs.length === 0) {
