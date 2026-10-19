@@ -20,6 +20,8 @@ import { StallsModule } from './stalls/stalls.module';
 import { HorseCatalogsModule } from './horse-catalogs/horse-catalogs.module';
 import { TrainingModule } from './training/training.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { TournamentsModule } from './tournaments/tournaments.module';
+import { FinancialModule } from './financial/financial.module';
 import { SuppliesModule } from './supplies/supplies.module';
 import { ShiftsModule } from './shifts/shifts.module';
 import { ShiftRostersModule } from './shift-rosters/shift-rosters.module';
@@ -52,6 +54,8 @@ import { InventoryModule } from './inventory/inventory.module';
     StallsModule,
     HorseCatalogsModule,
     TrainingModule,
+    TournamentsModule,
+    FinancialModule,
     SuppliesModule,
     ShiftsModule,
     ShiftRostersModule,
