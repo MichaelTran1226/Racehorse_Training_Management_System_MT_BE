@@ -1222,6 +1222,22 @@ async function main() {
     },
   });
 
+  await prisma.tournament.upsert({
+    where: { id: 'seed-tourn-cancelled' },
+    update: {},
+    create: {
+      id: 'seed-tourn-cancelled',
+      name: 'Phu Tho Summer Classic 2026',
+      raceDate: new Date('2026-08-15'),
+      location: 'Phu Tho Racecourse - Track B',
+      distanceMeters: 1600,
+      trackType: TrackSurface.TURF,
+      prizePool: 150000000,
+      registrationDeadline: new Date('2026-08-01'),
+      status: TournamentStatus.CANCELLED,
+    },
+  });
+
   // Registrations & Results for t1
   const reg1 = await prisma.tournamentRegistration.upsert({
     where: { tournamentId_horseId: { tournamentId: t1.id, horseId: horse1.id } },

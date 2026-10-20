@@ -285,11 +285,13 @@ export class FinancialService {
   /**
    * Tổng hợp báo cáo tài chính của Chủ ngựa (SC-5.06)
    */
-  async getOwnerSummary(ownerId: string) {
+  async getOwnerSummary(ownerId?: string) {
+    const where = ownerId ? { ownerId } : {};
     const invoices = await this.prisma.financialInvoice.findMany({
-      where: { ownerId },
+      where,
       include: {
         horse: { select: { id: true, name: true, horseCode: true } },
+        owner: { select: { id: true, fullName: true, email: true } },
       },
       orderBy: { billingPeriod: 'desc' },
     });
