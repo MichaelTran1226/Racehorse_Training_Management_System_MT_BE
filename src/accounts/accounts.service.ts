@@ -246,21 +246,21 @@ export class AccountsService {
   private async mailApproved(user: User): Promise<void> {
     await this.mail.send(
       user.email,
-      'Your EquiFlow account is approved',
-      `Hello ${user.fullName},\n\n` +
-        `The Club Manager approved your ${ROLE_LABEL[user.role]} account (request ${user.requestCode ?? '—'}).\n` +
-        `You can sign in now at ${this.appUrl()}/login with the email and password you chose.`,
+      'Tài khoản TMEC của bạn đã được phê duyệt',
+      `Kính gửi ${user.fullName},\n\n` +
+        `Ban Quản lý Câu lạc bộ đã phê duyệt yêu cầu tài khoản với vai trò ${ROLE_LABEL[user.role]} (mã yêu cầu: ${user.requestCode ?? '—'}).\n` +
+        `Quý khách hiện có thể đăng nhập vào hệ thống tại ${this.appUrl()}/login bằng email và mật khẩu đã đăng ký.`,
     );
   }
 
   private async mailDeclined(user: User): Promise<void> {
     await this.mail.send(
       user.email,
-      'Your EquiFlow account request was declined',
-      `Hello ${user.fullName},\n\n` +
-        `The Club Manager declined your account request ${user.requestCode ?? ''}.\n` +
-        (user.statusReason ? `Reason: ${user.statusReason}\n` : '') +
-        `\nIf the details were wrong, you can send a new request at ${this.appUrl()}/sign-up.`,
+      'Thông báo về yêu cầu tài khoản TMEC',
+      `Kính gửi ${user.fullName},\n\n` +
+        `Ban Quản lý Câu lạc bộ đã từ chối yêu cầu đăng ký tài khoản ${user.requestCode ?? ''}.\n` +
+        (user.statusReason ? `Lý do: ${user.statusReason}\n` : '') +
+        `\nNếu cần chỉnh sửa thông tin, Quý khách có thể gửi yêu cầu mới tại ${this.appUrl()}/sign-up.`,
     );
   }
 
