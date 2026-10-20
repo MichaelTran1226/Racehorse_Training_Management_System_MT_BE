@@ -152,6 +152,18 @@ export class TournamentsService {
       );
     }
 
+    const now = new Date();
+    let initialStatus = dto.status;
+    if (!initialStatus) {
+      initialStatus = deadline >= now ? TournamentStatus.OPEN_REGISTRATION : TournamentStatus.UPCOMING;
+    } else if (initialStatus === TournamentStatus.OPEN_REGISTRATION && deadline < now) {
+      throw apiError(
+        HttpStatus.BAD_REQUEST,
+        'INVALID_DEADLINE',
+        'Cannot set Open for Registration when registration deadline is in the past',
+      );
+    }
+
     const tournament = await this.prisma.tournament.create({
       data: {
         name: dto.name,
@@ -161,7 +173,7 @@ export class TournamentsService {
         trackType: dto.trackType ?? TrackSurface.TURF,
         prizePool: dto.prizePool ?? 0,
         registrationDeadline: deadline,
-        status: dto.status ?? TournamentStatus.UPCOMING,
+        status: initialStatus,
       },
     });
 
@@ -209,6 +221,14 @@ export class TournamentsService {
         HttpStatus.BAD_REQUEST,
         'INVALID_DEADLINE',
         'Registration deadline must be on or before the race date',
+      );
+    }
+
+    if (dto.status === TournamentStatus.OPEN_REGISTRATION && deadline < new Date()) {
+      throw apiError(
+        HttpStatus.BAD_REQUEST,
+        'INVALID_DEADLINE',
+        'Cannot set Open for Registration when registration deadline is in the past',
       );
     }
 

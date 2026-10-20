@@ -1238,7 +1238,7 @@ async function main() {
     },
   });
 
-  // Registrations & Results for t1
+  // Registrations & Results for t1 (Completed Grand Autumn Cup 2026)
   const reg1 = await prisma.tournamentRegistration.upsert({
     where: { tournamentId_horseId: { tournamentId: t1.id, horseId: horse1.id } },
     update: {},
@@ -1262,8 +1262,64 @@ async function main() {
       finalRank: 1,
       finishTimeSeconds: 142.5,
       avgSpeedKmh: 60.63,
-      prizeMoneyWon: 71428571.43,
+      prizeMoneyWon: 250000000,
       officialNotes: 'Champion of Grand Autumn Cup 2026 - Outstanding finish',
+    },
+  });
+
+  const reg2 = await prisma.tournamentRegistration.upsert({
+    where: { tournamentId_horseId: { tournamentId: t1.id, horseId: horse2.id } },
+    update: {},
+    create: {
+      id: 'seed-reg-2',
+      tournamentId: t1.id,
+      horseId: horse2.id,
+      registeredByTrainerId: trainer.id,
+      status: RegistrationStatus.CONFIRMED,
+      registrationDate: new Date('2026-09-29'),
+      notes: 'Strong pace in mid section',
+    },
+  });
+
+  await prisma.tournamentResult.upsert({
+    where: { registrationId: reg2.id },
+    update: {},
+    create: {
+      id: 'seed-res-2',
+      registrationId: reg2.id,
+      finalRank: 2,
+      finishTimeSeconds: 143.8,
+      avgSpeedKmh: 60.08,
+      prizeMoneyWon: 150000000,
+      officialNotes: 'Runner-up of Grand Autumn Cup 2026',
+    },
+  });
+
+  const reg3 = await prisma.tournamentRegistration.upsert({
+    where: { tournamentId_horseId: { tournamentId: t1.id, horseId: horse3.id } },
+    update: {},
+    create: {
+      id: 'seed-reg-3',
+      tournamentId: t1.id,
+      horseId: horse3.id,
+      registeredByTrainerId: trainer.id,
+      status: RegistrationStatus.CONFIRMED,
+      registrationDate: new Date('2026-09-30'),
+      notes: 'Steady finish',
+    },
+  });
+
+  await prisma.tournamentResult.upsert({
+    where: { registrationId: reg3.id },
+    update: {},
+    create: {
+      id: 'seed-res-3',
+      registrationId: reg3.id,
+      finalRank: 3,
+      finishTimeSeconds: 145.2,
+      avgSpeedKmh: 59.5,
+      prizeMoneyWon: 100000000,
+      officialNotes: 'Third place - Bronze medal',
     },
   });
 

@@ -75,9 +75,9 @@ export class RecordWorkoutResultDto {
   @IsIn([...COMPLETION_LEVELS], { message: 'Vui lòng chọn mức hoàn thành.' })
   completionLevel: string;
 
-  @ApiProperty({ description: 'Nhận xét chuyên môn (10-2000)' })
+  @ApiProperty({ description: 'Nhận xét chuyên môn (2-2000)' })
   @IsString({ message: 'Vui lòng nhập nhận xét.' })
-  @Length(10, 2000, { message: 'Nhận xét phải từ 10 đến 2000 ký tự.' })
+  @Length(2, 2000, { message: 'Nhận xét phải từ 2 đến 2000 ký tự.' })
   trainerNotes: string;
 
   @ApiPropertyOptional({ enum: ABNORMAL_SIGNS, isArray: true, description: 'Dấu hiệu bất thường' })
@@ -86,9 +86,9 @@ export class RecordWorkoutResultDto {
   @IsIn([...ABNORMAL_SIGNS], { each: true })
   abnormalSignTypes?: string[];
 
-  @ApiPropertyOptional({ description: 'Mô tả dấu hiệu (10-500, bắt buộc khi có dấu hiệu)' })
+  @ApiPropertyOptional({ description: 'Mô tả dấu hiệu (2-500, bắt buộc khi có dấu hiệu)' })
   @IsOptional()
   @IsString()
-  @Length(10, 500, { message: 'Vui lòng mô tả dấu hiệu bất thường (10-500 ký tự).' })
+  @Length(2, 500, { message: 'Vui lòng mô tả dấu hiệu bất thường (2-500 ký tự).' })
   abnormalNotes?: string;
 }

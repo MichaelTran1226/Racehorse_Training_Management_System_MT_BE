@@ -92,7 +92,7 @@ export class FinancialController {
   }
 
   @Patch(':id/status')
-  @Roles(UserRole.CLUB_MANAGER)
+  @Roles(UserRole.CLUB_MANAGER, UserRole.HORSE_OWNER)
   @ApiOperation({ summary: 'Đổi trạng thái hóa đơn (Phát hành SENT / Xác nhận thanh toán PAID)' })
   async changeStatus(
     @Param('id') id: string,
@@ -100,6 +100,21 @@ export class FinancialController {
     @CurrentUser() user: CurrentUserPayload,
   ) {
     return this.financialService.changeStatus(id, status, {
+      id: user.userId,
+      name: user.fullName || user.email,
+      role: user.role,
+    });
+  }
+
+  @Post(':id/pay')
+  @Roles(UserRole.CLUB_MANAGER, UserRole.HORSE_OWNER)
+  @ApiOperation({ summary: 'Chủ ngựa thanh toán hóa đơn trực tuyến (VietQR / Card / Balance)' })
+  async payInvoice(
+    @Param('id') id: string,
+    @Body() dto: { paymentMethod?: string; transactionRef?: string },
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.financialService.payInvoice(id, dto, {
       id: user.userId,
       name: user.fullName || user.email,
       role: user.role,
