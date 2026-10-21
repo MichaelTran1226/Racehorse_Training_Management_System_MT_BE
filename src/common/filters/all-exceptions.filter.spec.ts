@@ -89,4 +89,16 @@ describe('AllExceptionsFilter', () => {
       expect.objectContaining({ code: 'VALIDATION', error: 'Bad Request', data: {} }),
     );
   });
+
+  it('should not leak internal error messages for non-HTTP exceptions', () => {
+    const { host, statusFn, jsonFn } = hostCapturing();
+    jest.spyOn((filter as any).logger, 'error').mockImplementation(() => undefined);
+
+    filter.catch(new Error('Can\'t reach database server at "db.internal:5432"'), host);
+
+    expect(statusFn).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+    expect(jsonFn).toHaveBeenCalledWith(
+      expect.objectContaining({ code: 'SERVER_ERROR', message: 'Internal server error' }),
+    );
+  });
 });
