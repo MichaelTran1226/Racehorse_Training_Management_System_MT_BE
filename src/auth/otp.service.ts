@@ -5,7 +5,6 @@ import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { apiError } from '../common/exceptions/api-error';
-import { ROLE_LABEL } from '../users/permissions';
 
 // Hạn dùng: 10 phút (đăng ký, quên mật khẩu) — 48 giờ với lời mời nhân viên.
 export const OTP_TTL = 10 * 60 * 1000;

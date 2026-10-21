@@ -239,6 +239,17 @@ export class FinancialService {
       throw apiError(HttpStatus.NOT_FOUND, 'INVOICE_NOT_FOUND', `Invoice ${id} not found`);
     }
 
+    if (
+      user.role === 'HORSE_OWNER' &&
+      (status !== InvoiceStatus.PAID || existing.ownerId !== user.id)
+    ) {
+      throw apiError(
+        HttpStatus.FORBIDDEN,
+        'FORBIDDEN',
+        'Horse owners can only pay for their own invoices',
+      );
+    }
+
     const updated = await this.prisma.financialInvoice.update({
       where: { id },
       data: { status },
@@ -283,13 +294,68 @@ export class FinancialService {
   }
 
   /**
+<<<<<<< HEAD
+   * Thanh toán hóa đơn trực tuyến cho Chủ ngựa
+   */
+  async payInvoice(
+    id: string,
+    paymentData: { paymentMethod?: string; transactionRef?: string },
+    user: FinancialActor,
+  ) {
+    const existing = await this.prisma.financialInvoice.findUnique({
+      where: { id },
+      include: { horse: true },
+    });
+
+    if (!existing) {
+      throw apiError(HttpStatus.NOT_FOUND, 'INVOICE_NOT_FOUND', `Invoice ${id} not found`);
+    }
+
+    if (user.role === 'HORSE_OWNER' && existing.ownerId !== user.id) {
+      throw apiError(
+        HttpStatus.FORBIDDEN,
+        'FORBIDDEN',
+        'You can only pay for your own horse invoice',
+      );
+    }
+
+    const updated = await this.prisma.financialInvoice.update({
+      where: { id },
+      data: { status: InvoiceStatus.PAID },
+    });
+
+    await this.audit.record(
+      { id: user.id, name: user.name },
+      'INVOICE_PAID',
+      `Invoice ${id} (${existing.billingPeriod}) for horse ${existing.horse.name} was paid via ${paymentData?.paymentMethod || 'VietQR'}`,
+      id,
+      {
+        entityName: 'FinancialInvoice',
+        oldValues: { status: existing.status },
+        newValues: { status: InvoiceStatus.PAID, ...paymentData },
+      },
+    );
+
+    return {
+      ...updated,
+      boardingFee: Number(updated.boardingFee),
+      medicalFee: Number(updated.medicalFee),
+      trainingFee: Number(updated.trainingFee),
+      prizeCredit: Number(updated.prizeCredit),
+      netAmount: Number(updated.netAmount),
+    };
+  }
+
+  /**
    * Tổng hợp báo cáo tài chính của Chủ ngựa (SC-5.06)
    */
-  async getOwnerSummary(ownerId: string) {
+  async getOwnerSummary(ownerId?: string) {
+    const where = ownerId ? { ownerId } : {};
     const invoices = await this.prisma.financialInvoice.findMany({
-      where: { ownerId },
+      where,
       include: {
         horse: { select: { id: true, name: true, horseCode: true } },
+        owner: { select: { id: true, fullName: true, email: true } },
       },
       orderBy: { billingPeriod: 'desc' },
     });

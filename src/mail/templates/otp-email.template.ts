@@ -53,24 +53,32 @@ export function buildOtpEmail(options: OtpEmailOptions): GeneratedEmail {
   const durationText = formatDuration(expiresInMinutes);
 
   let badgeText = 'XÁC THỰC TÀI KHOẢN';
-  let contextDescription = 'Hệ thống ghi nhận yêu cầu kích hoạt tài khoản truy cập Hệ thống Quản lý Huấn luyện Ngựa đua TMEC.';
-  let actionInstruction = 'Quý khách vui lòng sử dụng mã xác thực bên dưới để hoàn tất xác nhận danh tính và kích hoạt quyền truy cập hệ thống.';
+  let contextDescription =
+    'Hệ thống ghi nhận yêu cầu kích hoạt tài khoản truy cập Hệ thống Quản lý Huấn luyện Ngựa đua TMEC.';
+  let actionInstruction =
+    'Quý khách vui lòng sử dụng mã xác thực bên dưới để hoàn tất xác nhận danh tính và kích hoạt quyền truy cập hệ thống.';
   let subjectDetail = 'Mã xác thực tài khoản';
 
   if (purpose === 'reset') {
     badgeText = 'ĐẶT LẠI MẬT KHẨU';
-    contextDescription = 'Hệ thống nhận được yêu cầu cấp lại mật khẩu bảo mật cho tài khoản của Quý khách trên hệ thống TMEC.';
-    actionInstruction = 'Quý khách vui lòng nhập mã xác thực này vào biểu mẫu để tiến hành thiết lập mật khẩu mới.';
+    contextDescription =
+      'Hệ thống nhận được yêu cầu cấp lại mật khẩu bảo mật cho tài khoản của Quý khách trên hệ thống TMEC.';
+    actionInstruction =
+      'Quý khách vui lòng nhập mã xác thực này vào biểu mẫu để tiến hành thiết lập mật khẩu mới.';
     subjectDetail = 'Mã xác thực đặt lại mật khẩu';
   } else if (purpose === 'invite') {
     badgeText = 'LỜI MỜI THAM GIA';
-    contextDescription = 'Quý khách được Ban Quản lý Câu lạc bộ TMEC phân quyền tham gia điều hành và quản lý chuồng trại.';
-    actionInstruction = 'Quý khách vui lòng nhập mã xác thực này để kích hoạt tài khoản nhân sự và khởi tạo mật khẩu bảo mật.';
+    contextDescription =
+      'Quý khách được Ban Quản lý Câu lạc bộ TMEC phân quyền tham gia điều hành và quản lý chuồng trại.';
+    actionInstruction =
+      'Quý khách vui lòng nhập mã xác thực này để kích hoạt tài khoản nhân sự và khởi tạo mật khẩu bảo mật.';
     subjectDetail = 'Mã kích hoạt tài khoản thành viên';
   } else if (purpose === 'tournament') {
     badgeText = 'CHECK-IN GIẢI ĐUA';
-    contextDescription = 'Chiến mã của Quý khách đã được xác nhận vào danh sách tham gia giải đua thuộc hệ thống TMEC.';
-    actionInstruction = 'Quý khách vui lòng xuất trình mã này tại bàn kiểm tra y tế và chuồng cân ngựa trước giờ xuất phát.';
+    contextDescription =
+      'Chiến mã của Quý khách đã được xác nhận vào danh sách tham gia giải đua thuộc hệ thống TMEC.';
+    actionInstruction =
+      'Quý khách vui lòng xuất trình mã này tại bàn kiểm tra y tế và chuồng cân ngựa trước giờ xuất phát.';
     subjectDetail = 'Mã check-in tham gia giải đua';
   }
 
@@ -193,7 +201,9 @@ export function buildOtpEmail(options: OtpEmailOptions): GeneratedEmail {
                 </tr>
               </table>
 
-              ${actionUrl ? `
+              ${
+                actionUrl
+                  ? `
               <!-- Nút kích hoạt trực tiếp (1 chạm - mở web và tự điền mã) -->
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin: 0 0 24px 0;">
                 <tr>
@@ -204,7 +214,9 @@ export function buildOtpEmail(options: OtpEmailOptions): GeneratedEmail {
                   </td>
                 </tr>
               </table>
-              ` : ''}
+              `
+                  : ''
+              }
 
               <!-- Khối lưu ý bảo mật chính thống -->
               <div style="background-color: #111a15; border-left: 3px solid #315D4B; border-radius: 0 6px 6px 0; padding: 12px 16px; margin: 20px 0 28px 0;">
