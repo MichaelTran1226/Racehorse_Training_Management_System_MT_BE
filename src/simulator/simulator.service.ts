@@ -129,10 +129,7 @@ export class SimulatorService {
       },
       create: {
         id: dto.session_id,
-        type:
-          dto.type === 'RACE'
-            ? SimulatorSessionType.RACE
-            : SimulatorSessionType.WORKOUT,
+        type: dto.type === 'RACE' ? SimulatorSessionType.RACE : SimulatorSessionType.WORKOUT,
         status,
         horseIds,
         actorUserId: actor.userId,

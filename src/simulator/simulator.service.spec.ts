@@ -34,10 +34,7 @@ describe('SimulatorService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        SimulatorService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [SimulatorService, { provide: PrismaService, useValue: prisma }],
     }).compile();
 
     service = module.get<SimulatorService>(SimulatorService);

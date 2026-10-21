@@ -13,13 +13,21 @@ async function bootstrap() {
   const port = configService.get<number>('PORT', 3000);
   const apiPrefix = configService.get<string>('API_PREFIX', '/api');
   const frontendUrl = configService.get<string>('FRONTEND_URL', 'http://localhost:5173');
+  const simulatorUrl = configService.get<string>('SIMULATOR_URL', 'http://localhost:5175');
 
   // Security Middleware
   app.use(helmet());
 
   // CORS Configuration
   app.enableCors({
-    origin: [frontendUrl, 'http://localhost:5173', 'http://127.0.0.1:5173'],
+    origin: [
+      frontendUrl,
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+      simulatorUrl,
+      'http://localhost:5175',
+      'http://127.0.0.1:5175',
+    ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],

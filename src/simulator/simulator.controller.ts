@@ -14,10 +14,13 @@ export class SimulatorController {
   @Get('sessions')
   @Roles(UserRole.CLUB_MANAGER, UserRole.HEAD_TRAINER, UserRole.VETERINARIAN)
   @ApiOperation({ summary: 'Truy vấn danh sách phiên mô phỏng đang chạy và lịch sử gần nhất' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Giới hạn số phiên gần nhất (1..100)' })
-  async getSessions(
-    @Query('limit') limit?: string,
-  ): Promise<SimulatorSessionsResponse> {
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Giới hạn số phiên gần nhất (1..100)',
+  })
+  async getSessions(@Query('limit') limit?: string): Promise<SimulatorSessionsResponse> {
     const parsedLimit = limit ? parseInt(limit, 10) : 20;
     return this.simulatorService.listRecent(parsedLimit);
   }
