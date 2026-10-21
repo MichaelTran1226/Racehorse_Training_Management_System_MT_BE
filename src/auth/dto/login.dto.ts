@@ -6,10 +6,12 @@ import {
   IsOptional,
   IsString,
   Matches,
+  MaxLength,
   MinLength,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { EMAIL_RE } from '../../common/utils/input';
+import { EMAIL_MAX, EMAIL_RE } from '../../common/utils/input';
+import { PASSWORD_MAX } from '../../common/utils/password';
 
 export class LoginDto {
   @ApiProperty({
@@ -17,6 +19,7 @@ export class LoginDto {
     description: 'Registered user email address',
   })
   @IsNotEmpty({ message: 'Email must not be empty' })
+  @MaxLength(EMAIL_MAX, { message: 'Email must be at most 254 characters' })
   @IsEmail({}, { message: 'Must be a valid email format' })
   // Mọi luồng tài khoản chỉ nhận @gmail.com (giống đăng ký, mời, quên mật khẩu).
   @Matches(EMAIL_RE, { message: 'Email must be a @gmail.com address' })
@@ -25,11 +28,12 @@ export class LoginDto {
 
   @ApiProperty({
     example: 'EquiFlow@2026',
-    description: 'Account password (minimum 8 characters)',
+    description: 'Account password (8-128 characters)',
   })
   @IsNotEmpty({ message: 'Password must not be empty' })
   @IsString({ message: 'Password must be a string' })
   @MinLength(8, { message: 'Password must be at least 8 characters' })
+  @MaxLength(PASSWORD_MAX, { message: 'Password must be at most 128 characters' })
   password: string;
 
   @ApiPropertyOptional({

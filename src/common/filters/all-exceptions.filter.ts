@@ -36,9 +36,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
       data = respObj.data && typeof respObj.data === 'object' ? respObj.data : data;
     } else if (typeof exceptionResponse === 'string') {
       message = exceptionResponse;
-    } else if (exception instanceof Error) {
-      message = exception.message;
     }
+    // Lỗi không phải HttpException (Prisma, mất kết nối DB…): giữ câu chung 'Internal server error',
+    // chi tiết chỉ nằm trong log bên dưới để không lộ thông tin nội bộ cho client.
 
     const errorPayload = {
       statusCode: status,
