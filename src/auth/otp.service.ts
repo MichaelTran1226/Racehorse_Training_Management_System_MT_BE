@@ -5,7 +5,6 @@ import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { apiError } from '../common/exceptions/api-error';
-import { ROLE_LABEL } from '../users/permissions';
 
 // Hạn dùng: 10 phút (đăng ký, quên mật khẩu) — 48 giờ với lời mời nhân viên.
 export const OTP_TTL = 10 * 60 * 1000;
@@ -140,24 +139,23 @@ export class OtpService {
     );
     if (purpose === OtpPurpose.INVITE) {
       const user = await this.prisma.user.findUnique({ where: { email } });
-      const role = user ? ROLE_LABEL[user.role] : 'a staff member';
-      const by = user?.invitedBy ?? 'The Club Manager';
-      await this.mail.send(
-        email,
-        `EquiFlow invitation code: ${code}`,
-        `${by} invited you to EquiFlow as ${role}.\n\n` +
-          `Open ${appUrl}/accept-invite?email=${encodeURIComponent(email)} and enter the code ${code} to set your password.\n\n` +
-          'The code expires in 48 hours and can be used once. If you did not expect this invitation, you can ignore this email.',
-      );
+      const inviteUrl = `${appUrl}/accept-invite?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`;
+      await this.mail.sendOtp(email, {
+        code,
+        purpose: 'invite',
+        expiresInMinutes: 48 * 60,
+        userName: user?.fullName || 'Quý khách',
+        brandName: 'TMEC',
+        actionUrl: inviteUrl,
+        actionUrlLabel: 'KÍCH HOẠT TÀI KHOẢN & ĐẶT MẬT KHẨU',
+      });
       return;
     }
-    const what =
-      purpose === OtpPurpose.SIGNUP ? 'verify your email address' : 'reset your password';
-    await this.mail.send(
-      email,
-      `EquiFlow verification code: ${code}`,
-      `Your EquiFlow code to ${what} is ${code}.\n\n` +
-        'It expires in 10 minutes and can be used once. If you did not ask for it, you can ignore this email.',
-    );
+    await this.mail.sendOtp(email, {
+      code,
+      purpose: purpose === OtpPurpose.SIGNUP ? 'signup' : 'reset',
+      expiresInMinutes: 10,
+      brandName: 'TMEC',
+    });
   }
 }

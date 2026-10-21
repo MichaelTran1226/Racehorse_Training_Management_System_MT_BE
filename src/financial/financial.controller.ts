@@ -35,7 +35,9 @@ export class FinancialController {
     @CurrentUser() user: CurrentUserPayload,
     @Query('ownerId') queryOwnerId?: string,
   ) {
-    const targetOwnerId = user.role === UserRole.HORSE_OWNER ? user.userId : queryOwnerId;
+    // Nếu là Club Manager có thể xem của owner khác; HORSE_OWNER luôn xem của chính mình
+    const targetOwnerId =
+      user.role === UserRole.HORSE_OWNER || !queryOwnerId ? user.userId : queryOwnerId;
     return this.financialService.getOwnerSummary(targetOwnerId);
   }
 

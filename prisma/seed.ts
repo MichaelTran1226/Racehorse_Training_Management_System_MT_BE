@@ -1322,7 +1322,6 @@ async function main() {
       officialNotes: 'Third place - Bronze medal',
     },
   });
-
   // Financial Invoices (Flow 5 Ledger)
   await prisma.financialInvoice.upsert({
     where: { id: 'seed-inv-1' },

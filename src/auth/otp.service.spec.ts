@@ -10,7 +10,7 @@ describe('OtpService', () => {
     otpCode: { findUnique: jest.fn(), upsert: jest.fn(), update: jest.fn(), delete: jest.fn() },
     user: { findUnique: jest.fn() },
   };
-  const mockMail = { send: jest.fn() };
+  const mockMail = { send: jest.fn(), sendOtp: jest.fn() };
   const config = { get: jest.fn().mockReturnValue('true') } as unknown as ConfigService;
   let service: OtpService;
 
@@ -51,10 +51,9 @@ describe('OtpService', () => {
     const saved = mockPrisma.otpCode.upsert.mock.calls[0][0].create;
     expect(saved.codeHash).toBe(sha256('123456')); // DEV_FIXED_OTP=true
     expect(saved).not.toHaveProperty('code');
-    expect(mockMail.send).toHaveBeenCalledWith(
+    expect(mockMail.sendOtp).toHaveBeenCalledWith(
       'anh@gmail.com',
-      expect.stringContaining('123456'),
-      expect.any(String),
+      expect.objectContaining({ code: '123456' }),
     );
   });
 

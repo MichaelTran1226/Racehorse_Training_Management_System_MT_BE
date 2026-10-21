@@ -239,8 +239,15 @@ export class FinancialService {
       throw apiError(HttpStatus.NOT_FOUND, 'INVOICE_NOT_FOUND', `Invoice ${id} not found`);
     }
 
-    if (user.role === 'HORSE_OWNER' && (status !== InvoiceStatus.PAID || existing.ownerId !== user.id)) {
-      throw apiError(HttpStatus.FORBIDDEN, 'FORBIDDEN', 'Horse owners can only pay for their own invoices');
+    if (
+      user.role === 'HORSE_OWNER' &&
+      (status !== InvoiceStatus.PAID || existing.ownerId !== user.id)
+    ) {
+      throw apiError(
+        HttpStatus.FORBIDDEN,
+        'FORBIDDEN',
+        'Horse owners can only pay for their own invoices',
+      );
     }
 
     const updated = await this.prisma.financialInvoice.update({
@@ -287,6 +294,7 @@ export class FinancialService {
   }
 
   /**
+<<<<<<< HEAD
    * Thanh toán hóa đơn trực tuyến cho Chủ ngựa
    */
   async payInvoice(
@@ -304,7 +312,11 @@ export class FinancialService {
     }
 
     if (user.role === 'HORSE_OWNER' && existing.ownerId !== user.id) {
-      throw apiError(HttpStatus.FORBIDDEN, 'FORBIDDEN', 'You can only pay for your own horse invoice');
+      throw apiError(
+        HttpStatus.FORBIDDEN,
+        'FORBIDDEN',
+        'You can only pay for your own horse invoice',
+      );
     }
 
     const updated = await this.prisma.financialInvoice.update({

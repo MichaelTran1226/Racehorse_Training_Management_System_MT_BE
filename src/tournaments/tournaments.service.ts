@@ -155,7 +155,8 @@ export class TournamentsService {
     const now = new Date();
     let initialStatus = dto.status;
     if (!initialStatus) {
-      initialStatus = deadline >= now ? TournamentStatus.OPEN_REGISTRATION : TournamentStatus.UPCOMING;
+      initialStatus =
+        deadline >= now ? TournamentStatus.OPEN_REGISTRATION : TournamentStatus.UPCOMING;
     } else if (initialStatus === TournamentStatus.OPEN_REGISTRATION && deadline < now) {
       throw apiError(
         HttpStatus.BAD_REQUEST,
@@ -231,7 +232,6 @@ export class TournamentsService {
         'Cannot set Open for Registration when registration deadline is in the past',
       );
     }
-
     const updated = await this.prisma.tournament.update({
       where: { id },
       data: {
