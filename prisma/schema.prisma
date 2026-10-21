@@ -242,6 +242,17 @@ enum SupplyUnit {
   SET
 }
 
+enum SimulatorSessionType {
+  WORKOUT
+  RACE
+}
+
+enum SimulatorSessionStatus {
+  RUNNING
+  COMPLETED
+  ABORTED_INJURY
+}
+
 // -------------------------------------------------------------
 // MODELS
 // -------------------------------------------------------------
@@ -1069,6 +1080,7 @@ model DailyCareTask {
 
 model IncidentReport {
   id               String         @id @default(uuid())
+  sourceEventId    String?        @unique
   incidentNumber   String?        @unique // e.g. "INC-20261018-0001"
   horseId          String
   horse            Horse          @relation("HorseIncidents", fields: [horseId], references: [id], onDelete: Restrict)
@@ -1145,5 +1157,25 @@ model RestockRequest {
   @@index([supplyId])
   @@index([status])
   @@index([requestedById])
+}
+
+// -------------------------------------------------------------
+// SIMULATOR REALTIME & SESSION PERSISTENCE
+// -------------------------------------------------------------
+
+model SimulatorSession {
+  id            String                 @id
+  type          SimulatorSessionType
+  status        SimulatorSessionStatus @default(RUNNING)
+  horseIds      String[]
+  lastSnapshot  Json?
+  result        Json?
+  actorUserId   String
+  startedAt     DateTime               @default(now())
+  finishedAt    DateTime?
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+
+  @@index([status, updatedAt])
 }
 
