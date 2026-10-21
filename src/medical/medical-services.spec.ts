@@ -11,6 +11,7 @@ import { Role } from '@prisma/client';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { notificationsMock } from '../notifications/notifications.testing';
 import { CurrentUserPayload } from '../common/decorators/current-user.decorator';
+import { SimulatorRealtimeService } from '../simulator/simulator-realtime.service';
 
 // Flow 3: các service y tế sau khi tách (C-10), dùng chung một bộ Prisma giả.
 describe('Medical services', () => {
@@ -77,6 +78,10 @@ describe('Medical services', () => {
     record: jest.fn(),
   };
 
+  const mockRealtimeService = {
+    emit: jest.fn(),
+  };
+
   const mockVetUser = {
     userId: 'vet-1',
     email: 'vet@example.com',
@@ -109,6 +114,7 @@ describe('Medical services', () => {
         PreventiveCareService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: AuditService, useValue: mockAuditService },
+        { provide: SimulatorRealtimeService, useValue: mockRealtimeService },
         notificationsMock(),
       ],
     }).compile();
@@ -328,6 +334,15 @@ describe('Medical services', () => {
         { entityName: 'MedicalLock' },
         mockPrismaService,
       );
+      expect(mockRealtimeService.emit).toHaveBeenCalledWith(
+        'sys:medical_lock_sync',
+        expect.objectContaining({
+          event: 'sys:medical_lock_sync',
+          horse_id: 'horse-1',
+          medical_lock: true,
+          issued_by_role: 'VETERINARIAN',
+        }),
+      );
     });
 
     it('should not let a Club Manager place a training lock (VET_ONLY)', async () => {
@@ -386,6 +401,15 @@ describe('Medical services', () => {
         where: { id: 'horse-1' },
         data: expect.objectContaining({ isMedicalLocked: false, status: 'RESTING' }),
       });
+      expect(mockRealtimeService.emit).toHaveBeenCalledWith(
+        'sys:medical_lock_sync',
+        expect.objectContaining({
+          event: 'sys:medical_lock_sync',
+          horse_id: 'horse-1',
+          medical_lock: false,
+          issued_by_role: 'VETERINARIAN',
+        }),
+      );
     });
 
     it('should extend medical lock with new recheck date and history timeline', async () => {
