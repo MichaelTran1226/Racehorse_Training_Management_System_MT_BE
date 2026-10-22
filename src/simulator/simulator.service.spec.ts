@@ -77,6 +77,53 @@ describe('SimulatorService', () => {
     },
   });
 
+  const telemetryTick = () => ({
+    event: 'sim:telemetry_tick' as const,
+    session_id: 'server-session-1',
+    timestamp_ms: 1729520000000,
+    sim_time_s: 1,
+    sim_speed_multiplier: 1,
+    horse: {
+      horse_id: 'horse-uuid-1',
+      microchip_id: '985141000000001',
+      lifecycle_status: 'IN_TRAINING',
+      medical_lock: false,
+    },
+    track: {
+      surface: 'GRASS',
+      target_distance_m: 1200,
+      covered_distance_m: 15.2,
+      track_condition: 'GOOD',
+      obstacles_cleared: 0,
+      obstacles_total: 0,
+    },
+    metrics: {
+      velocity_mps: 15.2,
+      heart_rate_bpm: 120,
+      stamina_pct: 98.5,
+      body_temp_c: 38,
+      stride_length_m: 6.2,
+      stride_freq_spm: 130,
+      calories_kcal: 25.4,
+    },
+    alerts: {
+      overload_warning: false,
+      limp_detected: false,
+      heat_stress: false,
+    },
+  });
+
+  const issuedSession = (overrides: Record<string, unknown> = {}) => ({
+    id: 'server-session-1',
+    type: 'WORKOUT',
+    status: 'PENDING',
+    horseIds: ['horse-uuid-1'],
+    actorUserId: mockActor.userId,
+    startedAt: new Date(),
+    workoutSession: eligibleWorkout(),
+    ...overrides,
+  });
+
   describe('backend-issued workout sessions', () => {
     it('creates one pending session and returns a simulator launch URL', async () => {
       const workout = eligibleWorkout();
@@ -192,57 +239,80 @@ describe('SimulatorService', () => {
   });
 
   it('records one active snapshot without a telemetry DB row', async () => {
-    const telemetryTick = {
-      event: 'sim:telemetry_tick' as const,
-      session_id: 'WRK-20261021-001',
-      timestamp_ms: 1729520000000,
-      sim_time_s: 1.0,
-      sim_speed_multiplier: 1.0,
-      horse: {
-        horse_id: 'horse-uuid-1',
-        microchip_id: '985141000000001',
-        lifecycle_status: 'IN_TRAINING',
-        medical_lock: false,
-      },
-      track: {
-        surface: 'TURF',
-        target_distance_m: 1200,
-        covered_distance_m: 15.2,
-        track_condition: 'FAST',
-        obstacles_cleared: 0,
-        obstacles_total: 0,
-      },
-      metrics: {
-        velocity_mps: 15.2,
-        heart_rate_bpm: 120,
-        stamina_pct: 98.5,
-        body_temp_c: 38.0,
-        stride_length_m: 6.2,
-        stride_freq_spm: 130,
-        calories_kcal: 25.4,
-      },
-      alerts: {
-        overload_warning: false,
-        limp_detected: false,
-        heat_stress: false,
-      },
-    };
+    prisma.simulatorSession.findUnique.mockResolvedValue(issuedSession());
+    prisma.simulatorSession.update.mockResolvedValue({ ...issuedSession(), status: 'RUNNING' });
 
-    const snapshot = await service.recordTelemetry(telemetryTick, mockActor);
+    const snapshot = await service.recordTelemetry(telemetryTick(), mockActor);
 
     expect(snapshot).toBeDefined();
-    expect(snapshot.sessionId).toBe('WRK-20261021-001');
+    expect(snapshot.sessionId).toBe('server-session-1');
     expect(snapshot.horseIds).toEqual(['horse-uuid-1']);
-    // Telemetry tick updates memory snapshot and upserts session metadata, but stores no per-tick DB rows
-    expect(prisma.simulatorSession.upsert).toHaveBeenCalledTimes(1);
+    expect(prisma.simulatorSession.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'server-session-1' },
+        data: expect.objectContaining({ status: 'RUNNING' }),
+      }),
+    );
+    expect(prisma.simulatorSession.upsert).not.toHaveBeenCalled();
     expect(prisma.medicalLock.create).not.toHaveBeenCalled();
     expect(prisma.medicalRecord.create).not.toHaveBeenCalled();
   });
 
-  it('upserts one finished session when the packet is retried', async () => {
+  it.each([
+    ['missing session', null, telemetryTick(), mockActor, 'SIMULATOR_SESSION_NOT_FOUND'],
+    [
+      'different actor',
+      issuedSession({ actorUserId: 'trainer-2' }),
+      telemetryTick(),
+      mockActor,
+      'SIMULATOR_SESSION_FORBIDDEN',
+    ],
+    [
+      'different horse',
+      issuedSession(),
+      { ...telemetryTick(), horse: { ...telemetryTick().horse, horse_id: 'horse-2' } },
+      mockActor,
+      'SIMULATOR_HORSE_MISMATCH',
+    ],
+    [
+      'finished session',
+      issuedSession({ status: 'COMPLETED' }),
+      telemetryTick(),
+      mockActor,
+      'SIMULATOR_SESSION_FINISHED',
+    ],
+  ])('rejects telemetry for %s', async (_name, session, packet, actor, code) => {
+    prisma.simulatorSession.findUnique.mockResolvedValue(session);
+
+    await expect(service.recordTelemetry(packet, actor)).rejects.toMatchObject({
+      response: expect.objectContaining({ code }),
+    });
+    expect(prisma.simulatorSession.update).not.toHaveBeenCalled();
+    expect(prisma.simulatorSession.upsert).not.toHaveBeenCalled();
+  });
+
+  it('rechecks the medical lock before the first tick', async () => {
+    const workout = eligibleWorkout();
+    prisma.simulatorSession.findUnique.mockResolvedValue(
+      issuedSession({
+        workoutSession: {
+          ...workout,
+          intensity: 'HEAVY',
+          horse: { ...workout.horse, isMedicalLocked: true },
+        },
+      }),
+    );
+
+    await expect(service.recordTelemetry(telemetryTick(), mockActor)).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'MEDICAL_LOCK_ACTIVE' }),
+    });
+    expect(prisma.simulatorSession.update).not.toHaveBeenCalled();
+  });
+
+  it('finishes an issued session once and rejects a retry', async () => {
     const finishedWorkout = {
       event: 'sim:session_finished' as const,
-      session_id: 'WRK-20261021-001',
+      session_id: 'server-session-1',
       type: 'WORKOUT' as const,
       status: 'COMPLETED' as const,
       horse: {
@@ -264,26 +334,28 @@ describe('SimulatorService', () => {
     };
 
     const now = new Date();
-    prisma.simulatorSession.upsert.mockResolvedValue({
-      id: 'WRK-20261021-001',
+    const completedSession = {
+      ...issuedSession(),
       type: 'WORKOUT',
       status: 'COMPLETED',
-      horseIds: ['horse-uuid-1'],
-      actorUserId: mockActor.userId,
       finishedAt: now,
       result: finishedWorkout.result,
+    };
+    prisma.simulatorSession.findUnique
+      .mockResolvedValueOnce(issuedSession({ status: 'RUNNING' }))
+      .mockResolvedValueOnce(completedSession);
+    prisma.simulatorSession.update.mockResolvedValue(completedSession);
+
+    await service.recordFinished(finishedWorkout, mockActor);
+    await expect(service.recordFinished(finishedWorkout, mockActor)).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'SIMULATOR_SESSION_FINISHED' }),
     });
 
-    // Send packet twice (retry scenario)
-    await service.recordFinished(finishedWorkout, mockActor);
-    await service.recordFinished(finishedWorkout, mockActor);
-
-    expect(prisma.simulatorSession.upsert).toHaveBeenCalledTimes(2);
-    // Both calls target the exact same session_id primary key
-    const firstCallArg = prisma.simulatorSession.upsert.mock.calls[0][0];
-    const secondCallArg = prisma.simulatorSession.upsert.mock.calls[1][0];
-    expect(firstCallArg.where.id).toBe('WRK-20261021-001');
-    expect(secondCallArg.where.id).toBe('WRK-20261021-001');
+    expect(prisma.simulatorSession.update).toHaveBeenCalledTimes(1);
+    expect(prisma.simulatorSession.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'server-session-1' } }),
+    );
+    expect(prisma.simulatorSession.upsert).not.toHaveBeenCalled();
 
     // Neither call touches medical locks or records
     expect(prisma.medicalLock.create).not.toHaveBeenCalled();
