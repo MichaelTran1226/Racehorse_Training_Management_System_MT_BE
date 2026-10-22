@@ -29,6 +29,7 @@ import { NutritionModule } from './nutrition/nutrition.module';
 import { DailyTasksModule } from './daily-tasks/daily-tasks.module';
 import { IncidentsModule } from './incidents/incidents.module';
 import { InventoryModule } from './inventory/inventory.module';
+import { SimulatorModule } from './simulator/simulator.module';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { InventoryModule } from './inventory/inventory.module';
     DailyTasksModule,
     IncidentsModule,
     InventoryModule,
+    SimulatorModule,
   ],
   controllers: [],
   providers: [

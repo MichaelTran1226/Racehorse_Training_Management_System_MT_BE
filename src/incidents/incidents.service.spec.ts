@@ -314,4 +314,94 @@ describe('IncidentsService', () => {
       ).rejects.toThrow(ForbiddenException);
     });
   });
+
+  describe('createFromSimulator', () => {
+    it('returns existing incident on retried sourceEventId without duplicate notifications', async () => {
+      const existingIncident = {
+        id: 'inc-existing-1',
+        incidentNumber: 'INC-20261021-0001',
+        sourceEventId: 'pkt-retry-123',
+        horseId: 'horse-1',
+        severity: SeverityLevel.CRITICAL,
+      };
+
+      prisma.incidentReport.findUnique.mockResolvedValue(existingIncident);
+
+      const reporter = {
+        userId: 'trainer-1',
+        email: 'trainer@equiflow.com',
+        role: Role.HEAD_TRAINER,
+        fullName: 'Trainer Minh',
+      };
+
+      const result = await service.createFromSimulator('pkt-retry-123', {} as any, reporter as any);
+
+      expect(result).toBe(existingIncident);
+      expect(prisma.incidentReport.create).not.toHaveBeenCalled();
+      expect(notifications.notifyRoles).not.toHaveBeenCalled();
+    });
+
+    it('maps FRACTURE to CRITICAL severity and creates IncidentReport without activating MedicalLock', async () => {
+      prisma.incidentReport.findUnique.mockResolvedValue(null);
+      prisma.horse.findUnique.mockResolvedValue({
+        id: 'horse-1',
+        name: 'Thunderbolt',
+        horseCode: 'H-002',
+        deletedAt: null,
+        ownerId: 'owner-uuid-1',
+        stallAllocations: [],
+      });
+      prisma.incidentReport.count.mockResolvedValue(0);
+
+      const createdIncident = {
+        id: 'inc-new-1',
+        incidentNumber: 'INC-20261021-0001',
+        sourceEventId: 'pkt-fracture-1',
+        horseId: 'horse-1',
+        severity: SeverityLevel.CRITICAL,
+      };
+      prisma.incidentReport.create.mockResolvedValue(createdIncident);
+
+      const reporter = {
+        userId: 'trainer-1',
+        email: 'trainer@equiflow.com',
+        role: Role.HEAD_TRAINER,
+        fullName: 'Trainer Minh',
+      };
+
+      const packet: any = {
+        horse: { horse_id: 'horse-1' },
+        incident: {
+          kind: 'FRACTURE',
+          label: 'Gãy xương chân cấp tính',
+          location: 'TRACK',
+        },
+        snapshot: {
+          velocity_mps: 16.0,
+          heart_rate_bpm: 185,
+          body_temp_c: 38.5,
+        },
+      };
+
+      const result = await service.createFromSimulator('pkt-fracture-1', packet, reporter as any);
+
+      expect(result).toBe(createdIncident);
+      expect(prisma.incidentReport.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            severity: SeverityLevel.CRITICAL,
+            sourceEventId: 'pkt-fracture-1',
+          }),
+        }),
+      );
+      // Notifications sent to management roles
+      expect(notifications.notifyRoles).toHaveBeenCalledWith(
+        [Role.VETERINARIAN, Role.HEAD_TRAINER, Role.CLUB_MANAGER],
+        expect.objectContaining({
+          type: 'CRITICAL_INCIDENT_REPORTED',
+          category: 'MEDICAL',
+        }),
+      );
+    });
+  });
 });

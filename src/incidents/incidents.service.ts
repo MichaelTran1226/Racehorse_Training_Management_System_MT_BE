@@ -126,6 +126,167 @@ export class IncidentsService {
   }
 
   /**
+   * Tạo báo cáo sự cố từ gói tin mô phỏng (Simulator).
+   * Idempotent dựa trên sourceEventId để tránh trùng lặp bản ghi và thông báo khi retry.
+   */
+  async createFromSimulator(
+    sourceEventId: string | undefined,
+    packet: any,
+    reporter: CurrentUserPayload,
+  ) {
+    if (sourceEventId) {
+      const existing = await this.prisma.incidentReport.findUnique({
+        where: { sourceEventId },
+        include: {
+          horse: {
+            select: {
+              id: true,
+              name: true,
+              horseCode: true,
+              status: true,
+              isMedicalLocked: true,
+            },
+          },
+          stallZone: { select: { id: true, code: true, name: true } },
+          reportedBy: { select: { id: true, fullName: true, role: true } },
+        },
+      });
+
+      if (existing) {
+        return existing;
+      }
+    }
+
+    const horseId = packet.horse?.horse_id;
+    const horse = await this.prisma.horse.findUnique({
+      where: { id: horseId },
+      include: {
+        stallAllocations: {
+          where: { isActive: true },
+          include: { stall: true },
+          take: 1,
+        },
+      },
+    });
+
+    if (!horse || horse.deletedAt) {
+      throw new NotFoundException('Không tìm thấy thông tin con ngựa từ gói tin mô phỏng.');
+    }
+
+    const allocation = horse.stallAllocations[0];
+    const stallZoneId = allocation?.stall?.zoneId || undefined;
+
+    const kind = packet.incident?.kind;
+    const severity = kind === 'FRACTURE' ? SeverityLevel.CRITICAL : SeverityLevel.MODERATE;
+
+    const symptomsList =
+      kind === 'FRACTURE'
+        ? ['FRACTURE', 'HOOF_INJURY']
+        : kind === 'LAMENESS'
+          ? ['LAMENESS']
+          : kind === 'COLIC'
+            ? ['COLIC']
+            : kind === 'FEVER'
+              ? ['FEVER']
+              : ['OTHER'];
+
+    const snapshot = packet.snapshot;
+    const snapshotText = snapshot
+      ? ` [Chỉ số: v=${snapshot.velocity_mps ?? 0}m/s, hr=${snapshot.heart_rate_bpm ?? 0}bpm, temp=${snapshot.body_temp_c ?? 0}°C]`
+      : '';
+    const description = `[Mô phỏng - ${packet.incident?.location || 'TRACK'}] ${packet.incident?.label || 'Sự cố sân chạy'}.${snapshotText}`;
+
+    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const countToday = await this.prisma.incidentReport.count();
+    const incidentNumber = `INC-${dateStr}-${String(countToday + 1).padStart(4, '0')}`;
+
+    const incident = await this.prisma.incidentReport.create({
+      data: {
+        sourceEventId: sourceEventId || undefined,
+        incidentNumber,
+        horseId: horse.id,
+        stallZoneId,
+        reportedById: reporter.userId,
+        severity,
+        symptomsJson: symptomsList,
+        description,
+        status: IncidentStatus.REPORTED,
+      },
+      include: {
+        horse: {
+          select: {
+            id: true,
+            name: true,
+            horseCode: true,
+            status: true,
+            isMedicalLocked: true,
+          },
+        },
+        stallZone: { select: { id: true, code: true, name: true } },
+        reportedBy: { select: { id: true, fullName: true, role: true } },
+      },
+    });
+
+    const isCritical = severity === SeverityLevel.CRITICAL;
+    const titlePrefix = isCritical
+      ? '🚨 [KHẨN CẤP - SIMULATOR] Sự cố nghiêm trọng:'
+      : '⚠️ [Cảnh báo - SIMULATOR] Bất thường sức khỏe:';
+
+    await this.notifications.notifyRoles(
+      [Role.VETERINARIAN, Role.HEAD_TRAINER, Role.CLUB_MANAGER],
+      {
+        type: isCritical ? 'CRITICAL_INCIDENT_REPORTED' : 'HEALTH_ANOMALY_LOGGED',
+        category: 'MEDICAL',
+        title: `${titlePrefix} ${horse.name} (${horse.horseCode || ''})`,
+        message: `${reporter.fullName} ghi nhận từ Simulator: ${symptomsList.join(', ')}. Mô tả: ${description}`,
+        params: {
+          incidentNumber,
+          horseId: horse.id,
+          horseName: horse.name,
+          severity,
+        },
+        link: '/incidents',
+        senderName: reporter.fullName,
+      },
+    );
+
+    if (horse.ownerId) {
+      await this.notifications.notifyUsers([horse.ownerId], {
+        type: isCritical ? 'CRITICAL_INCIDENT_REPORTED' : 'HEALTH_ANOMALY_LOGGED',
+        category: 'MEDICAL',
+        title: `${titlePrefix} ${horse.name}`,
+        message: `Ngựa của bạn ghi nhận sự cố trên sân mô phỏng: ${symptomsList.join(', ')}. Đang chờ bác sĩ thú y kiểm tra.`,
+        params: {
+          incidentNumber,
+          horseId: horse.id,
+          horseName: horse.name,
+          severity,
+        },
+        link: '/incidents',
+        senderName: reporter.fullName,
+      });
+    }
+
+    await this.auditService.record(
+      { id: reporter.userId, name: reporter.fullName } as any,
+      'REPORT_INCIDENT',
+      'IncidentReport',
+      incident.id,
+      {
+        newValues: {
+          action: 'CREATE_FROM_SIMULATOR',
+          sourceEventId,
+          incidentNumber,
+          horseId: horse.id,
+          severity,
+        },
+      },
+    );
+
+    return incident;
+  }
+
+  /**
    * Lấy danh sách sự cố theo bộ lọc
    */
   async findAll(query: QueryIncidentsDto) {

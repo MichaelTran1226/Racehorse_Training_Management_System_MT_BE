@@ -9,9 +9,10 @@ import { MedicalRecordsService } from './medical-records.service';
 import { PreventiveScheduler } from './preventive.scheduler';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuditModule } from '../audit/audit.module';
+import { SimulatorModule } from '../simulator/simulator.module';
 
 @Module({
-  imports: [PrismaModule, AuditModule],
+  imports: [PrismaModule, AuditModule, SimulatorModule],
   controllers: [MedicalController],
   providers: [
     MedicalAccessService,

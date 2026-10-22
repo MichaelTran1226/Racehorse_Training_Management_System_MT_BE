@@ -13,6 +13,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { MedicalAccessService } from './medical-access.service';
+import { SimulatorRealtimeService } from '../simulator/simulator-realtime.service';
 
 /** P2-04: Khóa huấn luyện — đặt, gỡ, gia hạn, danh sách (FR-3.10 → FR-3.12). */
 @Injectable()
@@ -22,6 +23,7 @@ export class MedicalLocksService {
     private readonly audit: AuditService,
     private readonly notifications: NotificationsService,
     private readonly access: MedicalAccessService,
+    private readonly realtime: SimulatorRealtimeService,
   ) {}
 
   /** FR-011: đặt/gỡ khóa báo HT, CM, chủ ngựa và groom đang chăm. */
@@ -206,6 +208,15 @@ export class MedicalLocksService {
       actor.userId,
     );
 
+    this.realtime.emit('sys:medical_lock_sync', {
+      event: 'sys:medical_lock_sync',
+      horse_id: horse.id,
+      medical_lock: true,
+      issued_by_role: 'VETERINARIAN',
+      lock_actions: ['BLOCK_HEAVY_WORKOUT', 'BLOCK_TOURNAMENT_ENTRY'],
+      note: dto.lockReason,
+    });
+
     return {
       ...lock,
       impactAssessment,
@@ -296,6 +307,15 @@ export class MedicalLocksService {
       },
       actor.userId,
     );
+
+    this.realtime.emit('sys:medical_lock_sync', {
+      event: 'sys:medical_lock_sync',
+      horse_id: lock.horseId,
+      medical_lock: false,
+      issued_by_role: 'VETERINARIAN',
+      lock_actions: [],
+      note: dto.unlockReason,
+    });
 
     const warnings: string[] = [];
     if (lock.horse?.injuryLogs && lock.horse.injuryLogs.length > 0) {
