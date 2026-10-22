@@ -19,6 +19,40 @@ export interface SimulatorSessionsResponse {
   recent: SimulatorSession[];
 }
 
+export interface WorkoutSimulationStartResponse {
+  sessionId: string;
+  status: SimulatorSessionStatus;
+  launchUrl: string;
+}
+
+export interface WorkoutSimulationContext {
+  sessionId: string;
+  status: SimulatorSessionStatus;
+  horse: {
+    id: string;
+    horseCode: string | null;
+    name: string;
+    microchipRfid: string;
+    breed: string;
+    dob: Date;
+    gender: string;
+    color: string;
+    status: string;
+    isMedicalLocked: boolean;
+  };
+  workout: {
+    id: string;
+    scheduledDate: Date;
+    workoutType: string | null;
+    intensity: string | null;
+    distanceMeters: number;
+    repetitions: number;
+    targetSpeedKmh: number | null;
+    targetDurationSeconds: number | null;
+    trackSurface: string | null;
+  };
+}
+
 export interface SimulatorAck {
   accepted: boolean;
   id?: string;

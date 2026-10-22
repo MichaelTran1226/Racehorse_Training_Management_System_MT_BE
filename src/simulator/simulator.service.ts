@@ -1,4 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CurrentUserPayload } from '../common/decorators/current-user.decorator';
 import {
@@ -6,15 +8,199 @@ import {
   SessionFinishedPacketDto,
   TelemetryTickPacketDto,
 } from './dto/simulator-packet.dto';
-import { LiveSimulatorSession, SimulatorSessionsResponse } from './simulator.types';
-import { SimulatorSession, SimulatorSessionStatus, SimulatorSessionType } from '@prisma/client';
+import {
+  LiveSimulatorSession,
+  SimulatorSessionsResponse,
+  WorkoutSimulationContext,
+  WorkoutSimulationStartResponse,
+} from './simulator.types';
+import {
+  SimulatorSession,
+  SimulatorSessionStatus,
+  SimulatorSessionType,
+  WorkoutStatus,
+} from '@prisma/client';
+import { apiError } from '../common/exceptions/api-error';
+import { UserRole } from '../common/enums/role.enum';
+import { isHeavy } from '../training/training-rules';
 
 @Injectable()
 export class SimulatorService {
   private readonly logger = new Logger(SimulatorService.name);
   private readonly active = new Map<string, LiveSimulatorSession>();
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: ConfigService,
+  ) {}
+
+  async startWorkout(
+    workoutId: string,
+    actor: CurrentUserPayload,
+  ): Promise<WorkoutSimulationStartResponse> {
+    if (actor.role !== UserRole.HEAD_TRAINER) {
+      throw apiError(
+        HttpStatus.FORBIDDEN,
+        'SIMULATOR_TRAINER_REQUIRED',
+        'Only the assigned head trainer can start this simulation.',
+      );
+    }
+
+    const session = await this.prisma.$transaction(async (tx) => {
+      const workout = await tx.workoutSession.findUnique({
+        where: { id: workoutId },
+        include: {
+          trainingPlan: { select: { id: true, trainerUserId: true } },
+          horse: {
+            select: {
+              id: true,
+              horseCode: true,
+              name: true,
+              microchipRfid: true,
+              breed: true,
+              dob: true,
+              gender: true,
+              color: true,
+              status: true,
+              isMedicalLocked: true,
+              medicalLocks: { where: { isLocked: true }, take: 1, select: { id: true } },
+            },
+          },
+        },
+      });
+      if (!workout) {
+        throw apiError(HttpStatus.NOT_FOUND, 'WORKOUT_NOT_FOUND', 'Workout session not found.');
+      }
+      if (workout.trainingPlan.trainerUserId !== actor.userId) {
+        throw apiError(
+          HttpStatus.FORBIDDEN,
+          'WORKOUT_NOT_ASSIGNED',
+          'This workout belongs to another trainer.',
+        );
+      }
+      if (workout.status !== WorkoutStatus.SCHEDULED) {
+        throw apiError(
+          HttpStatus.CONFLICT,
+          'WORKOUT_NOT_SIMULATABLE',
+          'Only scheduled workouts can be simulated.',
+        );
+      }
+      if (workout.scheduledDate > new Date()) {
+        throw apiError(
+          HttpStatus.CONFLICT,
+          'WORKOUT_NOT_STARTED',
+          'The workout has not reached its scheduled start time.',
+        );
+      }
+      const locked = workout.horse.isMedicalLocked || workout.horse.medicalLocks.length > 0;
+      if (locked && isHeavy(workout.workoutType ?? '', workout.intensity ?? '')) {
+        throw apiError(
+          HttpStatus.CONFLICT,
+          'MEDICAL_LOCK_ACTIVE',
+          'A medical lock prevents this high-intensity workout.',
+        );
+      }
+
+      return tx.simulatorSession.upsert({
+        where: { workoutSessionId: workout.id },
+        update: {},
+        create: {
+          id: randomUUID(),
+          type: SimulatorSessionType.WORKOUT,
+          status: SimulatorSessionStatus.PENDING,
+          workoutSessionId: workout.id,
+          horseIds: [workout.horse.id],
+          actorUserId: actor.userId,
+        },
+      });
+    });
+
+    const baseUrl = this.config
+      .get<string>('SIMULATOR_URL', 'http://localhost:5175')
+      .replace(/\/$/, '');
+    return {
+      sessionId: session.id,
+      status: session.status,
+      launchUrl: `${baseUrl}/?sessionId=${encodeURIComponent(session.id)}`,
+    };
+  }
+
+  async getContext(
+    sessionId: string,
+    actor: CurrentUserPayload,
+  ): Promise<WorkoutSimulationContext> {
+    if (actor.role !== UserRole.HEAD_TRAINER) {
+      throw apiError(
+        HttpStatus.FORBIDDEN,
+        'SIMULATOR_TRAINER_REQUIRED',
+        'Only the assigned head trainer can open this simulation.',
+      );
+    }
+    const session = await this.prisma.simulatorSession.findUnique({
+      where: { id: sessionId },
+      include: {
+        workoutSession: {
+          include: {
+            horse: true,
+            trainingPlan: { select: { trainerUserId: true } },
+          },
+        },
+      },
+    });
+    if (!session) {
+      throw apiError(
+        HttpStatus.NOT_FOUND,
+        'SIMULATOR_SESSION_NOT_FOUND',
+        'Simulation session not found.',
+      );
+    }
+    if (
+      session.actorUserId !== actor.userId ||
+      session.workoutSession?.trainingPlan.trainerUserId !== actor.userId
+    ) {
+      throw apiError(
+        HttpStatus.FORBIDDEN,
+        'SIMULATOR_SESSION_FORBIDDEN',
+        'This simulation session belongs to another trainer.',
+      );
+    }
+    const workout = session.workoutSession;
+    if (!workout) {
+      throw apiError(
+        HttpStatus.CONFLICT,
+        'SIMULATOR_CONTEXT_MISSING',
+        'The simulation session is not linked to a workout.',
+      );
+    }
+
+    return {
+      sessionId: session.id,
+      status: session.status,
+      horse: {
+        id: workout.horse.id,
+        horseCode: workout.horse.horseCode,
+        name: workout.horse.name,
+        microchipRfid: workout.horse.microchipRfid,
+        breed: workout.horse.breed,
+        dob: workout.horse.dob,
+        gender: workout.horse.gender,
+        color: workout.horse.color,
+        status: workout.horse.status,
+        isMedicalLocked: workout.horse.isMedicalLocked,
+      },
+      workout: {
+        id: workout.id,
+        scheduledDate: workout.scheduledDate,
+        workoutType: workout.workoutType,
+        intensity: workout.intensity,
+        distanceMeters: workout.distanceMeters,
+        repetitions: workout.repetitions,
+        targetSpeedKmh: workout.targetSpeedKmh,
+        targetDurationSeconds: workout.targetDurationSeconds,
+        trackSurface: workout.trackSurface,
+      },
+    };
+  }
 
   async recordTelemetry(
     dto: TelemetryTickPacketDto,

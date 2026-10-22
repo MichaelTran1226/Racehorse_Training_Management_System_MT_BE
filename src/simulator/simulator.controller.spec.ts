@@ -2,14 +2,24 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { SimulatorController } from './simulator.controller';
 import { SimulatorService } from './simulator.service';
 import { SimulatorSessionsResponse } from './simulator.types';
+import { Role } from '@prisma/client';
+import { CurrentUserPayload } from '../common/decorators/current-user.decorator';
 
 describe('SimulatorController', () => {
   let controller: SimulatorController;
   let service: any;
+  const actor: CurrentUserPayload = {
+    userId: 'trainer-1',
+    email: 'trainer@gmail.com',
+    role: Role.HEAD_TRAINER,
+    fullName: 'Trainer',
+  };
 
   beforeEach(async () => {
     service = {
       listRecent: jest.fn(),
+      startWorkout: jest.fn(),
+      getContext: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -44,5 +54,29 @@ describe('SimulatorController', () => {
 
     expect(service.listRecent).toHaveBeenCalledWith(50);
     expect(result).toBe(mockResponse);
+  });
+
+  it('starts a workout simulation for the current trainer', async () => {
+    const response = {
+      sessionId: 'session-1',
+      status: 'PENDING',
+      launchUrl: 'http://localhost:5175/?sessionId=session-1',
+    };
+    service.startWorkout.mockResolvedValue(response);
+
+    await expect(controller.startWorkout('workout-1', actor)).resolves.toBe(response);
+    expect(service.startWorkout).toHaveBeenCalledWith('workout-1', actor);
+  });
+
+  it('returns a session context for the current trainer', async () => {
+    const response = {
+      sessionId: 'session-1',
+      horse: { id: 'horse-1' },
+      workout: { id: 'workout-1' },
+    };
+    service.getContext.mockResolvedValue(response);
+
+    await expect(controller.getContext('session-1', actor)).resolves.toBe(response);
+    expect(service.getContext).toHaveBeenCalledWith('session-1', actor);
   });
 });

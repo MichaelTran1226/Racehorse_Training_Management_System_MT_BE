@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { SimulatorService } from './simulator.service';
 import { Role } from '@prisma/client';
@@ -17,6 +18,10 @@ describe('SimulatorService', () => {
 
   beforeEach(async () => {
     prisma = {
+      $transaction: jest.fn(async (callback: (tx: any) => unknown) => callback(prisma)),
+      workoutSession: {
+        findUnique: jest.fn(),
+      },
       simulatorSession: {
         upsert: jest.fn(),
         findMany: jest.fn(),
@@ -34,10 +39,156 @@ describe('SimulatorService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [SimulatorService, { provide: PrismaService, useValue: prisma }],
+      providers: [
+        SimulatorService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: ConfigService, useValue: { get: jest.fn(() => 'http://localhost:5175') } },
+      ],
     }).compile();
 
     service = module.get<SimulatorService>(SimulatorService);
+  });
+
+  const eligibleWorkout = () => ({
+    id: 'workout-1',
+    status: 'SCHEDULED',
+    scheduledDate: new Date(Date.now() - 60_000),
+    workoutType: 'TRIAL',
+    intensity: 'MODERATE',
+    distanceMeters: 1200,
+    repetitions: 1,
+    targetSpeedKmh: 45,
+    targetDurationSeconds: 100,
+    trackSurface: 'TURF',
+    simulatorSession: null,
+    trainingPlan: { id: 'plan-1', trainerUserId: mockActor.userId },
+    horse: {
+      id: 'horse-uuid-1',
+      horseCode: 'NG-000001',
+      name: 'Thunder',
+      microchipRfid: '985141000000001',
+      breed: 'Thoroughbred',
+      dob: new Date('2020-01-01'),
+      gender: 'MALE',
+      color: 'Bay',
+      status: 'IN_TRAINING',
+      isMedicalLocked: false,
+      medicalLocks: [],
+    },
+  });
+
+  describe('backend-issued workout sessions', () => {
+    it('creates one pending session and returns a simulator launch URL', async () => {
+      const workout = eligibleWorkout();
+      prisma.workoutSession.findUnique.mockResolvedValue(workout);
+      prisma.simulatorSession.upsert.mockResolvedValue({
+        id: 'server-session-1',
+        status: 'PENDING',
+        workoutSessionId: workout.id,
+      });
+
+      const result = await service.startWorkout(workout.id, mockActor);
+
+      expect(result).toEqual({
+        sessionId: 'server-session-1',
+        status: 'PENDING',
+        launchUrl: 'http://localhost:5175/?sessionId=server-session-1',
+      });
+      expect(prisma.simulatorSession.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { workoutSessionId: workout.id },
+          create: expect.objectContaining({
+            id: expect.any(String),
+            workoutSessionId: workout.id,
+            actorUserId: mockActor.userId,
+            horseIds: [workout.horse.id],
+            status: 'PENDING',
+          }),
+        }),
+      );
+    });
+
+    it('returns the same session when start is retried', async () => {
+      const workout = eligibleWorkout();
+      prisma.workoutSession.findUnique.mockResolvedValue(workout);
+      prisma.simulatorSession.upsert.mockResolvedValue({
+        id: 'server-session-1',
+        status: 'PENDING',
+        workoutSessionId: workout.id,
+      });
+
+      const first = await service.startWorkout(workout.id, mockActor);
+      const retried = await service.startWorkout(workout.id, mockActor);
+
+      expect(retried.sessionId).toBe(first.sessionId);
+      expect(prisma.simulatorSession.upsert).toHaveBeenCalledTimes(2);
+    });
+
+    it.each([
+      ['missing workout', null, mockActor, 'WORKOUT_NOT_FOUND'],
+      [
+        'wrong role',
+        eligibleWorkout(),
+        { ...mockActor, role: Role.VETERINARIAN },
+        'SIMULATOR_TRAINER_REQUIRED',
+      ],
+      [
+        'another trainer workout',
+        { ...eligibleWorkout(), trainingPlan: { id: 'plan-1', trainerUserId: 'trainer-2' } },
+        mockActor,
+        'WORKOUT_NOT_ASSIGNED',
+      ],
+      [
+        'future workout',
+        { ...eligibleWorkout(), scheduledDate: new Date(Date.now() + 60_000) },
+        mockActor,
+        'WORKOUT_NOT_STARTED',
+      ],
+      [
+        'completed workout',
+        { ...eligibleWorkout(), status: 'COMPLETED' },
+        mockActor,
+        'WORKOUT_NOT_SIMULATABLE',
+      ],
+      [
+        'medical lock on heavy workout',
+        {
+          ...eligibleWorkout(),
+          intensity: 'HIGH',
+          horse: { ...eligibleWorkout().horse, isMedicalLocked: true },
+        },
+        mockActor,
+        'MEDICAL_LOCK_ACTIVE',
+      ],
+    ])('rejects %s with a stable code', async (_name, workout, actor, code) => {
+      prisma.workoutSession.findUnique.mockResolvedValue(workout);
+
+      await expect(
+        service.startWorkout('workout-1', actor as CurrentUserPayload),
+      ).rejects.toMatchObject({
+        response: expect.objectContaining({ code }),
+      });
+      expect(prisma.simulatorSession.upsert).not.toHaveBeenCalled();
+    });
+
+    it('returns only the assigned horse and workout context', async () => {
+      const workout = eligibleWorkout();
+      prisma.simulatorSession.findUnique.mockResolvedValue({
+        id: 'server-session-1',
+        status: 'PENDING',
+        actorUserId: mockActor.userId,
+        workoutSessionId: workout.id,
+        workoutSession: workout,
+      });
+
+      const result = await service.getContext('server-session-1', mockActor);
+
+      expect(result.sessionId).toBe('server-session-1');
+      expect(result.horse.id).toBe(workout.horse.id);
+      expect(result.workout).toEqual(
+        expect.objectContaining({ id: workout.id, distanceMeters: 1200, trackSurface: 'TURF' }),
+      );
+    });
   });
 
   it('records one active snapshot without a telemetry DB row', async () => {
