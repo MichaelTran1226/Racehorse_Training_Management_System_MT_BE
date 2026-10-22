@@ -221,7 +221,11 @@ describe('SimulatorService', () => {
         stride_freq_spm: 130,
         calories_kcal: 25.4,
       },
-      alerts: [],
+      alerts: {
+        overload_warning: false,
+        limp_detected: false,
+        heat_stress: false,
+      },
     };
 
     const snapshot = await service.recordTelemetry(telemetryTick, mockActor);

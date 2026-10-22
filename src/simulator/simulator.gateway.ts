@@ -8,7 +8,9 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { Logger, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
+import { plainToInstance, type ClassConstructor } from 'class-transformer';
+import { validate } from 'class-validator';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { Role } from '@prisma/client';
@@ -28,6 +30,20 @@ import { SimulatorAck } from './simulator.types';
 const ALLOWED_SUBSCRIBERS: Role[] = [Role.CLUB_MANAGER, Role.HEAD_TRAINER, Role.VETERINARIAN];
 
 const ALLOWED_PUBLISHERS: Role[] = [Role.CLUB_MANAGER, Role.HEAD_TRAINER];
+
+async function validatePacket<T extends object>(
+  type: ClassConstructor<T>,
+  packet: unknown,
+): Promise<T> {
+  try {
+    const value = plainToInstance(type, packet);
+    const errors = await validate(value, { whitelist: true, forbidNonWhitelisted: true });
+    if (errors.length > 0) throw new Error();
+    return value;
+  } catch {
+    throw new Error('INVALID_SIMULATOR_PACKET');
+  }
+}
 
 @WebSocketGateway({
   namespace: '/simulator',
@@ -123,15 +139,15 @@ export class SimulatorGateway implements OnGatewayInit, OnGatewayConnection, OnG
   }
 
   @SubscribeMessage('sim:telemetry_tick')
-  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))
   async handleTelemetryTick(
     @ConnectedSocket() client: Socket,
     @MessageBody() packet: TelemetryTickPacketDto,
   ): Promise<SimulatorAck> {
     try {
       const user = this.requirePublisher(client);
-      await this.simulatorService.recordTelemetry(packet, user);
-      this.server.emit('sim:telemetry_tick', packet);
+      const validPacket = await validatePacket(TelemetryTickPacketDto, packet);
+      await this.simulatorService.recordTelemetry(validPacket, user);
+      this.server.emit('sim:telemetry_tick', validPacket);
       return { accepted: true };
     } catch (err: any) {
       return { accepted: false, code: err.message };
@@ -139,15 +155,15 @@ export class SimulatorGateway implements OnGatewayInit, OnGatewayConnection, OnG
   }
 
   @SubscribeMessage('sim:race_progress')
-  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))
   async handleRaceProgress(
     @ConnectedSocket() client: Socket,
     @MessageBody() packet: RaceProgressPacketDto,
   ): Promise<SimulatorAck> {
     try {
       const user = this.requirePublisher(client);
-      await this.simulatorService.recordRaceProgress(packet, user);
-      this.server.emit('sim:race_progress', packet);
+      const validPacket = await validatePacket(RaceProgressPacketDto, packet);
+      await this.simulatorService.recordRaceProgress(validPacket, user);
+      this.server.emit('sim:race_progress', validPacket);
       return { accepted: true };
     } catch (err: any) {
       return { accepted: false, code: err.message };
@@ -155,22 +171,22 @@ export class SimulatorGateway implements OnGatewayInit, OnGatewayConnection, OnG
   }
 
   @SubscribeMessage('sim:incident_report')
-  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))
   async handleIncidentReport(
     @ConnectedSocket() client: Socket,
     @MessageBody() packet: IncidentReportPacketDto,
   ): Promise<SimulatorAck> {
     try {
       const user = this.requirePublisher(client);
+      const validPacket = await validatePacket(IncidentReportPacketDto, packet);
       const incident = await this.incidentsService.createFromSimulator(
-        packet.packet_id,
-        packet,
+        validPacket.packet_id,
+        validPacket,
         user,
       );
 
       // Fan out persisted incident to all connected monitors
       this.server.emit('sim:incident_report', {
-        ...packet,
+        ...validPacket,
         incident_id: incident.id,
         incident_number: incident.incidentNumber,
       });
@@ -182,17 +198,17 @@ export class SimulatorGateway implements OnGatewayInit, OnGatewayConnection, OnG
   }
 
   @SubscribeMessage('sim:session_finished')
-  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))
   async handleSessionFinished(
     @ConnectedSocket() client: Socket,
     @MessageBody() packet: SessionFinishedPacketDto,
   ): Promise<SimulatorAck> {
     try {
       const user = this.requirePublisher(client);
-      const session = await this.simulatorService.recordFinished(packet, user);
+      const validPacket = await validatePacket(SessionFinishedPacketDto, packet);
+      const session = await this.simulatorService.recordFinished(validPacket, user);
 
       this.server.emit('sim:session_finished', {
-        ...packet,
+        ...validPacket,
         session_id: session.id,
         status: session.status,
       });
