@@ -415,16 +415,22 @@ export class SimulatorService {
     return session;
   }
 
-  async listRecent(limit = 20): Promise<SimulatorSessionsResponse> {
+  async listRecent(
+    limit = 20,
+    status?: SimulatorSessionStatus,
+  ): Promise<SimulatorSessionsResponse> {
     const clampedLimit = Math.max(1, Math.min(100, Math.floor(limit) || 20));
 
     const recent = await this.prisma.simulatorSession.findMany({
+      ...(status ? { where: { status } } : {}),
       take: clampedLimit,
       orderBy: { updatedAt: 'desc' },
     });
 
     return {
-      active: Array.from(this.active.values()),
+      active: Array.from(this.active.values()).filter(
+        (session) => !status || session.status === status,
+      ),
       recent,
     };
   }

@@ -39,7 +39,7 @@ describe('SimulatorController', () => {
 
     const result = await controller.getSessions();
 
-    expect(service.listRecent).toHaveBeenCalledWith(20);
+    expect(service.listRecent).toHaveBeenCalledWith(20, undefined);
     expect(result).toBe(mockResponse);
   });
 
@@ -52,8 +52,16 @@ describe('SimulatorController', () => {
 
     const result = await controller.getSessions('50');
 
-    expect(service.listRecent).toHaveBeenCalledWith(50);
+    expect(service.listRecent).toHaveBeenCalledWith(50, undefined);
     expect(result).toBe(mockResponse);
+  });
+
+  it('filters sessions by RUNNING status for live monitoring', async () => {
+    service.listRecent.mockResolvedValue({ active: [], recent: [] });
+
+    await controller.getSessions('20', 'RUNNING');
+
+    expect(service.listRecent).toHaveBeenCalledWith(20, 'RUNNING');
   });
 
   it('starts a workout simulation for the current trainer', async () => {

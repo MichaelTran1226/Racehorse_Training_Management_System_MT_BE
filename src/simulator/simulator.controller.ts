@@ -1,10 +1,11 @@
-import { Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Controller, Get, Param, ParseEnumPipe, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '../common/enums/role.enum';
 import { SimulatorService } from './simulator.service';
 import { SimulatorSessionsResponse } from './simulator.types';
 import { CurrentUser, CurrentUserPayload } from '../common/decorators/current-user.decorator';
+import { SimulatorSessionStatus } from '@prisma/client';
 
 @ApiTags('Simulator Realtime & Sessions')
 @ApiBearerAuth('JWT-auth')
@@ -35,8 +36,13 @@ export class SimulatorController {
     type: Number,
     description: 'Giới hạn số phiên gần nhất (1..100)',
   })
-  async getSessions(@Query('limit') limit?: string): Promise<SimulatorSessionsResponse> {
+  @ApiQuery({ name: 'status', required: false, enum: SimulatorSessionStatus })
+  async getSessions(
+    @Query('limit') limit?: string,
+    @Query('status', new ParseEnumPipe(SimulatorSessionStatus, { optional: true }))
+    status?: SimulatorSessionStatus,
+  ): Promise<SimulatorSessionsResponse> {
     const parsedLimit = limit ? parseInt(limit, 10) : 20;
-    return this.simulatorService.listRecent(parsedLimit);
+    return this.simulatorService.listRecent(parsedLimit, status);
   }
 }

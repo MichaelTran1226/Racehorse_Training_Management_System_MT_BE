@@ -391,4 +391,16 @@ describe('SimulatorService', () => {
       orderBy: { updatedAt: 'desc' },
     });
   });
+
+  it('queries only running sessions for live monitoring', async () => {
+    prisma.simulatorSession.findMany.mockResolvedValue([]);
+
+    await service.listRecent(20, 'RUNNING');
+
+    expect(prisma.simulatorSession.findMany).toHaveBeenCalledWith({
+      where: { status: 'RUNNING' },
+      take: 20,
+      orderBy: { updatedAt: 'desc' },
+    });
+  });
 });
