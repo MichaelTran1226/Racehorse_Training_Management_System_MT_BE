@@ -309,7 +309,7 @@ describe('SimulatorService', () => {
     expect(prisma.simulatorSession.update).not.toHaveBeenCalled();
   });
 
-  it('finishes an issued session once and rejects a retry', async () => {
+  it('finishes an issued session idempotently', async () => {
     const finishedWorkout = {
       event: 'sim:session_finished' as const,
       session_id: 'server-session-1',
@@ -347,9 +347,9 @@ describe('SimulatorService', () => {
     prisma.simulatorSession.update.mockResolvedValue(completedSession);
 
     await service.recordFinished(finishedWorkout, mockActor);
-    await expect(service.recordFinished(finishedWorkout, mockActor)).rejects.toMatchObject({
-      response: expect.objectContaining({ code: 'SIMULATOR_SESSION_FINISHED' }),
-    });
+    await expect(service.recordFinished(finishedWorkout, mockActor)).resolves.toBe(
+      completedSession,
+    );
 
     expect(prisma.simulatorSession.update).toHaveBeenCalledTimes(1);
     expect(prisma.simulatorSession.update).toHaveBeenCalledWith(
@@ -360,6 +360,40 @@ describe('SimulatorService', () => {
     // Neither call touches medical locks or records
     expect(prisma.medicalLock.create).not.toHaveBeenCalled();
     expect(prisma.medicalRecord.create).not.toHaveBeenCalled();
+  });
+
+  it('maps the latest simulator result into a trainer draft', async () => {
+    prisma.workoutSession.findUnique.mockResolvedValue({
+      id: 'workout-1',
+      trainingPlan: { trainerUserId: mockActor.userId },
+      simulatorSession: {
+        id: 'server-session-1',
+        status: 'ABORTED_INJURY',
+        result: {
+          durationS: 72.4,
+          distanceCompletedM: 1187,
+          peakHr: 195,
+          hrRecovery10m: 86,
+          topSpeedKmh: 65.5,
+          surface: 'GRASS',
+          condition: 'WET',
+        },
+      },
+    });
+
+    await expect(service.getLatestWorkoutResult('workout-1', mockActor)).resolves.toEqual({
+      sessionId: 'server-session-1',
+      status: 'ABORTED_INJURY',
+      resultDraft: {
+        actualTimeSeconds: 72.4,
+        actualDistanceMeters: 1187,
+        heartRatePeak: 195,
+        heartRateRecovery: 86,
+        topSpeedKmh: 65.5,
+        actualSurface: 'TURF',
+        trackCondition: 'SOFT',
+      },
+    });
   });
 
   it('lists newest persisted sessions with active memory snapshots', async () => {

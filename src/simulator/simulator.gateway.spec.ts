@@ -142,6 +142,38 @@ describe('SimulatorGateway', () => {
       expect(mockTrainerClient.data.user).toBeDefined();
       expect(mockTrainerClient.data.user.role).toBe(Role.HEAD_TRAINER);
     });
+
+    it('waits for asynchronous authentication before handling the first packet', async () => {
+      let resolveProfile!: (profile: any) => void;
+      const mockClient: any = {
+        handshake: { auth: { token: 'trainer-token' } },
+        disconnect: jest.fn(),
+        data: {},
+      };
+      jwtService.verify.mockReturnValue({ sub: 'trainer-1' });
+      authService.getMe.mockReturnValue(new Promise((resolve) => (resolveProfile = resolve)));
+      simulatorService.recordFinished.mockResolvedValue({ id: 'session-1', status: 'COMPLETED' });
+
+      const connection = gateway.handleConnection(mockClient);
+      const firstPacket = gateway.handleSessionFinished(mockClient, {
+        event: 'sim:session_finished',
+        session_id: 'session-1',
+        type: 'WORKOUT',
+        status: 'COMPLETED',
+        horse: { horse_id: 'horse-1' },
+        result: {},
+      });
+      resolveProfile({
+        id: 'trainer-1',
+        email: 'trainer@equiflow.com',
+        role: Role.HEAD_TRAINER,
+        status: 'ACTIVE',
+        fullName: 'Trainer Minh',
+      });
+
+      await connection;
+      await expect(firstPacket).resolves.toEqual({ accepted: true, id: 'session-1' });
+    });
   });
 
   describe('telemetry and incident relay', () => {

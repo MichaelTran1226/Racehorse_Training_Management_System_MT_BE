@@ -93,41 +93,47 @@ export class SimulatorGateway implements OnGatewayInit, OnGatewayConnection, OnG
         return;
       }
 
-      const profile = await this.authService.getMe(payload.sub);
-      if (!profile || profile.status !== 'ACTIVE') {
-        this.logger.warn(`Rejected connection [${client.id}]: user ${payload.sub} not active`);
-        client.disconnect(true);
-        return;
-      }
-
-      if (!ALLOWED_SUBSCRIBERS.includes(profile.role as Role)) {
-        this.logger.warn(
-          `Rejected connection [${client.id}]: role ${profile.role} is not permitted in /simulator`,
-        );
-        client.disconnect(true);
-        return;
-      }
-
-      const user: CurrentUserPayload = {
-        userId: profile.id,
-        email: profile.email,
-        role: profile.role,
-        fullName: profile.fullName,
-      };
-
-      client.data.user = user;
-      this.logger.log(`Client connected [${client.id}] user=${user.email} role=${user.role}`);
+      client.data.authReady = this.authenticateClient(client, payload.sub);
+      await client.data.authReady;
     } catch (err: any) {
       this.logger.error(`Error in handleConnection [${client.id}]: ${err.message}`);
       client.disconnect(true);
     }
   }
 
+  private async authenticateClient(client: Socket, userId: string): Promise<void> {
+    const profile = await this.authService.getMe(userId);
+    if (!profile || profile.status !== 'ACTIVE') {
+      this.logger.warn(`Rejected connection [${client.id}]: user ${userId} not active`);
+      client.disconnect(true);
+      return;
+    }
+
+    if (!ALLOWED_SUBSCRIBERS.includes(profile.role as Role)) {
+      this.logger.warn(
+        `Rejected connection [${client.id}]: role ${profile.role} is not permitted in /simulator`,
+      );
+      client.disconnect(true);
+      return;
+    }
+
+    const user: CurrentUserPayload = {
+      userId: profile.id,
+      email: profile.email,
+      role: profile.role,
+      fullName: profile.fullName,
+    };
+
+    client.data.user = user;
+    this.logger.log(`Client connected [${client.id}] user=${user.email} role=${user.role}`);
+  }
+
   handleDisconnect(client: Socket) {
     this.logger.log(`Client disconnected [${client.id}]`);
   }
 
-  private requirePublisher(client: Socket): CurrentUserPayload {
+  private async requirePublisher(client: Socket): Promise<CurrentUserPayload> {
+    await client.data?.authReady;
     const user: CurrentUserPayload | undefined = client.data?.user;
     if (!user) {
       throw new Error('UNAUTHENTICATED');
@@ -144,7 +150,7 @@ export class SimulatorGateway implements OnGatewayInit, OnGatewayConnection, OnG
     @MessageBody() packet: TelemetryTickPacketDto,
   ): Promise<SimulatorAck> {
     try {
-      const user = this.requirePublisher(client);
+      const user = await this.requirePublisher(client);
       const validPacket = await validatePacket(TelemetryTickPacketDto, packet);
       await this.simulatorService.recordTelemetry(validPacket, user);
       this.server.emit('sim:telemetry_tick', validPacket);
@@ -160,7 +166,7 @@ export class SimulatorGateway implements OnGatewayInit, OnGatewayConnection, OnG
     @MessageBody() packet: RaceProgressPacketDto,
   ): Promise<SimulatorAck> {
     try {
-      const user = this.requirePublisher(client);
+      const user = await this.requirePublisher(client);
       const validPacket = await validatePacket(RaceProgressPacketDto, packet);
       await this.simulatorService.recordRaceProgress(validPacket, user);
       this.server.emit('sim:race_progress', validPacket);
@@ -176,7 +182,7 @@ export class SimulatorGateway implements OnGatewayInit, OnGatewayConnection, OnG
     @MessageBody() packet: IncidentReportPacketDto,
   ): Promise<SimulatorAck> {
     try {
-      const user = this.requirePublisher(client);
+      const user = await this.requirePublisher(client);
       const validPacket = await validatePacket(IncidentReportPacketDto, packet);
       const incident = await this.incidentsService.createFromSimulator(
         validPacket.packet_id,
@@ -203,7 +209,7 @@ export class SimulatorGateway implements OnGatewayInit, OnGatewayConnection, OnG
     @MessageBody() packet: SessionFinishedPacketDto,
   ): Promise<SimulatorAck> {
     try {
-      const user = this.requirePublisher(client);
+      const user = await this.requirePublisher(client);
       const validPacket = await validatePacket(SessionFinishedPacketDto, packet);
       const session = await this.simulatorService.recordFinished(validPacket, user);
 

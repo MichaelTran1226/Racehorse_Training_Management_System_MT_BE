@@ -20,6 +20,7 @@ describe('SimulatorController', () => {
       listRecent: jest.fn(),
       startWorkout: jest.fn(),
       getContext: jest.fn(),
+      getLatestWorkoutResult: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -86,5 +87,13 @@ describe('SimulatorController', () => {
 
     await expect(controller.getContext('session-1', actor)).resolves.toBe(response);
     expect(service.getContext).toHaveBeenCalledWith('session-1', actor);
+  });
+
+  it('returns the latest simulator draft for a workout', async () => {
+    const response = { sessionId: 'session-1', status: 'COMPLETED', resultDraft: {} };
+    service.getLatestWorkoutResult.mockResolvedValue(response);
+
+    await expect(controller.getLatestWorkoutResult('workout-1', actor)).resolves.toBe(response);
+    expect(service.getLatestWorkoutResult).toHaveBeenCalledWith('workout-1', actor);
   });
 });

@@ -25,6 +25,20 @@ export interface WorkoutSimulationStartResponse {
   launchUrl: string;
 }
 
+export interface WorkoutSimulationResultResponse {
+  sessionId: string;
+  status: SimulatorSessionStatus;
+  resultDraft: {
+    actualTimeSeconds?: number;
+    actualDistanceMeters?: number;
+    heartRatePeak?: number;
+    heartRateRecovery?: number;
+    topSpeedKmh?: number;
+    actualSurface?: 'TURF' | 'DIRT' | 'SYNTHETIC';
+    trackCondition?: 'GOOD' | 'SOFT' | 'HEAVY';
+  } | null;
+}
+
 export interface WorkoutSimulationContext {
   sessionId: string;
   status: SimulatorSessionStatus;

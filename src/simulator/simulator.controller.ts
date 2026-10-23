@@ -20,6 +20,16 @@ export class SimulatorController {
     return this.simulatorService.startWorkout(workoutId, actor);
   }
 
+  @Get('workouts/:workoutId/latest')
+  @Roles(UserRole.HEAD_TRAINER)
+  @ApiOperation({ summary: 'Lấy số đo mô phỏng gần nhất để trainer duyệt kết quả' })
+  getLatestWorkoutResult(
+    @Param('workoutId') workoutId: string,
+    @CurrentUser() actor: CurrentUserPayload,
+  ) {
+    return this.simulatorService.getLatestWorkoutResult(workoutId, actor);
+  }
+
   @Get('sessions/:sessionId/context')
   @Roles(UserRole.HEAD_TRAINER)
   @ApiOperation({ summary: 'Lấy ngựa và cấu hình workout của phiên mô phỏng' })

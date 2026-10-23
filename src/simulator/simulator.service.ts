@@ -12,6 +12,7 @@ import {
   LiveSimulatorSession,
   SimulatorSessionsResponse,
   WorkoutSimulationContext,
+  WorkoutSimulationResultResponse,
   WorkoutSimulationStartResponse,
 } from './simulator.types';
 import {
@@ -303,15 +304,30 @@ export class SimulatorService {
       dto.type === 'WORKOUT' && dto.horse?.horse_id
         ? [dto.horse.horse_id]
         : dto.results?.map((r) => r.horse_id) || [];
-    await this.requireIssuedSession(
+    const issued = await this.requireIssuedSession(
       dto.session_id,
       dto.type === 'RACE' ? SimulatorSessionType.RACE : SimulatorSessionType.WORKOUT,
       horseIds,
       actor,
+      true,
     );
 
+    if (
+      issued.status === SimulatorSessionStatus.COMPLETED ||
+      issued.status === SimulatorSessionStatus.ABORTED_INJURY
+    ) {
+      this.active.delete(dto.session_id);
+      return issued;
+    }
+
     const finishedAt = new Date();
-    const resultPayload = dto.result ?? dto.results ?? null;
+    const resultPayload =
+      dto.type === 'WORKOUT'
+        ? {
+            ...(typeof dto.result === 'object' && dto.result ? dto.result : {}),
+            surface: dto.surface,
+          }
+        : (dto.results ?? null);
 
     const session = await this.prisma.simulatorSession.update({
       where: { id: dto.session_id },
@@ -332,6 +348,7 @@ export class SimulatorService {
     type: SimulatorSessionType,
     horseIds: string[],
     actor: CurrentUserPayload,
+    allowFinished = false,
   ) {
     const session = await this.prisma.simulatorSession.findUnique({
       where: { id: sessionId },
@@ -355,16 +372,6 @@ export class SimulatorService {
         HttpStatus.NOT_FOUND,
         'SIMULATOR_SESSION_NOT_FOUND',
         'Simulation session not found.',
-      );
-    }
-    if (
-      session.status === SimulatorSessionStatus.COMPLETED ||
-      session.status === SimulatorSessionStatus.ABORTED_INJURY
-    ) {
-      throw apiError(
-        HttpStatus.CONFLICT,
-        'SIMULATOR_SESSION_FINISHED',
-        'Simulation session has already finished.',
       );
     }
     if (session.actorUserId !== actor.userId) {
@@ -412,7 +419,86 @@ export class SimulatorService {
         );
       }
     }
+    if (
+      !allowFinished &&
+      (session.status === SimulatorSessionStatus.COMPLETED ||
+        session.status === SimulatorSessionStatus.ABORTED_INJURY)
+    ) {
+      throw apiError(
+        HttpStatus.CONFLICT,
+        'SIMULATOR_SESSION_FINISHED',
+        'Simulation session has already finished.',
+      );
+    }
     return session;
+  }
+
+  async getLatestWorkoutResult(
+    workoutId: string,
+    actor: CurrentUserPayload,
+  ): Promise<WorkoutSimulationResultResponse> {
+    if (actor.role !== UserRole.HEAD_TRAINER) {
+      throw apiError(
+        HttpStatus.FORBIDDEN,
+        'SIMULATOR_TRAINER_REQUIRED',
+        'Only the assigned head trainer can review this simulation.',
+      );
+    }
+    const workout = await this.prisma.workoutSession.findUnique({
+      where: { id: workoutId },
+      include: {
+        trainingPlan: { select: { trainerUserId: true } },
+        simulatorSession: { select: { id: true, status: true, result: true } },
+      },
+    });
+    if (!workout) {
+      throw apiError(HttpStatus.NOT_FOUND, 'WORKOUT_NOT_FOUND', 'Workout session not found.');
+    }
+    if (workout.trainingPlan.trainerUserId !== actor.userId) {
+      throw apiError(
+        HttpStatus.FORBIDDEN,
+        'WORKOUT_NOT_ASSIGNED',
+        'This workout belongs to another trainer.',
+      );
+    }
+    const session = workout.simulatorSession;
+    if (!session) {
+      throw apiError(
+        HttpStatus.NOT_FOUND,
+        'SIMULATOR_RESULT_NOT_FOUND',
+        'No simulation result exists for this workout.',
+      );
+    }
+
+    return {
+      sessionId: session.id,
+      status: session.status,
+      resultDraft: session.result ? this.toWorkoutResultDraft(session.result) : null,
+    };
+  }
+
+  private toWorkoutResultDraft(
+    result: unknown,
+  ): NonNullable<WorkoutSimulationResultResponse['resultDraft']> {
+    const value =
+      typeof result === 'object' && result !== null && !Array.isArray(result)
+        ? (result as Record<string, unknown>)
+        : {};
+    const number = (key: string) =>
+      typeof value[key] === 'number' && Number.isFinite(value[key])
+        ? (value[key] as number)
+        : undefined;
+    const surfaces = { GRASS: 'TURF', SAND: 'DIRT', MIXED: 'SYNTHETIC' } as const;
+    const conditions = { GOOD: 'GOOD', WET: 'SOFT', HEAVY: 'HEAVY' } as const;
+    return {
+      actualTimeSeconds: number('durationS'),
+      actualDistanceMeters: number('distanceCompletedM'),
+      heartRatePeak: number('peakHr'),
+      heartRateRecovery: number('hrRecovery10m'),
+      topSpeedKmh: number('topSpeedKmh'),
+      actualSurface: surfaces[value.surface as keyof typeof surfaces],
+      trackCondition: conditions[value.condition as keyof typeof conditions],
+    };
   }
 
   async listRecent(
