@@ -8,7 +8,7 @@ import {
   Min,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
-import { SupplyCategory, RestockStatus } from '@prisma/client';
+import { RestockStatus } from '@prisma/client';
 
 export class QueryInventoryDto {
   @IsOptional()
@@ -16,8 +16,8 @@ export class QueryInventoryDto {
   zoneId?: string;
 
   @IsOptional()
-  @IsEnum(SupplyCategory)
-  category?: SupplyCategory;
+  @IsString()
+  category?: string;
 
   @IsOptional()
   @IsString()

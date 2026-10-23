@@ -52,11 +52,21 @@ export class NutritionService {
       throw apiError(HttpStatus.NOT_FOUND, 'HORSE_NOT_FOUND', 'Ngựa không tồn tại.');
     }
 
-    const horseWeightKg = horse.medicalRecords[0]?.weightKg ?? 500;
+    const horseWeightKg = horse.weightKg ?? horse.medicalRecords[0]?.weightKg ?? 500;
 
     let totalKg = 0;
     for (const meal of meals || []) {
       for (const item of meal.items || []) {
+        const cat = (item.category || '').toUpperCase();
+        const isFeedOrSupp = cat.startsWith('FEED') || cat.startsWith('SUPPLEMENT');
+        if (!isFeedOrSupp) {
+          throw apiError(
+            HttpStatus.BAD_REQUEST,
+            'INVALID_MEAL_ITEM_CATEGORY',
+            `Vật tư "${item.supplyName || 'Đã chọn'}" thuộc nhóm ${item.category} không được phép đưa vào khẩu phần ăn. Khẩu phần ăn chỉ chấp nhận Thức ăn (Cỏ, Cám) và Thực phẩm bổ sung dinh dưỡng.`,
+          );
+        }
+
         const u = (item.unit || '').toUpperCase();
         if (u === 'KG') {
           totalKg += Number(item.amount);
@@ -169,6 +179,7 @@ export class NutritionService {
               avatarUrl: true,
               status: true,
               isMedicalLocked: true,
+              weightKg: true,
               stallAllocations: {
                 where: { isActive: true },
                 take: 1,
@@ -201,7 +212,10 @@ export class NutritionService {
     return {
       items: items.map((item) => {
         const horseWeight =
-          item.horseWeightSnapshot ?? item.horse?.medicalRecords[0]?.weightKg ?? 500;
+          item.horseWeightSnapshot ??
+          item.horse?.weightKg ??
+          item.horse?.medicalRecords[0]?.weightKg ??
+          500;
         const currentZone = item.horse?.stallAllocations[0]?.stall?.zoneRef ?? null;
         const currentStallCode = item.horse?.stallAllocations[0]?.stall?.code ?? null;
         return {
@@ -267,7 +281,11 @@ export class NutritionService {
       }
     }
 
-    const horseWeight = item.horseWeightSnapshot ?? item.horse?.medicalRecords[0]?.weightKg ?? 500;
+    const horseWeight =
+      item.horseWeightSnapshot ??
+      item.horse?.weightKg ??
+      item.horse?.medicalRecords[0]?.weightKg ??
+      500;
 
     return {
       ...item,

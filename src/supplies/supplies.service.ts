@@ -1,5 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, SupplyCategory } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { apiError } from '../common/exceptions/api-error';
@@ -25,7 +25,37 @@ export class SuppliesService {
    */
   async findAll(query: QuerySupplyCatalogDto, currentUser?: CurrentUserPayload) {
     const where: Prisma.SupplyCatalogWhereInput = {};
-    if (query.category) where.category = query.category;
+    if (query.category) {
+      const cat = query.category.toUpperCase().trim();
+      if (cat === 'FEED') {
+        where.category = { in: [SupplyCategory.FEED_HAY, SupplyCategory.FEED_GRAIN] };
+      } else if (cat === 'MEDICINE') {
+        where.category = {
+          in: [
+            SupplyCategory.MEDICINE,
+            SupplyCategory.VACCINE,
+            SupplyCategory.DEWORMER,
+            SupplyCategory.SUPPLEMENT_VITAMIN,
+            SupplyCategory.SUPPLEMENT_MINERAL,
+            SupplyCategory.SUPPLEMENT_ELECTROLYTE,
+            SupplyCategory.SUPPLEMENT_GENERAL,
+          ],
+        };
+      } else if (cat === 'CARE') {
+        where.category = {
+          in: [
+            SupplyCategory.SUPPLEMENT_VITAMIN,
+            SupplyCategory.SUPPLEMENT_MINERAL,
+            SupplyCategory.SUPPLEMENT_ELECTROLYTE,
+            SupplyCategory.SUPPLEMENT_GENERAL,
+          ],
+        };
+      } else if (cat === 'EQUIPMENT') {
+        where.category = { in: [SupplyCategory.TOOL_EQUIPMENT, SupplyCategory.CLEANING_SUPPLY] };
+      } else if (Object.values(SupplyCategory).includes(cat as SupplyCategory)) {
+        where.category = cat as SupplyCategory;
+      }
+    }
     if (query.status === 'ACTIVE') where.isActive = true;
     if (query.status === 'INACTIVE') where.isActive = false;
 

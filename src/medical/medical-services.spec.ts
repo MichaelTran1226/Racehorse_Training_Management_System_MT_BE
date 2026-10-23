@@ -62,6 +62,7 @@ describe('Medical services', () => {
       create: jest.fn(),
       findMany: jest.fn(),
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
       update: jest.fn(),
     },
     preventiveSchedule: {
@@ -625,6 +626,37 @@ describe('Medical services', () => {
       expect(mockPrismaService.preventiveSchedule.update).toHaveBeenCalled();
     });
 
+    it('should complete preventive care by scheduleId', async () => {
+      mockPrismaService.preventiveSchedule.findUnique.mockResolvedValue({
+        id: 'sched-1',
+        horseId: 'horse-1',
+        typeCatalogId: 'cat-1',
+        scheduleType: 'VACCINATION',
+        productAdministered: 'Equine Influenza Vaccine',
+        historyLogs: [],
+      });
+      mockPrismaService.preventiveTypeCatalog.findUnique.mockResolvedValue({
+        id: 'cat-1',
+        name: 'Tiêm cúm',
+        category: 'VACCINATION',
+        intervalDays: 180,
+      });
+      mockPrismaService.preventiveSchedule.update.mockResolvedValue({
+        id: 'sched-1',
+        status: 'COMPLETED',
+      });
+
+      const res = await preventive.recordPreventiveCare(mockVetUser, {
+        scheduleId: 'sched-1',
+        performedDate: new Date().toISOString(),
+        productAdministered: 'Equine Influenza Vaccine',
+        batchNumber: 'BATCH-2026-01',
+      });
+
+      expect(res.count).toBe(1);
+      expect(mockPrismaService.preventiveSchedule.update).toHaveBeenCalled();
+    });
+
     it('should setup custom preventive schedule for a horse', async () => {
       mockPrismaService.horse.findUnique.mockResolvedValue({ id: 'horse-1', name: 'Thunder' });
       mockPrismaService.preventiveTypeCatalog.findUnique.mockResolvedValue({
@@ -653,6 +685,33 @@ describe('Medical services', () => {
       });
 
       expect(res.message).toBe('Đã thiết lập lịch chăm sóc định kỳ cho chiến mã thành công');
+      expect(mockPrismaService.preventiveSchedule.create).toHaveBeenCalled();
+    });
+
+    it('should create a single preventive care schedule for a horse', async () => {
+      mockPrismaService.horse.findUnique.mockResolvedValue({ id: 'horse-1', name: 'Thunder' });
+      mockPrismaService.preventiveTypeCatalog.findFirst.mockResolvedValue({
+        id: 'cat-1',
+        name: 'Tiêm phòng uốn ván',
+        category: 'VACCINATION',
+      });
+      mockPrismaService.preventiveSchedule.create.mockResolvedValue({
+        id: 'sched-1',
+        horseId: 'horse-1',
+        typeCatalogId: 'cat-1',
+        dueDate: new Date(),
+        status: 'PENDING',
+      });
+
+      const res = await preventive.createPreventiveSchedule(mockVetUser, {
+        horseId: 'horse-1',
+        category: 'VACCINATION',
+        type: 'Tiêm phòng uốn ván',
+        dueDate: '2026-12-01',
+        notes: 'Tiêm mũi tăng cường',
+      });
+
+      expect(res.id).toBe('sched-1');
       expect(mockPrismaService.preventiveSchedule.create).toHaveBeenCalled();
     });
   });

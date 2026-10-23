@@ -116,10 +116,10 @@ export class SetSupplyStatusDto {
 }
 
 export class QuerySupplyCatalogDto {
-  @ApiPropertyOptional({ enum: SupplyCategory })
+  @ApiPropertyOptional({ description: 'Nhóm vật tư hoặc mã loại vật tư' })
   @IsOptional()
-  @IsEnum(SupplyCategory)
-  category?: SupplyCategory;
+  @IsString()
+  category?: string;
 
   @ApiPropertyOptional({ enum: ['ACTIVE', 'INACTIVE', 'ALL'], default: 'ALL' })
   @IsOptional()

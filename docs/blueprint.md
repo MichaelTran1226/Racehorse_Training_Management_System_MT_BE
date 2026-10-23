@@ -448,7 +448,7 @@ Mẫu chuẩn: `Hệ thống phải [hành vi] cho [tác nhân] khi [điều ki�
 | Entity | Key fields | Relationships | Lifecycle | Classification | Owner |
 |---|---|---|---|---|---|
 | **User** | `user_id`, `email`, `password_hash`, `full_name`, `phone`, `role`, `status`, `created_at` | 1-n với `Horse` (Owner), 1-n với `AuditLog` | Active -> Inactive -> Suspended | Confidential | Club Manager |
-| **Horse** | `horse_id`, `microchip_rfid`, `name`, `breed`, `dob`, `gender`, `color`, `owner_id`, `status`, `medical_locked`, `created_at` | n-1 với `User` (Owner), 1-1 với `StallAllocation`, 1-n với `MedicalRecord`, 1-n với `TrainingPlan` | Active -> In_Training -> Medical_Locked -> Resting -> Retired | Restricted | Club Manager & Trainer |
+| **Horse** | `horse_id`, `microchip_rfid`, `name`, `breed`, `dob`, `gender`, `color`, `weight_kg`, `owner_id`, `status`, `medical_locked`, `created_at` | n-1 với `User` (Owner), 1-1 với `StallAllocation`, 1-n với `MedicalRecord`, 1-n với `TrainingPlan` | Active -> In_Training -> Medical_Locked -> Resting -> Retired | Restricted | Club Manager & Trainer |
 | **Stall** | `stall_id`, `stall_code`, `barn_zone`, `capacity`, `status`, `notes` | 1-1 với `StallAllocation` | Available -> Occupied -> Maintenance | Internal | Club Manager |
 | **StallAllocation** | `allocation_id`, `horse_id`, `stall_id`, `groom_id`, `start_date`, `end_date`, `status` | n-1 với `Horse`, n-1 với `Stall`, n-1 với `User` (Groom) | Active -> Transferred -> Released | Internal | Club Manager |
 | **TrainingPlan** | `plan_id`, `horse_id`, `trainer_id`, `phase_name`, `target_speed`, `target_distance`, `track_surface`, `status`, `start_date`, `end_date` | n-1 với `Horse`, n-1 với `User` (Trainer), 1-n với `WorkoutSession` | Draft -> Approved -> In_Progress -> Completed -> Cancelled | Internal | Head Trainer |
@@ -472,6 +472,20 @@ Mẫu chuẩn: `Hệ thống phải [hành vi] cho [tác nhân] khi [điều ki�
 
 ```mermaid
 erDiagram
+    Horse {
+        uuid horse_id PK
+        string microchip_rfid
+        string name
+        string breed
+        date dob
+        string gender
+        string color
+        float weight_kg "Cân nặng (kg)"
+        uuid owner_id FK
+        string status
+        boolean medical_locked
+        datetime created_at
+    }
     User ||--o{ Horse : owns
     User ||--o{ StallAllocation : assigned_groom
     User ||--o{ TrainingPlan : authors_trainer
@@ -512,8 +526,8 @@ erDiagram
 | API ID | Method & Path | Purpose | Auth / Role | Request Payload / Params | Response & Status Codes | Error Scenarios |
 |---|---|---|---|---|---|
 | **API-001** | `POST /api/auth/login` | Xác thực người dùng và cấp phát JWT token | Public | `{ email, password }` | `200 OK`: `{ token, user: { id, email, role, fullName } }` | `401 Unauthorized` nếu sai credentials; `403` nếu bị khóa |
-| **API-002** | `GET /api/horses` | Lấy danh sách hồ sơ đàn ngựa (tìm kiếm, lọc trạng thái) | Bearer (Tất cả vai trò) | Query: `?status=...&search=...&ownerId=...` | `200 OK`: `[{ horseId, name, microchipRfid, breed, status, medicalLocked, stallCode }]` | `401 Unauthorized` |
-| **API-003** | `POST /api/horses` | Tạo mới hồ sơ định danh chiến mã | Bearer (`Manager`) | `{ name, microchipRfid, breed, dob, gender, color, ownerId }` | `201 Created`: `{ horseId, name, status: "Active" }` | `400 Bad Request` nếu trùng RFID; `422 Unprocessable` |
+| **API-002** | `GET /api/horses` | Lấy danh sách hồ sơ đàn ngựa (tìm kiếm, lọc trạng thái) | Bearer (Tất cả vai trò) | Query: `?status=...&search=...&ownerId=...` | `200 OK`: `[{ horseId, name, microchipRfid, breed, weightKg, status, medicalLocked, stallCode }]` | `401 Unauthorized` |
+| **API-003** | `POST /api/horses` | Tạo mới hồ sơ định danh chiến mã | Bearer (`Manager`) | `{ name, microchipRfid, breed, dob, gender, color, weightKg, ownerId }` | `201 Created`: `{ horseId, name, weightKg, status: "Active" }` | `400 Bad Request` nếu trùng RFID; `422 Unprocessable` |
 | **API-004** | `GET /api/horses/:id/health-board` | Lấy chi tiết trạng thái y tế, vị trí chấn thương 2D & Medical Lock | Bearer (`Vet`, `Trainer`, `Manager`) | Path: `id` | `200 OK`: `{ horseId, medicalLocked, lockReason, injuries: [{ id, x, y, zone, severity }], vitals }` | `404 Not Found` |
 | **API-005** | `POST /api/medical/locks` | Kích hoạt Lệnh "Khóa huấn luyện" khẩn cấp (Medical Lock) | Bearer (`Veterinarian`) | `{ horseId, reason, expectedRestDays, unlockConditions }` | `201 Created`: `{ lockId, horseId, isLocked: true, timestamp }` | `403 Forbidden` nếu không phải Vet; `409 Conflict` nếu đã khóa |
 | **API-006** | `PUT /api/medical/locks/:id/unlock` | Gỡ bỏ Lệnh "Khóa huấn luyện" sau khi khám lại đạt | Bearer (`Veterinarian`) | `{ recheckNotes, fitnessConfirmed: true }` | `200 OK`: `{ lockId, isLocked: false, unlockedAt }` | `403 Forbidden` nếu không phải Vet phụ trách; `404 Not Found` |

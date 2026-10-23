@@ -212,6 +212,7 @@ export class HorsesService {
           dob,
           gender: dto.gender,
           color,
+          weightKg: dto.weightKg != null ? Number(dto.weightKg) : null,
           microchip,
           microchipRfid,
           status: HorseStatus.RESTING,
@@ -368,6 +369,9 @@ export class HorsesService {
         ...(dto.dob ? { dob: new Date(dto.dob) } : {}),
         ...(dto.gender ? { gender: dto.gender } : {}),
         ...(color ? { color } : {}),
+        ...(dto.weightKg !== undefined
+          ? { weightKg: dto.weightKg != null ? Number(dto.weightKg) : null }
+          : {}),
         ...(dto.microchip
           ? {
               microchip: dto.microchip,

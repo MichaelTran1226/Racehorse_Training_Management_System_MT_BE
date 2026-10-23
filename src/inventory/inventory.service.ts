@@ -1,5 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { NotificationCategory, Prisma, RestockStatus, Role } from '@prisma/client';
+import { NotificationCategory, Prisma, RestockStatus, Role, SupplyCategory } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -33,7 +33,39 @@ export class InventoryService {
     if (query.zoneId) whereZone.id = query.zoneId;
 
     const whereSupply: Prisma.SupplyCatalogWhereInput = { isActive: true };
-    if (query.category) whereSupply.category = query.category;
+    if (query.category) {
+      const cat = query.category.toUpperCase().trim();
+      if (cat === 'FEED') {
+        whereSupply.category = { in: [SupplyCategory.FEED_HAY, SupplyCategory.FEED_GRAIN] };
+      } else if (cat === 'MEDICINE') {
+        whereSupply.category = {
+          in: [
+            SupplyCategory.MEDICINE,
+            SupplyCategory.VACCINE,
+            SupplyCategory.DEWORMER,
+            SupplyCategory.SUPPLEMENT_VITAMIN,
+            SupplyCategory.SUPPLEMENT_MINERAL,
+            SupplyCategory.SUPPLEMENT_ELECTROLYTE,
+            SupplyCategory.SUPPLEMENT_GENERAL,
+          ],
+        };
+      } else if (cat === 'CARE') {
+        whereSupply.category = {
+          in: [
+            SupplyCategory.SUPPLEMENT_VITAMIN,
+            SupplyCategory.SUPPLEMENT_MINERAL,
+            SupplyCategory.SUPPLEMENT_ELECTROLYTE,
+            SupplyCategory.SUPPLEMENT_GENERAL,
+          ],
+        };
+      } else if (cat === 'EQUIPMENT') {
+        whereSupply.category = {
+          in: [SupplyCategory.TOOL_EQUIPMENT, SupplyCategory.CLEANING_SUPPLY],
+        };
+      } else if (Object.values(SupplyCategory).includes(cat as SupplyCategory)) {
+        whereSupply.category = cat as SupplyCategory;
+      }
+    }
     if (query.search?.trim()) {
       const term = query.search.trim();
       whereSupply.OR = [

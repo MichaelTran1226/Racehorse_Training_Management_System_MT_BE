@@ -2,10 +2,12 @@ import {
   IsIn,
   IsISO8601,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
   Length,
   Matches,
+  Min,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
@@ -70,6 +72,12 @@ export class CreateHorseDto {
   @IsOptional()
   @IsString()
   avatarUrl?: string;
+
+  @ApiPropertyOptional({ description: 'Weight in kg (> 0)', example: 485.5 })
+  @IsOptional()
+  @IsNumber({}, { message: 'Cân nặng phải là số.' })
+  @Min(0.01, { message: 'Cân nặng phải lớn hơn 0 kg.' })
+  weightKg?: number;
 
   @ApiPropertyOptional({ description: 'Initial Stall ID' })
   @IsOptional()

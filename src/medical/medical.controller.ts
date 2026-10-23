@@ -49,6 +49,7 @@ import {
   RecordPreventiveCareDto,
   SetupHorsePreventiveDto,
   PreventiveQueryDto,
+  CreatePreventiveScheduleDto,
 } from './dto/preventive-care.dto';
 // import { PreventiveType } from '@prisma/client';
 
@@ -423,5 +424,15 @@ export class MedicalController {
     @Body() dto: SetupHorsePreventiveDto,
   ) {
     return this.preventive.setupHorsePreventive(user, dto);
+  }
+
+  @Post('preventive/schedules')
+  @RequirePermission('viewMedical')
+  @ApiOperation({ summary: 'Lập lịch chăm sóc định kỳ cho chiến mã' })
+  createPreventiveSchedule(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: CreatePreventiveScheduleDto,
+  ) {
+    return this.preventive.createPreventiveSchedule(user, dto);
   }
 }
