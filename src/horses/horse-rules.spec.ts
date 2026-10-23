@@ -4,7 +4,6 @@ import {
   assertStatusTransition,
   HORSE_NAME_RE,
   normalizeName,
-  RFID_RE,
   StatusChangeInput,
 } from './horse-rules';
 
@@ -174,12 +173,6 @@ describe('horse-rules', () => {
       expect(HORSE_NAME_RE.test("O'Brien Jr.")).toBe(true);
       expect(HORSE_NAME_RE.test('Bad<script>')).toBe(false);
       expect(normalizeName('  Sao   Mai ')).toBe('Sao Mai');
-    });
-
-    it('accepts RFID with or without the RFID- prefix', () => {
-      expect(RFID_RE.test('RFID-985141002341')).toBe(true);
-      expect(RFID_RE.test('985141002341')).toBe(true);
-      expect(RFID_RE.test('abc')).toBe(false);
     });
   });
 });

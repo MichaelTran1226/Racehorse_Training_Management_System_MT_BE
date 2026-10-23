@@ -3,7 +3,7 @@ import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class QueryHorseDto {
-  @ApiPropertyOptional({ description: 'Từ khóa tìm kiếm (tên, mã ngựa, microchip, RFID)' })
+  @ApiPropertyOptional({ description: 'Từ khóa tìm kiếm (tên, mã ngựa, microchip)' })
   @IsOptional()
   @IsString()
   search?: string;

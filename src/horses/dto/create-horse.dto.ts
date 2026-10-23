@@ -9,7 +9,7 @@ import {
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { HORSE_GENDERS, HORSE_NAME_RE, normalizeName, RFID_RE } from '../horse-rules';
+import { HORSE_GENDERS, HORSE_NAME_RE, normalizeName } from '../horse-rules';
 
 export class CreateHorseDto {
   @ApiProperty({ description: 'Horse name (2-100 characters)', example: 'Thunderbolt Swift' })
@@ -60,18 +60,6 @@ export class CreateHorseDto {
   @IsString()
   @Matches(/^\d{15}$/, { message: 'Microchip number must consist of exactly 15 digits.' })
   microchip?: string;
-
-  @ApiPropertyOptional({
-    description: 'RFID tag code (4-32 A-Z, 0-9, -)',
-    example: 'RFID-985141002341',
-  })
-  @IsOptional()
-  @IsString()
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value))
-  @Matches(RFID_RE, {
-    message: 'RFID tag must be 4-32 characters: uppercase letters, digits, or hyphens.',
-  })
-  rfid?: string;
 
   @ApiPropertyOptional({ description: 'Owner User ID' })
   @IsOptional()

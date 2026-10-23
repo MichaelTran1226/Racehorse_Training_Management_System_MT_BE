@@ -427,7 +427,6 @@ model Horse {
   horseCode       String?     @unique
   name            String
   microchip       String?     @unique
-  rfid            String?     @unique
   microchipRfid   String      @unique
   breed           String
   dob             DateTime
@@ -463,7 +462,6 @@ model Horse {
 
   @@index([horseCode])
   @@index([microchip])
-  @@index([rfid])
   @@index([microchipRfid])
   @@index([ownerId])
   @@index([status])

@@ -62,21 +62,6 @@ export class HorsesService {
     return `985${Date.now().toString().slice(-12)}`;
   }
 
-  /**
-   * Tự sinh mã thẻ RFID (dạng RFID-XXXXXXXX).
-   */
-  async generateRfid(): Promise<string> {
-    for (let attempts = 0; attempts < 100; attempts++) {
-      const randStr = Math.random().toString(36).substring(2, 8).toUpperCase();
-      const numStr = Math.floor(1000 + Math.random() * 9000).toString();
-      const candidate = `RFID-${randStr}${numStr}`;
-      const exists = await this.prisma.horse.findFirst({
-        where: { OR: [{ rfid: candidate }, { microchipRfid: candidate }] },
-      });
-      if (!exists) return candidate;
-    }
-    return `RFID-${Date.now().toString(36).toUpperCase()}`;
-  }
 
   /**
    * Che giấu số microchip với vai trò GROOM (chỉ hiển thị 4 số cuối).
@@ -207,28 +192,6 @@ export class HorsesService {
       }
     }
 
-    // Tự sinh mã thẻ RFID nếu không cung cấp hoặc để trống
-    let rfid = dto.rfid?.trim() ? dto.rfid.trim().toUpperCase() : undefined;
-    if (!rfid) {
-      rfid = await this.generateRfid();
-    } else {
-      // Kiểm tra trùng mã thẻ RFID nếu có
-      const existingRfid = await this.prisma.horse.findFirst({
-        where: {
-          OR: [{ rfid }, { microchipRfid: rfid }],
-        },
-      });
-      if (existingRfid) {
-        throw apiError(
-          HttpStatus.CONFLICT,
-          'DUPLICATE_RFID',
-          existingRfid.deletedAt
-            ? 'Mã thẻ RFID thuộc một hồ sơ trong mục Hồ sơ đã xóa.'
-            : 'Mã thẻ RFID đã được gán cho ngựa khác.',
-        );
-      }
-    }
-
     const breed = await this.catalogs.resolveName(HorseCatalogType.BREED, dto.breed);
     const color = await this.catalogs.resolveName(HorseCatalogType.COLOR, dto.color);
     const horseCode = await this.generateHorseCode();
@@ -251,7 +214,6 @@ export class HorsesService {
           gender: dto.gender,
           color,
           microchip,
-          rfid: rfid || null,
           microchipRfid,
           status: HorseStatus.RESTING,
           isMedicalLocked: false,
@@ -381,22 +343,6 @@ export class HorsesService {
       }
     }
 
-    if (dto.rfid && dto.rfid !== horse.rfid) {
-      const existingRfid = await this.prisma.horse.findFirst({
-        where: {
-          OR: [{ rfid: dto.rfid }, { microchipRfid: dto.rfid }],
-          id: { not: id },
-        },
-      });
-      if (existingRfid) {
-        throw apiError(
-          HttpStatus.CONFLICT,
-          'DUPLICATE_RFID',
-          'Mã thẻ RFID đã được gán cho ngựa khác.',
-        );
-      }
-    }
-
     const breed = dto.breed
       ? await this.catalogs.resolveName(HorseCatalogType.BREED, dto.breed, horse.breed)
       : undefined;
@@ -429,7 +375,6 @@ export class HorsesService {
               microchipRfid: dto.microchip,
             }
           : {}),
-        ...(dto.rfid !== undefined ? { rfid: dto.rfid ? dto.rfid.toUpperCase() : null } : {}),
         ...(dto.ownerId !== undefined ? { ownerId: dto.ownerId || null } : {}),
         ...(dto.avatarUrl !== undefined ? { avatarUrl: dto.avatarUrl } : {}),
       },
@@ -588,7 +533,6 @@ export class HorsesService {
         { name: { contains: q, mode: 'insensitive' } },
         { horseCode: { contains: q, mode: 'insensitive' } },
         { microchip: { contains: q, mode: 'insensitive' } },
-        { rfid: { contains: q, mode: 'insensitive' } },
         { microchipRfid: { contains: q, mode: 'insensitive' } },
         { breed: { contains: q, mode: 'insensitive' } },
       ];
