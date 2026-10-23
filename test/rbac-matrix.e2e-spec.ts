@@ -10,7 +10,17 @@ describe('5-Role Parameterized Matrix: Scope & Permission Enforcement (RULE-RBAC
   let app: INestApplication;
   let jwtService: JwtService;
 
-  const users: Record<Role, { id: string; email: string; fullName: string; role: Role; status: UserStatus; permissions: any }> = {
+  const users: Record<
+    Role,
+    {
+      id: string;
+      email: string;
+      fullName: string;
+      role: Role;
+      status: UserStatus;
+      permissions: any;
+    }
+  > = {
     [Role.CLUB_MANAGER]: {
       id: 'u-cm',
       email: 'manager@gmail.com',
@@ -58,12 +68,14 @@ describe('5-Role Parameterized Matrix: Scope & Permission Enforcement (RULE-RBAC
 
   const prisma: any = {
     user: {
-      findUnique: jest.fn().mockImplementation(({ where }: { where: { id?: string; email?: string } }) => {
-        const found = Object.values(users).find(
-          (u) => (where.id && u.id === where.id) || (where.email && u.email === where.email),
-        );
-        return Promise.resolve(found || null);
-      }),
+      findUnique: jest
+        .fn()
+        .mockImplementation(({ where }: { where: { id?: string; email?: string } }) => {
+          const found = Object.values(users).find(
+            (u) => (where.id && u.id === where.id) || (where.email && u.email === where.email),
+          );
+          return Promise.resolve(found || null);
+        }),
       findFirst: jest.fn().mockImplementation(({ where }: any) => {
         const found = Object.values(users).find(
           (u) => (where.id && u.id === where.id) || (where.email && u.email === where.email),

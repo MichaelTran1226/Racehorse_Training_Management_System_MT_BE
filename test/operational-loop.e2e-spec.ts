@@ -1,7 +1,14 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
-import { HorseStatus, IncidentStatus, Role, SeverityLevel, TournamentStatus, UserStatus } from '@prisma/client';
+import {
+  HorseStatus,
+  IncidentStatus,
+  Role,
+  SeverityLevel,
+  TournamentStatus,
+  UserStatus,
+} from '@prisma/client';
 import * as request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
@@ -13,7 +20,17 @@ describe('End-to-End Operational Loop (Groom -> Vet -> Trainer -> Owner -> Manag
   let app: INestApplication;
   let jwt: JwtService;
 
-  const users: Record<Role, { id: string; email: string; fullName: string; role: Role; status: UserStatus; permissions: any }> = {
+  const users: Record<
+    Role,
+    {
+      id: string;
+      email: string;
+      fullName: string;
+      role: Role;
+      status: UserStatus;
+      permissions: any;
+    }
+  > = {
     [Role.CLUB_MANAGER]: {
       id: 'u-cm',
       email: 'manager@gmail.com',
@@ -66,7 +83,9 @@ describe('End-to-End Operational Loop (Groom -> Vet -> Trainer -> Owner -> Manag
     isMedicalLocked: false,
     ownerId: 'u-owner',
     deletedAt: null,
-    stallAllocations: [{ assignedGroomUserId: 'u-groom', isActive: true, stall: { zone: 'Zone A', code: 'A01' } }],
+    stallAllocations: [
+      { assignedGroomUserId: 'u-groom', isActive: true, stall: { zone: 'Zone A', code: 'A01' } },
+    ],
     medicalLocks: [] as any[],
   };
 
@@ -108,15 +127,23 @@ describe('End-to-End Operational Loop (Groom -> Vet -> Trainer -> Owner -> Manag
       count: jest.fn().mockResolvedValue(1),
     },
     medicalLock: {
-      findFirst: jest.fn().mockImplementation(() => Promise.resolve(currentHorseState.medicalLocks[0] || null)),
-      findUnique: jest.fn().mockImplementation(() => Promise.resolve(currentHorseState.medicalLocks[0] || null)),
+      findFirst: jest
+        .fn()
+        .mockImplementation(() => Promise.resolve(currentHorseState.medicalLocks[0] || null)),
+      findUnique: jest
+        .fn()
+        .mockImplementation(() => Promise.resolve(currentHorseState.medicalLocks[0] || null)),
       count: jest.fn().mockResolvedValue(0),
       create: jest.fn().mockImplementation(({ data }: any) => {
         const lock = {
           id: 'lock-1',
           ...data,
           isLocked: true,
-          horse: { id: currentHorseState.id, name: currentHorseState.name, microchipRfid: 'RFID-001' },
+          horse: {
+            id: currentHorseState.id,
+            name: currentHorseState.name,
+            microchipRfid: 'RFID-001',
+          },
           veterinarian: {
             id: users[Role.VETERINARIAN].id,
             fullName: users[Role.VETERINARIAN].fullName,
