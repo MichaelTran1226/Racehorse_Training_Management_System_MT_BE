@@ -9,12 +9,15 @@ import {
   TelemetryTickPacketDto,
 } from './dto/simulator-packet.dto';
 import {
+  ExamSimulationContext,
+  ExamSimulationResultResponse,
   LiveSimulatorSession,
   SimulatorSessionsResponse,
   WorkoutSimulationContext,
   WorkoutSimulationResultResponse,
   WorkoutSimulationStartResponse,
 } from './simulator.types';
+import { ExamFinishedPacketDto } from './dto/exam-packet.dto';
 import {
   SimulatorSession,
   SimulatorSessionStatus,
@@ -126,17 +129,71 @@ export class SimulatorService {
     };
   }
 
+  async startExam(
+    horseId: string,
+    medicalRecordId: string | undefined,
+    actor: CurrentUserPayload,
+  ): Promise<WorkoutSimulationStartResponse> {
+    if (actor.role !== UserRole.VETERINARIAN) {
+      throw apiError(
+        HttpStatus.FORBIDDEN,
+        'SIMULATOR_VET_REQUIRED',
+        'Only a veterinarian can start an examination simulation.',
+      );
+    }
+
+    const session = await this.prisma.$transaction(async (tx) => {
+      const horse = await tx.horse.findUnique({ where: { id: horseId, deletedAt: null } });
+      if (!horse) throw apiError(HttpStatus.NOT_FOUND, 'HORSE_NOT_FOUND', 'Horse not found.');
+
+      if (medicalRecordId) {
+        const record = await tx.medicalRecord.findUnique({ where: { id: medicalRecordId } });
+        if (!record || record.horseId !== horseId) {
+          throw apiError(
+            HttpStatus.CONFLICT,
+            'MEDICAL_RECORD_HORSE_MISMATCH',
+            'Medical record does not belong to this horse.',
+          );
+        }
+      }
+
+      const existing = await tx.simulatorSession.findFirst({
+        where: {
+          type: SimulatorSessionType.EXAM,
+          actorUserId: actor.userId,
+          horseIds: { has: horseId },
+          status: { in: [SimulatorSessionStatus.PENDING, SimulatorSessionStatus.RUNNING] },
+        },
+        orderBy: { updatedAt: 'desc' },
+      });
+      if (existing) return existing;
+
+      return tx.simulatorSession.create({
+        data: {
+          id: randomUUID(),
+          type: SimulatorSessionType.EXAM,
+          status: SimulatorSessionStatus.PENDING,
+          horseIds: [horseId],
+          actorUserId: actor.userId,
+          medicalRecordId,
+        },
+      });
+    });
+
+    const baseUrl = this.config
+      .get<string>('SIMULATOR_URL', 'http://localhost:5175')
+      .replace(/\/$/, '');
+    return {
+      sessionId: session.id,
+      status: session.status,
+      launchUrl: `${baseUrl}/?sessionId=${encodeURIComponent(session.id)}`,
+    };
+  }
+
   async getContext(
     sessionId: string,
     actor: CurrentUserPayload,
-  ): Promise<WorkoutSimulationContext> {
-    if (actor.role !== UserRole.HEAD_TRAINER) {
-      throw apiError(
-        HttpStatus.FORBIDDEN,
-        'SIMULATOR_TRAINER_REQUIRED',
-        'Only the assigned head trainer can open this simulation.',
-      );
-    }
+  ): Promise<WorkoutSimulationContext | ExamSimulationContext> {
     const session = await this.prisma.simulatorSession.findUnique({
       where: { id: sessionId },
       include: {
@@ -153,6 +210,44 @@ export class SimulatorService {
         HttpStatus.NOT_FOUND,
         'SIMULATOR_SESSION_NOT_FOUND',
         'Simulation session not found.',
+      );
+    }
+    if (session.type === SimulatorSessionType.EXAM) {
+      if (actor.role !== UserRole.VETERINARIAN || session.actorUserId !== actor.userId) {
+        throw apiError(
+          HttpStatus.FORBIDDEN,
+          'SIMULATOR_SESSION_FORBIDDEN',
+          'This examination simulation belongs to another veterinarian.',
+        );
+      }
+      const horse = await this.prisma.horse.findUnique({ where: { id: session.horseIds[0] } });
+      if (!horse) {
+        throw apiError(HttpStatus.NOT_FOUND, 'HORSE_NOT_FOUND', 'Horse not found.');
+      }
+      return {
+        type: 'EXAM',
+        sessionId: session.id,
+        status: session.status,
+        medicalRecordId: session.medicalRecordId,
+        horse: {
+          id: horse.id,
+          horseCode: horse.horseCode,
+          name: horse.name,
+          microchipRfid: horse.microchipRfid,
+          breed: horse.breed,
+          dob: horse.dob,
+          gender: horse.gender,
+          color: horse.color,
+          status: horse.status,
+          isMedicalLocked: horse.isMedicalLocked,
+        },
+      };
+    }
+    if (actor.role !== UserRole.HEAD_TRAINER) {
+      throw apiError(
+        HttpStatus.FORBIDDEN,
+        'SIMULATOR_TRAINER_REQUIRED',
+        'Only the assigned head trainer can open this simulation.',
       );
     }
     if (
@@ -175,6 +270,7 @@ export class SimulatorService {
     }
 
     return {
+      type: 'WORKOUT',
       sessionId: session.id,
       status: session.status,
       horse: {
@@ -201,6 +297,41 @@ export class SimulatorService {
         trackSurface: workout.trackSurface,
       },
     };
+  }
+
+  async recordExamFinished(
+    dto: ExamFinishedPacketDto,
+    actor: CurrentUserPayload,
+  ): Promise<SimulatorSession> {
+    if (actor.role !== UserRole.VETERINARIAN) {
+      throw apiError(
+        HttpStatus.FORBIDDEN,
+        'SIMULATOR_VET_REQUIRED',
+        'Only a veterinarian can publish examination measurements.',
+      );
+    }
+    const issued = await this.requireIssuedSession(
+      dto.session_id,
+      SimulatorSessionType.EXAM,
+      [dto.horse_id],
+      actor,
+      true,
+    );
+    if (issued.status === SimulatorSessionStatus.COMPLETED) return issued;
+
+    return this.prisma.simulatorSession.update({
+      where: { id: dto.session_id },
+      data: {
+        status: SimulatorSessionStatus.COMPLETED,
+        finishedAt: new Date(),
+        result: {
+          capturedAt: dto.captured_at,
+          modelVersion: dto.model_version,
+          source: dto.source,
+          metrics: dto.metrics,
+        } as any,
+      },
+    });
   }
 
   async recordTelemetry(
@@ -474,6 +605,51 @@ export class SimulatorService {
       sessionId: session.id,
       status: session.status,
       resultDraft: session.result ? this.toWorkoutResultDraft(session.result) : null,
+    };
+  }
+
+  async getLatestExamResult(
+    horseId: string,
+    actor: CurrentUserPayload,
+  ): Promise<ExamSimulationResultResponse> {
+    if (actor.role !== UserRole.VETERINARIAN && actor.role !== UserRole.CLUB_MANAGER) {
+      throw apiError(
+        HttpStatus.FORBIDDEN,
+        'SIMULATOR_MEDICAL_REVIEW_REQUIRED',
+        'Only medical staff can review examination simulations.',
+      );
+    }
+    const session = await this.prisma.simulatorSession.findFirst({
+      where: {
+        type: SimulatorSessionType.EXAM,
+        horseIds: { has: horseId },
+        status: SimulatorSessionStatus.COMPLETED,
+      },
+      orderBy: { finishedAt: 'desc' },
+    });
+    if (!session) {
+      throw apiError(
+        HttpStatus.NOT_FOUND,
+        'SIMULATOR_EXAM_RESULT_NOT_FOUND',
+        'No simulation examination result exists for this horse.',
+      );
+    }
+
+    const value = session.result as any;
+    return {
+      sessionId: session.id,
+      status: session.status,
+      resultDraft: value
+        ? {
+            temperature: value.metrics.temperature.value,
+            restingHeartRate: value.metrics.resting_heart_rate.value,
+            respiratoryRate: value.metrics.respiratory_rate.value,
+            weightKg: value.metrics.weight.value,
+            capturedAt: value.capturedAt,
+            modelVersion: value.modelVersion,
+            source: value.source,
+          }
+        : null,
     };
   }
 

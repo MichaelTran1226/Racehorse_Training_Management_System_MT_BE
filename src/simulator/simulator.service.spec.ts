@@ -15,6 +15,12 @@ describe('SimulatorService', () => {
     role: Role.HEAD_TRAINER,
     fullName: 'Head Trainer',
   };
+  const mockVet: CurrentUserPayload = {
+    userId: 'vet-1',
+    email: 'vet@equiflow.com',
+    role: Role.VETERINARIAN,
+    fullName: 'Veterinarian',
+  };
 
   beforeEach(async () => {
     prisma = {
@@ -22,8 +28,11 @@ describe('SimulatorService', () => {
       workoutSession: {
         findUnique: jest.fn(),
       },
+      horse: { findUnique: jest.fn() },
       simulatorSession: {
         upsert: jest.fn(),
+        create: jest.fn(),
+        findFirst: jest.fn(),
         findMany: jest.fn(),
         findUnique: jest.fn(),
         update: jest.fn(),
@@ -33,6 +42,7 @@ describe('SimulatorService', () => {
         update: jest.fn(),
       },
       medicalRecord: {
+        findUnique: jest.fn(),
         create: jest.fn(),
         update: jest.fn(),
       },
@@ -47,6 +57,49 @@ describe('SimulatorService', () => {
     }).compile();
 
     service = module.get<SimulatorService>(SimulatorService);
+  });
+
+  it('issues an exam session and stores a validated result without finalizing a medical record', async () => {
+    prisma.horse.findUnique.mockResolvedValue(eligibleWorkout().horse);
+    prisma.simulatorSession.findFirst.mockResolvedValue(null);
+    prisma.simulatorSession.create.mockResolvedValue({ id: 'exam-1', status: 'PENDING' });
+
+    await expect(service.startExam('horse-uuid-1', undefined, mockVet)).resolves.toEqual({
+      sessionId: 'exam-1',
+      status: 'PENDING',
+      launchUrl: 'http://localhost:5175/?sessionId=exam-1',
+    });
+
+    const issued = {
+      id: 'exam-1',
+      type: 'EXAM',
+      status: 'PENDING',
+      horseIds: ['horse-uuid-1'],
+      actorUserId: mockVet.userId,
+      workoutSession: null,
+    };
+    prisma.simulatorSession.findUnique.mockResolvedValue(issued);
+    prisma.simulatorSession.update.mockResolvedValue({ ...issued, status: 'COMPLETED' });
+    await service.recordExamFinished(
+      {
+        event: 'sim:exam_finished',
+        session_id: 'exam-1',
+        horse_id: 'horse-uuid-1',
+        captured_at: '2026-10-23T01:00:00.000Z',
+        model_version: 'equiflow-sim-v3',
+        source: 'EQUIFLOW_SIMULATOR',
+        metrics: {
+          temperature: { value: 38.2, unit: 'CELSIUS' },
+          resting_heart_rate: { value: 38, unit: 'BPM' },
+          respiratory_rate: { value: 13, unit: 'BREATHS_PER_MINUTE' },
+          weight: { value: 480, unit: 'KG' },
+        },
+      },
+      mockVet,
+    );
+
+    expect(prisma.medicalRecord.create).not.toHaveBeenCalled();
+    expect(prisma.medicalRecord.update).not.toHaveBeenCalled();
   });
 
   const eligibleWorkout = () => ({
@@ -230,6 +283,8 @@ describe('SimulatorService', () => {
 
       const result = await service.getContext('server-session-1', mockActor);
 
+      expect(result.type).toBe('WORKOUT');
+      if (result.type !== 'WORKOUT') throw new Error('Expected workout context');
       expect(result.sessionId).toBe('server-session-1');
       expect(result.horse.id).toBe(workout.horse.id);
       expect(result.workout).toEqual(

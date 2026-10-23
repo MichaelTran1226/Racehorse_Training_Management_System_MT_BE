@@ -26,6 +26,7 @@ import {
   TelemetryTickPacketDto,
 } from './dto/simulator-packet.dto';
 import { SimulatorAck } from './simulator.types';
+import { ExamFinishedPacketDto } from './dto/exam-packet.dto';
 
 const ALLOWED_SUBSCRIBERS: Role[] = [Role.CLUB_MANAGER, Role.HEAD_TRAINER, Role.VETERINARIAN];
 
@@ -144,6 +145,14 @@ export class SimulatorGateway implements OnGatewayInit, OnGatewayConnection, OnG
     return user;
   }
 
+  private async requireExamPublisher(client: Socket): Promise<CurrentUserPayload> {
+    await client.data?.authReady;
+    const user: CurrentUserPayload | undefined = client.data?.user;
+    if (!user) throw new Error('UNAUTHENTICATED');
+    if (user.role !== Role.VETERINARIAN) throw new Error('FORBIDDEN');
+    return user;
+  }
+
   @SubscribeMessage('sim:telemetry_tick')
   async handleTelemetryTick(
     @ConnectedSocket() client: Socket,
@@ -219,6 +228,22 @@ export class SimulatorGateway implements OnGatewayInit, OnGatewayConnection, OnG
         status: session.status,
       });
 
+      return { accepted: true, id: session.id };
+    } catch (err: any) {
+      return { accepted: false, code: err.message };
+    }
+  }
+
+  @SubscribeMessage('sim:exam_finished')
+  async handleExamFinished(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() packet: ExamFinishedPacketDto,
+  ): Promise<SimulatorAck> {
+    try {
+      const user = await this.requireExamPublisher(client);
+      const validPacket = await validatePacket(ExamFinishedPacketDto, packet);
+      const session = await this.simulatorService.recordExamFinished(validPacket, user);
+      this.server.emit('sim:exam_finished', validPacket);
       return { accepted: true, id: session.id };
     } catch (err: any) {
       return { accepted: false, code: err.message };

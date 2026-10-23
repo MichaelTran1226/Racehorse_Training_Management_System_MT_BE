@@ -21,6 +21,8 @@ describe('SimulatorController', () => {
       startWorkout: jest.fn(),
       getContext: jest.fn(),
       getLatestWorkoutResult: jest.fn(),
+      startExam: jest.fn(),
+      getLatestExamResult: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -95,5 +97,16 @@ describe('SimulatorController', () => {
 
     await expect(controller.getLatestWorkoutResult('workout-1', actor)).resolves.toBe(response);
     expect(service.getLatestWorkoutResult).toHaveBeenCalledWith('workout-1', actor);
+  });
+
+  it('starts and reviews an examination simulation', async () => {
+    service.startExam.mockResolvedValue({ sessionId: 'exam-1' });
+    service.getLatestExamResult.mockResolvedValue({ sessionId: 'exam-1', resultDraft: {} });
+
+    await controller.startExam('horse-1', {}, actor);
+    await controller.getLatestExamResult('horse-1', actor);
+
+    expect(service.startExam).toHaveBeenCalledWith('horse-1', undefined, actor);
+    expect(service.getLatestExamResult).toHaveBeenCalledWith('horse-1', actor);
   });
 });

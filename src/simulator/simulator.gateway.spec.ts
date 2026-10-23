@@ -27,6 +27,7 @@ describe('SimulatorGateway', () => {
       recordTelemetry: jest.fn(),
       recordRaceProgress: jest.fn(),
       recordFinished: jest.fn(),
+      recordExamFinished: jest.fn(),
     };
     incidentsService = {
       createFromSimulator: jest.fn(),
@@ -177,6 +178,47 @@ describe('SimulatorGateway', () => {
   });
 
   describe('telemetry and incident relay', () => {
+    it('lets a veterinarian publish only a valid examination result', async () => {
+      const client: any = {
+        data: { user: { userId: 'vet-1', role: Role.VETERINARIAN, email: 'vet@equiflow.com' } },
+      };
+      const packet = {
+        event: 'sim:exam_finished' as const,
+        session_id: 'exam-1',
+        horse_id: '68eecf5d-1bc8-4a98-8d74-0b2399d04fe1',
+        captured_at: '2026-10-23T01:00:00.000Z',
+        model_version: 'equiflow-sim-v3',
+        source: 'EQUIFLOW_SIMULATOR' as const,
+        metrics: {
+          temperature: { value: 38.2, unit: 'CELSIUS' as const },
+          resting_heart_rate: { value: 38, unit: 'BPM' as const },
+          respiratory_rate: { value: 13, unit: 'BREATHS_PER_MINUTE' as const },
+          weight: { value: 480, unit: 'KG' as const },
+        },
+      };
+      simulatorService.recordExamFinished.mockResolvedValue({ id: 'exam-1' });
+
+      await expect(gateway.handleExamFinished(client, packet)).resolves.toEqual({
+        accepted: true,
+        id: 'exam-1',
+      });
+      expect(simulatorService.recordExamFinished).toHaveBeenCalledWith(packet, client.data.user);
+
+      await expect(
+        gateway.handleExamFinished(client, {
+          ...packet,
+          metrics: { ...packet.metrics, temperature: { value: 99, unit: 'FAHRENHEIT' as any } },
+        }),
+      ).resolves.toEqual({ accepted: false, code: 'INVALID_SIMULATOR_PACKET' });
+
+      await expect(
+        gateway.handleExamFinished(
+          { data: { user: { ...client.data.user, role: Role.HEAD_TRAINER } } } as any,
+          packet,
+        ),
+      ).resolves.toEqual({ accepted: false, code: 'FORBIDDEN' });
+    });
+
     it('relays accepted telemetry packet to subscribers', async () => {
       const mockTrainerClient: any = {
         data: {

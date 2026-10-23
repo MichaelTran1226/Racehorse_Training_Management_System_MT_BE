@@ -25,6 +25,28 @@ export interface WorkoutSimulationStartResponse {
   launchUrl: string;
 }
 
+export interface ExamSimulationResultResponse {
+  sessionId: string;
+  status: SimulatorSessionStatus;
+  resultDraft: {
+    temperature: number;
+    restingHeartRate: number;
+    respiratoryRate: number;
+    weightKg: number;
+    capturedAt: string;
+    modelVersion: string;
+    source: 'EQUIFLOW_SIMULATOR';
+  } | null;
+}
+
+export interface ExamSimulationContext {
+  type: 'EXAM';
+  sessionId: string;
+  status: SimulatorSessionStatus;
+  horse: WorkoutSimulationContext['horse'];
+  medicalRecordId: string | null;
+}
+
 export interface WorkoutSimulationResultResponse {
   sessionId: string;
   status: SimulatorSessionStatus;
@@ -40,6 +62,7 @@ export interface WorkoutSimulationResultResponse {
 }
 
 export interface WorkoutSimulationContext {
+  type: 'WORKOUT';
   sessionId: string;
   status: SimulatorSessionStatus;
   horse: {
