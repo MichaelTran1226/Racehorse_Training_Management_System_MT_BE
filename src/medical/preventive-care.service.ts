@@ -10,6 +10,7 @@ import {
   RecordPreventiveCareDto,
   SetupHorsePreventiveDto,
   PreventiveQueryDto,
+  CreatePreventiveScheduleDto,
 } from './dto/preventive-care.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -392,9 +393,55 @@ export class PreventiveCareService {
   async recordPreventiveCare(actor: CurrentUserPayload, dto: RecordPreventiveCareDto) {
     this.access.assertVet(actor, 'record preventive care');
 
-    const catalog = await this.prisma.preventiveTypeCatalog.findUnique({
-      where: { id: dto.typeCatalogId },
-    });
+    let initialSchedule: any = null;
+    let typeCatalogId = dto.typeCatalogId;
+    let horseId = dto.horseId;
+
+    if (dto.scheduleId) {
+      initialSchedule = await this.prisma.preventiveSchedule.findUnique({
+        where: { id: dto.scheduleId },
+        include: { typeCatalog: true },
+      });
+      if (initialSchedule) {
+        if (!horseId) horseId = initialSchedule.horseId;
+        if (!typeCatalogId) typeCatalogId = initialSchedule.typeCatalogId || undefined;
+      }
+    }
+
+    let catalog = typeCatalogId
+      ? await this.prisma.preventiveTypeCatalog.findUnique({
+          where: { id: typeCatalogId },
+        })
+      : null;
+
+    if (!catalog && initialSchedule) {
+      catalog = await this.prisma.preventiveTypeCatalog.findFirst({
+        where: {
+          category: initialSchedule.scheduleType,
+          isActive: true,
+        },
+      });
+
+      if (!catalog) {
+        const cleanSlug = (initialSchedule.productAdministered || initialSchedule.scheduleType)
+          .toUpperCase()
+          .replace(/[^A-Z0-9]/g, '_')
+          .slice(0, 15);
+        const code = `CUSTOM_${cleanSlug}_${Date.now().toString().slice(-4)}`;
+        catalog = await this.prisma.preventiveTypeCatalog.create({
+          data: {
+            code,
+            name: initialSchedule.productAdministered || (initialSchedule.scheduleType as string),
+            category: initialSchedule.scheduleType,
+            intervalDays: 180,
+            advanceNoticeDays: 7,
+            applyToNewHorses: false,
+            isActive: true,
+          },
+        });
+      }
+    }
+
     if (!catalog) {
       throw apiError(
         HttpStatus.NOT_FOUND,
@@ -404,7 +451,7 @@ export class PreventiveCareService {
     }
 
     const horseIds =
-      dto.horseIds && dto.horseIds.length > 0 ? dto.horseIds : dto.horseId ? [dto.horseId] : [];
+      dto.horseIds && dto.horseIds.length > 0 ? dto.horseIds : horseId ? [horseId] : [];
 
     if (horseIds.length === 0) {
       throw apiError(HttpStatus.BAD_REQUEST, 'VALIDATION', 'Choose at least one horse.');
@@ -417,10 +464,13 @@ export class PreventiveCareService {
       throw apiError(HttpStatus.BAD_REQUEST, 'VALIDATION', 'Enter who performed the care.');
     }
 
+    const resolvedProduct =
+      dto.productAdministered || initialSchedule?.productAdministered || catalog.name;
+
     if (
       (catalog.category === PreventiveType.VACCINATION ||
         catalog.category === PreventiveType.DEWORMING) &&
-      !dto.productAdministered
+      !resolvedProduct
     ) {
       throw apiError(HttpStatus.BAD_REQUEST, 'VALIDATION', 'Enter the product or vaccine used.');
     }
@@ -467,13 +517,19 @@ export class PreventiveCareService {
         : (cb: any) => cb(this.prisma);
 
     await runTx(async (tx: any) => {
-      for (const horseId of horseIds) {
-        const horse = await tx.horse.findUnique({ where: { id: horseId, deletedAt: null } });
+      for (const hId of horseIds) {
+        const horse = await tx.horse.findUnique({ where: { id: hId, deletedAt: null } });
         if (!horse) continue;
 
-        const schedule = await tx.preventiveSchedule.findFirst({
-          where: { horseId, typeCatalogId: catalog.id },
-        });
+        let schedule = dto.scheduleId
+          ? await tx.preventiveSchedule.findUnique({ where: { id: dto.scheduleId } })
+          : null;
+
+        if (!schedule) {
+          schedule = await tx.preventiveSchedule.findFirst({
+            where: { horseId: hId, typeCatalogId: catalog.id },
+          });
+        }
 
         let history: any[] = [];
         if (schedule?.historyLogs) {
@@ -509,19 +565,20 @@ export class PreventiveCareService {
               lastCompletedDate: performedDate,
               completedDate: performedDate,
               dueDate: nextDueDate,
-              productAdministered: dto.productAdministered || null,
+              productAdministered: resolvedProduct || schedule.productAdministered || null,
               batchNumber: dto.batchNumber || null,
               performedByMode: dto.performedByMode || 'SELF',
               performedByName,
               notes: dto.notes || null,
               status: PreventiveStatus.COMPLETED,
               historyLogs: history,
+              typeCatalogId: schedule.typeCatalogId || catalog.id,
             },
           });
         } else {
           await tx.preventiveSchedule.create({
             data: {
-              horseId,
+              horseId: hId,
               typeCatalogId: catalog.id,
               scheduleType: catalog.category,
               veterinarianUserId: actor.userId,
@@ -613,5 +670,130 @@ export class PreventiveCareService {
     );
 
     return { message: 'Đã thiết lập lịch chăm sóc định kỳ cho chiến mã thành công' };
+  }
+
+  async createPreventiveSchedule(actor: CurrentUserPayload, dto: CreatePreventiveScheduleDto) {
+    this.access.assertVet(actor, 'create preventive care schedules');
+
+    const horse = await this.prisma.horse.findUnique({
+      where: { id: dto.horseId, deletedAt: null },
+    });
+    if (!horse) {
+      throw apiError(HttpStatus.NOT_FOUND, 'HORSE_NOT_FOUND', 'Horse not found.');
+    }
+
+    let scheduleType: PreventiveType = PreventiveType.VACCINATION;
+    const catUpper = (dto.category || '').toUpperCase();
+    if (catUpper === 'DEWORMING') {
+      scheduleType = PreventiveType.DEWORMING;
+    } else if (catUpper === 'FARRIER' || catUpper === 'FARRIER_HOOF_CARE') {
+      scheduleType = PreventiveType.FARRIER_HOOF_CARE;
+    } else if (catUpper === 'DENTAL') {
+      scheduleType = PreventiveType.DENTAL;
+    } else {
+      scheduleType = PreventiveType.VACCINATION;
+    }
+
+    let typeCatalogId = dto.typeCatalogId;
+    if (typeCatalogId) {
+      const catalog = await this.prisma.preventiveTypeCatalog.findUnique({
+        where: { id: typeCatalogId },
+      });
+      if (!catalog) {
+        typeCatalogId = undefined;
+      }
+    }
+
+    if (!typeCatalogId) {
+      // Find catalog with matching name
+      let catalog = await this.prisma.preventiveTypeCatalog.findFirst({
+        where: {
+          name: { equals: dto.type.trim(), mode: 'insensitive' },
+        },
+      });
+
+      if (!catalog) {
+        // Try matching by category
+        catalog = await this.prisma.preventiveTypeCatalog.findFirst({
+          where: { category: scheduleType, isActive: true },
+        });
+      }
+
+      if (!catalog) {
+        // Create catalog entry for this type
+        const cleanSlug = dto.type
+          .trim()
+          .toUpperCase()
+          .replace(/[^A-Z0-9]/g, '_')
+          .slice(0, 15);
+        const code = `CUSTOM_${cleanSlug}_${Date.now().toString().slice(-4)}`;
+        catalog = await this.prisma.preventiveTypeCatalog.create({
+          data: {
+            code,
+            name: dto.type.trim(),
+            category: scheduleType,
+            intervalDays:
+              scheduleType === PreventiveType.FARRIER_HOOF_CARE
+                ? 35
+                : scheduleType === PreventiveType.DEWORMING
+                  ? 90
+                  : scheduleType === PreventiveType.DENTAL
+                    ? 365
+                    : 180,
+            advanceNoticeDays: 7,
+            applyToNewHorses: false,
+            isActive: true,
+          },
+        });
+      }
+
+      typeCatalogId = catalog.id;
+    }
+
+    const dueDate = new Date(dto.dueDate);
+
+    const schedule = await this.prisma.preventiveSchedule.create({
+      data: {
+        horseId: dto.horseId,
+        typeCatalogId,
+        scheduleType,
+        dueDate,
+        veterinarianUserId: actor.userId,
+        productAdministered: dto.type.trim(),
+        notes: dto.notes?.trim() || null,
+        status: PreventiveStatus.PENDING,
+      },
+      include: {
+        horse: {
+          select: {
+            id: true,
+            name: true,
+            microchipRfid: true,
+            stallAllocations: {
+              where: { isActive: true },
+              select: { stall: { select: { code: true, zone: true } } },
+            },
+          },
+        },
+        typeCatalog: true,
+        veterinarian: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    await this.audit.record(
+      { id: actor.userId, name: actor.fullName },
+      'CREATE_PREVENTIVE_SCHEDULE',
+      `Created preventive care schedule (${dto.type}) for horse ${horse.name}`,
+      schedule.id,
+      { entityName: 'PreventiveSchedule' },
+    );
+
+    return schedule;
   }
 }

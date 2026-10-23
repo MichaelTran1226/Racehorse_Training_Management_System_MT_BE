@@ -15,6 +15,11 @@ import { Type } from 'class-transformer';
 import { PreventiveType } from '@prisma/client';
 
 export class RecordPreventiveCareDto {
+  @ApiPropertyOptional({ description: 'ID lịch chăm sóc (nếu hoàn thành từ lịch có sẵn)' })
+  @IsOptional()
+  @IsString()
+  scheduleId?: string;
+
   @ApiPropertyOptional({ description: 'ID chiến mã (dành cho ghi nhận đơn lẻ)' })
   @IsOptional()
   @IsUUID()
@@ -26,10 +31,10 @@ export class RecordPreventiveCareDto {
   @IsUUID('all', { each: true })
   horseIds?: string[];
 
-  @ApiProperty({ description: 'ID loại chăm sóc định kỳ' })
-  @IsNotEmpty({ message: 'Choose the preventive care type' })
+  @ApiPropertyOptional({ description: 'ID loại chăm sóc định kỳ' })
+  @IsOptional()
   @IsUUID()
-  typeCatalogId: string;
+  typeCatalogId?: string;
 
   @ApiPropertyOptional({ description: 'Ngày thực hiện (ISO date string, mặc định hôm nay)' })
   @IsOptional()
@@ -151,4 +156,41 @@ export class PreventiveQueryDto {
   @IsOptional()
   @IsString()
   limit?: string;
+}
+
+export class CreatePreventiveScheduleDto {
+  @ApiProperty({ description: 'ID chiến mã' })
+  @IsNotEmpty({ message: 'Choose a horse' })
+  @IsUUID()
+  horseId: string;
+
+  @ApiPropertyOptional({ description: 'ID loại định kỳ (nếu chọn từ danh mục)' })
+  @IsOptional()
+  @IsUUID()
+  typeCatalogId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Nhóm chăm sóc: VACCINATION | DEWORMING | FARRIER | FARRIER_HOOF_CARE | DENTAL | GENERAL',
+  })
+  @IsOptional()
+  @IsString()
+  category?: string;
+
+  @ApiProperty({ description: 'Tên quy trình / loại chăm sóc / vắc xin' })
+  @IsNotEmpty({ message: 'Enter care procedure name' })
+  @IsString()
+  @Length(2, 150)
+  type: string;
+
+  @ApiProperty({ description: 'Ngày đến hạn' })
+  @IsNotEmpty({ message: 'Enter due date' })
+  @IsDateString({}, { message: 'Due date is not valid' })
+  dueDate: string;
+
+  @ApiPropertyOptional({ description: 'Ghi chú thêm' })
+  @IsOptional()
+  @IsString()
+  @Length(0, 500)
+  notes?: string;
 }

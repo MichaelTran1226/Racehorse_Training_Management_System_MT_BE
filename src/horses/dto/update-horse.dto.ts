@@ -1,4 +1,13 @@
-import { IsIn, IsISO8601, IsOptional, IsString, Length, Matches } from 'class-validator';
+import {
+  IsIn,
+  IsISO8601,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Length,
+  Matches,
+  Min,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { HORSE_GENDERS, HORSE_NAME_RE, normalizeName, RFID_RE } from '../horse-rules';
@@ -63,6 +72,12 @@ export class UpdateHorseDto {
   @IsOptional()
   @IsString()
   ownerId?: string;
+
+  @ApiPropertyOptional({ description: 'Weight in kg (> 0)' })
+  @IsOptional()
+  @IsNumber({}, { message: 'Cân nặng phải là số.' })
+  @Min(0.01, { message: 'Cân nặng phải lớn hơn 0 kg.' })
+  weightKg?: number;
 
   @ApiPropertyOptional({ description: 'Avatar URL' })
   @IsOptional()

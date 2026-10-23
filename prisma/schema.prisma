@@ -433,6 +433,7 @@ model Horse {
   dob             DateTime
   gender          String
   color           String
+  weightKg        Float?
   avatarUrl       String?
   status          HorseStatus @default(RESTING)
   isMedicalLocked Boolean     @default(false)

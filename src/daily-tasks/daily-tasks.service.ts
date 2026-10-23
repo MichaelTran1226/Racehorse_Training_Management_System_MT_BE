@@ -186,7 +186,7 @@ export class DailyTasksService {
         tasksToEnsure.push(
           {
             taskType: DailyTaskType.ICE_BOOT_REST,
-            title: '🧊 Ngâm chân nước đá phục hồi buổi sáng',
+            title: 'Ngâm chân nước đá phục hồi buổi sáng',
             description:
               'Ngựa có Khóa Huấn Luyện Y Tế. Thực hiện ngâm chân nước đá 20 phút cho chân đau/khớp viêm, sau đó để ngựa nghỉ ngơi tại ô.',
             mealType: null,
@@ -194,7 +194,7 @@ export class DailyTasksService {
           },
           {
             taskType: DailyTaskType.ICE_BOOT_REST,
-            title: '🧊 Chườm lạnh & Theo dõi vết thương buổi chiều',
+            title: 'Chườm lạnh & Theo dõi vết thương buổi chiều',
             description:
               'Kiểm tra lại khớp/vết thương, chườm lạnh 15 phút. Tuyệt đối không dắt chạy nhanh hay để ngựa vận động mạnh.',
             mealType: null,
