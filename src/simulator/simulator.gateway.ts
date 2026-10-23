@@ -8,7 +8,9 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { Logger, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
+import { plainToInstance, type ClassConstructor } from 'class-transformer';
+import { validate } from 'class-validator';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { Role } from '@prisma/client';
@@ -24,10 +26,25 @@ import {
   TelemetryTickPacketDto,
 } from './dto/simulator-packet.dto';
 import { SimulatorAck } from './simulator.types';
+import { ExamFinishedPacketDto } from './dto/exam-packet.dto';
 
 const ALLOWED_SUBSCRIBERS: Role[] = [Role.CLUB_MANAGER, Role.HEAD_TRAINER, Role.VETERINARIAN];
 
 const ALLOWED_PUBLISHERS: Role[] = [Role.CLUB_MANAGER, Role.HEAD_TRAINER];
+
+async function validatePacket<T extends object>(
+  type: ClassConstructor<T>,
+  packet: unknown,
+): Promise<T> {
+  try {
+    const value = plainToInstance(type, packet);
+    const errors = await validate(value, { whitelist: true, forbidNonWhitelisted: true });
+    if (errors.length > 0) throw new Error();
+    return value;
+  } catch {
+    throw new Error('INVALID_SIMULATOR_PACKET');
+  }
+}
 
 @WebSocketGateway({
   namespace: '/simulator',
@@ -77,41 +94,47 @@ export class SimulatorGateway implements OnGatewayInit, OnGatewayConnection, OnG
         return;
       }
 
-      const profile = await this.authService.getMe(payload.sub);
-      if (!profile || profile.status !== 'ACTIVE') {
-        this.logger.warn(`Rejected connection [${client.id}]: user ${payload.sub} not active`);
-        client.disconnect(true);
-        return;
-      }
-
-      if (!ALLOWED_SUBSCRIBERS.includes(profile.role as Role)) {
-        this.logger.warn(
-          `Rejected connection [${client.id}]: role ${profile.role} is not permitted in /simulator`,
-        );
-        client.disconnect(true);
-        return;
-      }
-
-      const user: CurrentUserPayload = {
-        userId: profile.id,
-        email: profile.email,
-        role: profile.role,
-        fullName: profile.fullName,
-      };
-
-      client.data.user = user;
-      this.logger.log(`Client connected [${client.id}] user=${user.email} role=${user.role}`);
+      client.data.authReady = this.authenticateClient(client, payload.sub);
+      await client.data.authReady;
     } catch (err: any) {
       this.logger.error(`Error in handleConnection [${client.id}]: ${err.message}`);
       client.disconnect(true);
     }
   }
 
+  private async authenticateClient(client: Socket, userId: string): Promise<void> {
+    const profile = await this.authService.getMe(userId);
+    if (!profile || profile.status !== 'ACTIVE') {
+      this.logger.warn(`Rejected connection [${client.id}]: user ${userId} not active`);
+      client.disconnect(true);
+      return;
+    }
+
+    if (!ALLOWED_SUBSCRIBERS.includes(profile.role as Role)) {
+      this.logger.warn(
+        `Rejected connection [${client.id}]: role ${profile.role} is not permitted in /simulator`,
+      );
+      client.disconnect(true);
+      return;
+    }
+
+    const user: CurrentUserPayload = {
+      userId: profile.id,
+      email: profile.email,
+      role: profile.role,
+      fullName: profile.fullName,
+    };
+
+    client.data.user = user;
+    this.logger.log(`Client connected [${client.id}] user=${user.email} role=${user.role}`);
+  }
+
   handleDisconnect(client: Socket) {
     this.logger.log(`Client disconnected [${client.id}]`);
   }
 
-  private requirePublisher(client: Socket): CurrentUserPayload {
+  private async requirePublisher(client: Socket): Promise<CurrentUserPayload> {
+    await client.data?.authReady;
     const user: CurrentUserPayload | undefined = client.data?.user;
     if (!user) {
       throw new Error('UNAUTHENTICATED');
@@ -122,16 +145,24 @@ export class SimulatorGateway implements OnGatewayInit, OnGatewayConnection, OnG
     return user;
   }
 
+  private async requireExamPublisher(client: Socket): Promise<CurrentUserPayload> {
+    await client.data?.authReady;
+    const user: CurrentUserPayload | undefined = client.data?.user;
+    if (!user) throw new Error('UNAUTHENTICATED');
+    if (user.role !== Role.VETERINARIAN) throw new Error('FORBIDDEN');
+    return user;
+  }
+
   @SubscribeMessage('sim:telemetry_tick')
-  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))
   async handleTelemetryTick(
     @ConnectedSocket() client: Socket,
     @MessageBody() packet: TelemetryTickPacketDto,
   ): Promise<SimulatorAck> {
     try {
-      const user = this.requirePublisher(client);
-      await this.simulatorService.recordTelemetry(packet, user);
-      this.server.emit('sim:telemetry_tick', packet);
+      const user = await this.requirePublisher(client);
+      const validPacket = await validatePacket(TelemetryTickPacketDto, packet);
+      await this.simulatorService.recordTelemetry(validPacket, user);
+      this.server.emit('sim:telemetry_tick', validPacket);
       return { accepted: true };
     } catch (err: any) {
       return { accepted: false, code: err.message };
@@ -139,15 +170,15 @@ export class SimulatorGateway implements OnGatewayInit, OnGatewayConnection, OnG
   }
 
   @SubscribeMessage('sim:race_progress')
-  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))
   async handleRaceProgress(
     @ConnectedSocket() client: Socket,
     @MessageBody() packet: RaceProgressPacketDto,
   ): Promise<SimulatorAck> {
     try {
-      const user = this.requirePublisher(client);
-      await this.simulatorService.recordRaceProgress(packet, user);
-      this.server.emit('sim:race_progress', packet);
+      const user = await this.requirePublisher(client);
+      const validPacket = await validatePacket(RaceProgressPacketDto, packet);
+      await this.simulatorService.recordRaceProgress(validPacket, user);
+      this.server.emit('sim:race_progress', validPacket);
       return { accepted: true };
     } catch (err: any) {
       return { accepted: false, code: err.message };
@@ -155,22 +186,22 @@ export class SimulatorGateway implements OnGatewayInit, OnGatewayConnection, OnG
   }
 
   @SubscribeMessage('sim:incident_report')
-  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))
   async handleIncidentReport(
     @ConnectedSocket() client: Socket,
     @MessageBody() packet: IncidentReportPacketDto,
   ): Promise<SimulatorAck> {
     try {
-      const user = this.requirePublisher(client);
+      const user = await this.requirePublisher(client);
+      const validPacket = await validatePacket(IncidentReportPacketDto, packet);
       const incident = await this.incidentsService.createFromSimulator(
-        packet.packet_id,
-        packet,
+        validPacket.packet_id,
+        validPacket,
         user,
       );
 
       // Fan out persisted incident to all connected monitors
       this.server.emit('sim:incident_report', {
-        ...packet,
+        ...validPacket,
         incident_id: incident.id,
         incident_number: incident.incidentNumber,
       });
@@ -182,21 +213,37 @@ export class SimulatorGateway implements OnGatewayInit, OnGatewayConnection, OnG
   }
 
   @SubscribeMessage('sim:session_finished')
-  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))
   async handleSessionFinished(
     @ConnectedSocket() client: Socket,
     @MessageBody() packet: SessionFinishedPacketDto,
   ): Promise<SimulatorAck> {
     try {
-      const user = this.requirePublisher(client);
-      const session = await this.simulatorService.recordFinished(packet, user);
+      const user = await this.requirePublisher(client);
+      const validPacket = await validatePacket(SessionFinishedPacketDto, packet);
+      const session = await this.simulatorService.recordFinished(validPacket, user);
 
       this.server.emit('sim:session_finished', {
-        ...packet,
+        ...validPacket,
         session_id: session.id,
         status: session.status,
       });
 
+      return { accepted: true, id: session.id };
+    } catch (err: any) {
+      return { accepted: false, code: err.message };
+    }
+  }
+
+  @SubscribeMessage('sim:exam_finished')
+  async handleExamFinished(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() packet: ExamFinishedPacketDto,
+  ): Promise<SimulatorAck> {
+    try {
+      const user = await this.requireExamPublisher(client);
+      const validPacket = await validatePacket(ExamFinishedPacketDto, packet);
+      const session = await this.simulatorService.recordExamFinished(validPacket, user);
+      this.server.emit('sim:exam_finished', validPacket);
       return { accepted: true, id: session.id };
     } catch (err: any) {
       return { accepted: false, code: err.message };

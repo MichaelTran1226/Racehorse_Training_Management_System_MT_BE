@@ -245,9 +245,11 @@ enum SupplyUnit {
 enum SimulatorSessionType {
   WORKOUT
   RACE
+  EXAM
 }
 
 enum SimulatorSessionStatus {
+  PENDING
   RUNNING
   COMPLETED
   ABORTED_INJURY
@@ -632,6 +634,7 @@ model WorkoutSession {
   vetNotes             String?
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt
+  simulatorSession     SimulatorSession?
 
   @@index([trainingPlanId])
   @@index([horseId])
@@ -683,6 +686,7 @@ model MedicalRecord {
 
   injuries     InjuryLog[]
   medicalLocks MedicalLock[]
+  simulatorSessions SimulatorSession[]
 
   @@index([horseId])
   @@index([veterinarianUserId])
@@ -1171,11 +1175,16 @@ model SimulatorSession {
   lastSnapshot  Json?
   result        Json?
   actorUserId   String
+  workoutSessionId String?                @unique
+  workoutSession   WorkoutSession?        @relation(fields: [workoutSessionId], references: [id], onDelete: SetNull)
+  medicalRecordId  String?
+  medicalRecord    MedicalRecord?          @relation(fields: [medicalRecordId], references: [id], onDelete: SetNull)
   startedAt     DateTime               @default(now())
   finishedAt    DateTime?
   createdAt     DateTime               @default(now())
   updatedAt     DateTime               @updatedAt
 
   @@index([status, updatedAt])
+  @@index([medicalRecordId])
 }
 

@@ -89,6 +89,17 @@ export class TelemetryMetricsDto {
   calories_kcal: number;
 }
 
+export class TelemetryAlertsDto {
+  @IsBoolean()
+  overload_warning: boolean;
+
+  @IsBoolean()
+  limp_detected: boolean;
+
+  @IsBoolean()
+  heat_stress: boolean;
+}
+
 export class TelemetryTickPacketDto {
   @IsIn(['sim:telemetry_tick'])
   event: 'sim:telemetry_tick';
@@ -118,9 +129,19 @@ export class TelemetryTickPacketDto {
   @Type(() => TelemetryMetricsDto)
   metrics: TelemetryMetricsDto;
 
-  @IsArray()
-  @IsString({ each: true })
-  alerts: string[];
+  @ValidateNested()
+  @Type(() => TelemetryAlertsDto)
+  alerts: TelemetryAlertsDto;
+}
+
+export class StallCoordinatesDto {
+  @IsInt()
+  @Min(0)
+  col: number;
+
+  @IsInt()
+  @Min(0)
+  row: number;
 }
 
 export class IncidentPayloadDto {
@@ -135,8 +156,9 @@ export class IncidentPayloadDto {
   location: 'TRACK' | 'STALL';
 
   @IsOptional()
-  @IsString()
-  stall?: string;
+  @ValidateNested()
+  @Type(() => StallCoordinatesDto)
+  stall?: StallCoordinatesDto;
 }
 
 export class IncidentSnapshotDto {

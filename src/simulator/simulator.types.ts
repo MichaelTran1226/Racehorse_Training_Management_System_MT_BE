@@ -19,6 +19,77 @@ export interface SimulatorSessionsResponse {
   recent: SimulatorSession[];
 }
 
+export interface WorkoutSimulationStartResponse {
+  sessionId: string;
+  status: SimulatorSessionStatus;
+  launchUrl: string;
+}
+
+export interface ExamSimulationResultResponse {
+  sessionId: string;
+  status: SimulatorSessionStatus;
+  resultDraft: {
+    temperature: number;
+    restingHeartRate: number;
+    respiratoryRate: number;
+    weightKg: number;
+    capturedAt: string;
+    modelVersion: string;
+    source: 'EQUIFLOW_SIMULATOR';
+  } | null;
+}
+
+export interface ExamSimulationContext {
+  type: 'EXAM';
+  sessionId: string;
+  status: SimulatorSessionStatus;
+  horse: WorkoutSimulationContext['horse'];
+  medicalRecordId: string | null;
+}
+
+export interface WorkoutSimulationResultResponse {
+  sessionId: string;
+  status: SimulatorSessionStatus;
+  resultDraft: {
+    actualTimeSeconds?: number;
+    actualDistanceMeters?: number;
+    heartRatePeak?: number;
+    heartRateRecovery?: number;
+    topSpeedKmh?: number;
+    actualSurface?: 'TURF' | 'DIRT' | 'SYNTHETIC';
+    trackCondition?: 'GOOD' | 'SOFT' | 'HEAVY';
+  } | null;
+}
+
+export interface WorkoutSimulationContext {
+  type: 'WORKOUT';
+  sessionId: string;
+  status: SimulatorSessionStatus;
+  horse: {
+    id: string;
+    horseCode: string | null;
+    name: string;
+    microchipRfid: string;
+    breed: string;
+    dob: Date;
+    gender: string;
+    color: string;
+    status: string;
+    isMedicalLocked: boolean;
+  };
+  workout: {
+    id: string;
+    scheduledDate: Date;
+    workoutType: string | null;
+    intensity: string | null;
+    distanceMeters: number;
+    repetitions: number;
+    targetSpeedKmh: number | null;
+    targetDurationSeconds: number | null;
+    trackSurface: string | null;
+  };
+}
+
 export interface SimulatorAck {
   accepted: boolean;
   id?: string;

@@ -27,6 +27,7 @@ describe('SimulatorGateway', () => {
       recordTelemetry: jest.fn(),
       recordRaceProgress: jest.fn(),
       recordFinished: jest.fn(),
+      recordExamFinished: jest.fn(),
     };
     incidentsService = {
       createFromSimulator: jest.fn(),
@@ -142,9 +143,82 @@ describe('SimulatorGateway', () => {
       expect(mockTrainerClient.data.user).toBeDefined();
       expect(mockTrainerClient.data.user.role).toBe(Role.HEAD_TRAINER);
     });
+
+    it('waits for asynchronous authentication before handling the first packet', async () => {
+      let resolveProfile!: (profile: any) => void;
+      const mockClient: any = {
+        handshake: { auth: { token: 'trainer-token' } },
+        disconnect: jest.fn(),
+        data: {},
+      };
+      jwtService.verify.mockReturnValue({ sub: 'trainer-1' });
+      authService.getMe.mockReturnValue(new Promise((resolve) => (resolveProfile = resolve)));
+      simulatorService.recordFinished.mockResolvedValue({ id: 'session-1', status: 'COMPLETED' });
+
+      const connection = gateway.handleConnection(mockClient);
+      const firstPacket = gateway.handleSessionFinished(mockClient, {
+        event: 'sim:session_finished',
+        session_id: 'session-1',
+        type: 'WORKOUT',
+        status: 'COMPLETED',
+        horse: { horse_id: 'horse-1' },
+        result: {},
+      });
+      resolveProfile({
+        id: 'trainer-1',
+        email: 'trainer@equiflow.com',
+        role: Role.HEAD_TRAINER,
+        status: 'ACTIVE',
+        fullName: 'Trainer Minh',
+      });
+
+      await connection;
+      await expect(firstPacket).resolves.toEqual({ accepted: true, id: 'session-1' });
+    });
   });
 
   describe('telemetry and incident relay', () => {
+    it('lets a veterinarian publish only a valid examination result', async () => {
+      const client: any = {
+        data: { user: { userId: 'vet-1', role: Role.VETERINARIAN, email: 'vet@equiflow.com' } },
+      };
+      const packet = {
+        event: 'sim:exam_finished' as const,
+        session_id: 'exam-1',
+        horse_id: '68eecf5d-1bc8-4a98-8d74-0b2399d04fe1',
+        captured_at: '2026-10-23T01:00:00.000Z',
+        model_version: 'equiflow-sim-v3',
+        source: 'EQUIFLOW_SIMULATOR' as const,
+        metrics: {
+          temperature: { value: 38.2, unit: 'CELSIUS' as const },
+          resting_heart_rate: { value: 38, unit: 'BPM' as const },
+          respiratory_rate: { value: 13, unit: 'BREATHS_PER_MINUTE' as const },
+          weight: { value: 480, unit: 'KG' as const },
+        },
+      };
+      simulatorService.recordExamFinished.mockResolvedValue({ id: 'exam-1' });
+
+      await expect(gateway.handleExamFinished(client, packet)).resolves.toEqual({
+        accepted: true,
+        id: 'exam-1',
+      });
+      expect(simulatorService.recordExamFinished).toHaveBeenCalledWith(packet, client.data.user);
+
+      await expect(
+        gateway.handleExamFinished(client, {
+          ...packet,
+          metrics: { ...packet.metrics, temperature: { value: 99, unit: 'FAHRENHEIT' as any } },
+        }),
+      ).resolves.toEqual({ accepted: false, code: 'INVALID_SIMULATOR_PACKET' });
+
+      await expect(
+        gateway.handleExamFinished(
+          { data: { user: { ...client.data.user, role: Role.HEAD_TRAINER } } } as any,
+          packet,
+        ),
+      ).resolves.toEqual({ accepted: false, code: 'FORBIDDEN' });
+    });
+
     it('relays accepted telemetry packet to subscribers', async () => {
       const mockTrainerClient: any = {
         data: {
@@ -186,7 +260,11 @@ describe('SimulatorGateway', () => {
           stride_freq_spm: 130,
           calories_kcal: 20,
         },
-        alerts: [],
+        alerts: {
+          overload_warning: false,
+          limp_detected: false,
+          heat_stress: false,
+        },
       };
 
       const result = await gateway.handleTelemetryTick(mockTrainerClient, packet);
@@ -197,6 +275,92 @@ describe('SimulatorGateway', () => {
       );
       expect(mockServer.emit).toHaveBeenCalledWith('sim:telemetry_tick', packet);
       expect(result).toEqual({ accepted: true });
+    });
+
+    it.each([
+      ['out-of-range metric', { metrics: { velocity_mps: 51 } }],
+      ['unknown field', { unexpected: true }],
+      ['non-object payload', { payload: null }],
+    ] as [string, { metrics?: { velocity_mps: number }; unexpected?: boolean; payload?: null }][])(
+      'returns a stable ack for %s without recording telemetry',
+      async (_name, invalid) => {
+        const mockTrainerClient: any = {
+          data: {
+            user: {
+              userId: 'trainer-1',
+              role: Role.HEAD_TRAINER,
+              email: 'trainer@equiflow.com',
+              fullName: 'Trainer Minh',
+            },
+          },
+        };
+        const validPacket: any = {
+          event: 'sim:telemetry_tick',
+          session_id: 'session-1',
+          timestamp_ms: 1,
+          sim_time_s: 1,
+          sim_speed_multiplier: 1,
+          horse: { horse_id: 'horse-1' },
+          track: {
+            surface: 'GRASS',
+            target_distance_m: 1200,
+            covered_distance_m: 10,
+            track_condition: 'GOOD',
+            obstacles_cleared: 0,
+            obstacles_total: 0,
+          },
+          metrics: {
+            velocity_mps: 15,
+            heart_rate_bpm: 120,
+            stamina_pct: 99,
+            body_temp_c: 38,
+            stride_length_m: 6,
+            stride_freq_spm: 130,
+            calories_kcal: 20,
+            ...invalid.metrics,
+          },
+          alerts: { overload_warning: false, limp_detected: false, heat_stress: false },
+          ...(invalid.unexpected ? { unexpected: true } : {}),
+        };
+        const packet = invalid.payload === null ? null : validPacket;
+
+        await expect(gateway.handleTelemetryTick(mockTrainerClient, packet)).resolves.toEqual({
+          accepted: false,
+          code: 'INVALID_SIMULATOR_PACKET',
+        });
+        expect(simulatorService.recordTelemetry).not.toHaveBeenCalled();
+      },
+    );
+
+    it('rejects an invalid incident before persistence', async () => {
+      const mockTrainerClient: any = {
+        data: {
+          user: {
+            userId: 'trainer-1',
+            role: Role.HEAD_TRAINER,
+            email: 'trainer@equiflow.com',
+            fullName: 'Trainer Minh',
+          },
+        },
+      };
+      const packet: any = {
+        event: 'sim:incident_report',
+        session_id: null,
+        timestamp_ms: 1,
+        horse: { horse_id: 'horse-1' },
+        incident: {
+          kind: 'COLIC',
+          label: 'Colic',
+          location: 'STALL',
+          stall: { col: 2, row: 3, unexpected: true },
+        },
+      };
+
+      await expect(gateway.handleIncidentReport(mockTrainerClient, packet)).resolves.toEqual({
+        accepted: false,
+        code: 'INVALID_SIMULATOR_PACKET',
+      });
+      expect(incidentsService.createFromSimulator).not.toHaveBeenCalled();
     });
 
     it('ingests incident packet, sets CRITICAL for FRACTURE, and relays to monitors without medical lock', async () => {
@@ -225,7 +389,8 @@ describe('SimulatorGateway', () => {
         incident: {
           kind: 'FRACTURE',
           label: 'Gãy xương chân cấp tính',
-          location: 'TRACK',
+          location: 'STALL',
+          stall: { col: 2, row: 3 },
         },
         snapshot: {
           covered_distance_m: 600,
