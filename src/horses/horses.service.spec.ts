@@ -156,7 +156,7 @@ describe('HorsesService', () => {
           gender: 'Colt',
           color: 'Bay',
           microchip: '123456789012345',
-          },
+        },
         mockManager,
       );
 

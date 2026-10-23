@@ -6,9 +6,6 @@ import { apiError } from '../common/exceptions/api-error';
 /** Tên ngựa: chữ (có dấu tiếng Việt), số, khoảng trắng, ' . - */
 export const HORSE_NAME_RE = /^[\p{L}\p{N}\s'.-]+$/u;
 
-
-
-
 /** Giới tính (SC-1.02): Ngựa đực / Ngựa cái / Ngựa đực thiến. */
 export const HORSE_GENDERS = ['Stallion', 'Mare', 'Gelding'];
 

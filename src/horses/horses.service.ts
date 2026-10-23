@@ -62,7 +62,6 @@ export class HorsesService {
     return `985${Date.now().toString().slice(-12)}`;
   }
 
-
   /**
    * Che giấu số microchip với vai trò GROOM (chỉ hiển thị 4 số cuối).
    */
