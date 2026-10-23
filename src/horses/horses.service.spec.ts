@@ -141,7 +141,6 @@ describe('HorsesService', () => {
         gender: 'Colt',
         color: 'Bay',
         microchip: '123456789012345',
-        rfid: 'RFID-12345',
         microchipRfid: '123456789012345',
         status: HorseStatus.RESTING,
         isMedicalLocked: false,
@@ -157,7 +156,6 @@ describe('HorsesService', () => {
           gender: 'Colt',
           color: 'Bay',
           microchip: '123456789012345',
-          rfid: 'RFID-12345',
         },
         mockManager,
       );
@@ -201,7 +199,7 @@ describe('HorsesService', () => {
       });
     });
 
-    it('should auto-generate 15-digit microchip and RFID if not provided', async () => {
+    it('should auto-generate 15-digit microchip if not provided', async () => {
       prisma.horse.findFirst.mockResolvedValue(null);
       prisma.horse.findUnique.mockResolvedValue(null);
       prisma.horse.count.mockResolvedValue(0);
@@ -222,7 +220,6 @@ describe('HorsesService', () => {
       );
 
       expect(res.microchip).toMatch(/^\d{15}$/);
-      expect(res.rfid).toMatch(/^RFID-[A-Z0-9-]+$/);
     });
 
     it('should occupy the chosen stall inside the same transaction', async () => {

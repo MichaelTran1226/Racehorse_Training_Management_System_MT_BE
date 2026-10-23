@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, ParseEnumPipe, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../common/decorators/roles.decorator';
+import { Public } from '../common/decorators/public.decorator';
 import { UserRole } from '../common/enums/role.enum';
 import { SimulatorService } from './simulator.service';
 import { SimulatorSessionsResponse } from './simulator.types';
@@ -13,6 +14,13 @@ import { StartExamDto } from './dto/exam-packet.dto';
 @Controller('simulator')
 export class SimulatorController {
   constructor(private readonly simulatorService: SimulatorService) {}
+
+  @Get('horses')
+  @Public()
+  @ApiOperation({ summary: 'Lấy toàn bộ danh sách ngựa công khai cho thiết bị mô phỏng' })
+  getSimulatorHorses() {
+    return this.simulatorService.getHorsesForSimulator();
+  }
 
   @Post('workouts/:workoutId/start')
   @Roles(UserRole.HEAD_TRAINER)
@@ -50,9 +58,9 @@ export class SimulatorController {
   }
 
   @Get('sessions/:sessionId/context')
-  @Roles(UserRole.HEAD_TRAINER, UserRole.VETERINARIAN)
+  @Public()
   @ApiOperation({ summary: 'Lấy ngựa và cấu hình của phiên mô phỏng' })
-  getContext(@Param('sessionId') sessionId: string, @CurrentUser() actor: CurrentUserPayload) {
+  getContext(@Param('sessionId') sessionId: string, @CurrentUser() actor?: CurrentUserPayload) {
     return this.simulatorService.getContext(sessionId, actor);
   }
 

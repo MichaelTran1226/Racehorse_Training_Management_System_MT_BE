@@ -163,13 +163,36 @@ async function main() {
     },
   });
 
-  console.log(`[1/9] Seeded 10 Users across all Roles and Account Lifecycles (ACTIVE, PENDING_APPROVAL, INVITED, LOCKED)`);
+  console.log(
+    `[1/9] Seeded 10 Users across all Roles and Account Lifecycles (ACTIVE, PENDING_APPROVAL, INVITED, LOCKED)`,
+  );
 
   // 2. Khu chuồng (Stall Zones)
   const zoneDefs = [
-    { code: 'ZONE-A', name: 'Zone A - Barn 1', rows: 2, cols: 4, sortOrder: 1, description: 'Chuồng đua tiêu chuẩn số 1' },
-    { code: 'ZONE-B', name: 'Zone B - Barn 2', rows: 2, cols: 4, sortOrder: 2, description: 'Chuồng tập huấn luyện số 2' },
-    { code: 'ZONE-C', name: 'Zone C - Isolation', rows: 1, cols: 4, sortOrder: 3, description: 'Khu cách ly thú y & kiểm dịch' },
+    {
+      code: 'ZONE-A',
+      name: 'Zone A - Barn 1',
+      rows: 2,
+      cols: 4,
+      sortOrder: 1,
+      description: 'Chuồng đua tiêu chuẩn số 1',
+    },
+    {
+      code: 'ZONE-B',
+      name: 'Zone B - Barn 2',
+      rows: 2,
+      cols: 4,
+      sortOrder: 2,
+      description: 'Chuồng tập huấn luyện số 2',
+    },
+    {
+      code: 'ZONE-C',
+      name: 'Zone C - Isolation',
+      rows: 1,
+      cols: 4,
+      sortOrder: 3,
+      description: 'Khu cách ly thú y & kiểm dịch',
+    },
   ];
 
   const zoneIds: Record<string, string> = {};
@@ -183,7 +206,14 @@ async function main() {
   }
 
   // 3. Toàn bộ 20 ô chuồng với các trạng thái: OCCUPIED, AVAILABLE, MAINTENANCE, INACTIVE
-  const stallDefs: Array<{ code: string; zone: string; row: number; col: number; status: StallStatus; notes?: string }> = [];
+  const stallDefs: Array<{
+    code: string;
+    zone: string;
+    row: number;
+    col: number;
+    status: StallStatus;
+    notes?: string;
+  }> = [];
 
   // Zone A: 2x4 = 8 ô (STALL-A01 đến STALL-A08)
   for (let r = 1; r <= 2; r++) {
@@ -222,7 +252,8 @@ async function main() {
       row: 1,
       col: c,
       status: c === 4 ? StallStatus.INACTIVE : StallStatus.AVAILABLE,
-      notes: c === 4 ? 'Ô chuồng ngừng sử dụng (đang cải tạo hệ thống khử trùng áp lực âm)' : undefined,
+      notes:
+        c === 4 ? 'Ô chuồng ngừng sử dụng (đang cải tạo hệ thống khử trùng áp lực âm)' : undefined,
     });
   }
 
@@ -234,7 +265,9 @@ async function main() {
       create: { ...s, ...place },
     });
   }
-  console.log(`[2/9] Seeded 3 Zones and 20 Stalls (covering AVAILABLE, OCCUPIED, MAINTENANCE, INACTIVE)`);
+  console.log(
+    `[2/9] Seeded 3 Zones and 20 Stalls (covering AVAILABLE, OCCUPIED, MAINTENANCE, INACTIVE)`,
+  );
 
   // 4. Danh mục Giống & Màu lông (SC-1.06)
   const catalog: Array<{ type: HorseCatalogType; names: string[] }> = [
@@ -274,7 +307,6 @@ async function main() {
       horseCode: 'HR-000001',
       name: 'Thunderbolt Swift',
       microchip: '985141002341001',
-      rfid: 'RFID-985141002341',
       breed: 'Thoroughbred',
       dob: new Date('2021-04-12'),
       gender: 'Colt',
@@ -289,7 +321,6 @@ async function main() {
       horseCode: 'HR-000002',
       name: 'Northern Dancer Legacy',
       microchip: '985141002342002',
-      rfid: 'RFID-985141002342',
       breed: 'Thoroughbred',
       dob: new Date('2020-03-15'),
       gender: 'Stallion',
@@ -304,7 +335,6 @@ async function main() {
       horseCode: 'HR-000003',
       name: 'Shadowfax Wonder',
       microchip: '985141002343003',
-      rfid: 'RFID-985141002343',
       breed: 'Arabian Cross',
       dob: new Date('2022-01-20'),
       gender: 'Filly',
@@ -319,7 +349,6 @@ async function main() {
       horseCode: 'HR-000004',
       name: 'Pegasus Dream',
       microchip: '985141002344004',
-      rfid: 'RFID-985141002344',
       breed: 'Thoroughbred',
       dob: new Date('2021-08-05'),
       gender: 'Gelding',
@@ -334,7 +363,6 @@ async function main() {
       horseCode: 'HR-000005',
       name: 'Golden Eclipse',
       microchip: '985141002345005',
-      rfid: 'RFID-985141002345',
       breed: 'Quarter Horse',
       dob: new Date('2022-05-18'),
       gender: 'Mare',
@@ -349,7 +377,6 @@ async function main() {
       horseCode: 'HR-000006',
       name: 'Storm Runner',
       microchip: '985141002346006',
-      rfid: 'RFID-985141002346',
       breed: 'Thoroughbred',
       dob: new Date('2020-11-10'),
       gender: 'Stallion',
@@ -364,7 +391,6 @@ async function main() {
       horseCode: 'HR-000007',
       name: 'Midnight Mirage',
       microchip: '985141002347007',
-      rfid: 'RFID-985141002347',
       breed: 'Standardbred',
       dob: new Date('2021-02-14'),
       gender: 'Mare',
@@ -379,7 +405,6 @@ async function main() {
       horseCode: 'HR-000008',
       name: 'Red Velvet',
       microchip: '985141002348008',
-      rfid: 'RFID-985141002348',
       breed: 'Warmblood',
       dob: new Date('2022-09-01'),
       gender: 'Mare',
@@ -394,7 +419,6 @@ async function main() {
       horseCode: 'HR-000009',
       name: 'Silver Comet',
       microchip: '985141002349009',
-      rfid: 'RFID-985141002349',
       breed: 'Thoroughbred',
       dob: new Date('2017-06-25'),
       gender: 'Gelding',
@@ -411,12 +435,11 @@ async function main() {
 
   for (const h of horsesData) {
     const horse = await prisma.horse.upsert({
-      where: { microchipRfid: h.rfid },
+      where: { microchipRfid: h.microchip },
       update: {
         horseCode: h.horseCode,
         name: h.name,
         microchip: h.microchip,
-        rfid: h.rfid,
         breed: h.breed,
         dob: h.dob,
         gender: h.gender,
@@ -425,15 +448,17 @@ async function main() {
         isMedicalLocked: h.isMedicalLocked,
         ownerId: h.ownerId,
         retireReason: h.status === HorseStatus.RETIRED ? RetireReason.RETIRED : null,
-        deleteReason: h.status === HorseStatus.RETIRED ? 'Tuổi tác đạt ngưỡng và nghỉ hưu vinh danh sau chức vô địch Derby 2024' : null,
+        deleteReason:
+          h.status === HorseStatus.RETIRED
+            ? 'Tuổi tác đạt ngưỡng và nghỉ hưu vinh danh sau chức vô địch Derby 2024'
+            : null,
         deletedAt: h.status === HorseStatus.RETIRED ? new Date('2025-11-20') : null,
       },
       create: {
         horseCode: h.horseCode,
         name: h.name,
         microchip: h.microchip,
-        rfid: h.rfid,
-        microchipRfid: h.rfid,
+        microchipRfid: h.microchip,
         breed: h.breed,
         dob: h.dob,
         gender: h.gender,
@@ -442,7 +467,10 @@ async function main() {
         isMedicalLocked: h.isMedicalLocked,
         ownerId: h.ownerId,
         retireReason: h.status === HorseStatus.RETIRED ? RetireReason.RETIRED : null,
-        deleteReason: h.status === HorseStatus.RETIRED ? 'Tuổi tác đạt ngưỡng và nghỉ hưu vinh danh sau chức vô địch Derby 2024' : null,
+        deleteReason:
+          h.status === HorseStatus.RETIRED
+            ? 'Tuổi tác đạt ngưỡng và nghỉ hưu vinh danh sau chức vô địch Derby 2024'
+            : null,
         deletedAt: h.status === HorseStatus.RETIRED ? new Date('2025-11-20') : null,
       },
     });
@@ -488,7 +516,8 @@ async function main() {
       expectedRestDays: 14,
       recheckDate: new Date(Date.now() + 11 * 86400000),
       appliedMedicalStatus: HorseStatus.INJURED,
-      lockReason: 'Viêm cấp tính dây chằng treo (Suspensory ligament acute desmitis) trong bài chạy thử',
+      lockReason:
+        'Viêm cấp tính dây chằng treo (Suspensory ligament acute desmitis) trong bài chạy thử',
       unlockConditions: 'Siêu âm lại hoàn toàn bình phục và vượt qua bài test co duỗi flexion test',
       isLocked: true,
     },
@@ -529,7 +558,8 @@ async function main() {
       isLocked: false,
       unlockedAt: new Date(Date.now() - 30 * 86400000),
       unlockVetUserId: vet.id,
-      unlockReason: 'Đã hoàn toàn bình phục sau 2 tuần chườm lạnh và vật lý trị liệu, kết quả siêu âm bình thường',
+      unlockReason:
+        'Đã hoàn toàn bình phục sau 2 tuần chườm lạnh và vật lý trị liệu, kết quả siêu âm bình thường',
     },
   });
 
@@ -646,10 +676,12 @@ async function main() {
       restingHeartRate: 46,
       respiratoryRate: 18,
       weightKg: 510.0,
-      clinicalExamination: 'Sưng nóng rõ rệt vùng gân gót chân trước bên trái, phản xạ co giật đau cấp 3/5.',
+      clinicalExamination:
+        'Sưng nóng rõ rệt vùng gân gót chân trước bên trái, phản xạ co giật đau cấp 3/5.',
       symptoms: 'Khập khiễng khi sải bước nhanh, né tránh chịu lực hoàn toàn chân trước trái.',
       clinicalDiagnosis: 'Viêm rách vi thể gân treo chi trước (Suspensory Ligament Desmitis).',
-      treatmentProtocol: 'Chườm lạnh hydrotherapy 3 lần/ngày, băng ép cố định, tiêm kháng viêm NSAID và đặt lệnh Khóa Y Tế.',
+      treatmentProtocol:
+        'Chườm lạnh hydrotherapy 3 lần/ngày, băng ép cố định, tiêm kháng viêm NSAID và đặt lệnh Khóa Y Tế.',
       requiresFollowUp: true,
       followUpDate: new Date(Date.now() + 11 * 86400000),
       createdAt: new Date(Date.now() - 3 * 86400000),
@@ -700,7 +732,9 @@ async function main() {
       createdAt: new Date(),
     },
   });
-  console.log(`[4/9] Seeded Medical Records (OPEN, CLOSED, DRAFT) & Medical Locks (ACTIVE, RELEASED)`);
+  console.log(
+    `[4/9] Seeded Medical Records (OPEN, CLOSED, DRAFT) & Medical Locks (ACTIVE, RELEASED)`,
+  );
 
   // 9. Giáo án Huấn Luyện bao quát 100% PlanStatus: ACTIVE, COMPLETED, DRAFT
   const now = new Date();
@@ -932,7 +966,9 @@ async function main() {
     update: { value: 4 },
     create: { name: 'training_plan', value: 4 },
   });
-  console.log(`[5/9] Seeded Training Plans (ACTIVE, COMPLETED, DRAFT) & Workouts (COMPLETED, SCHEDULED, BLOCKED, MISSED)`);
+  console.log(
+    `[5/9] Seeded Training Plans (ACTIVE, COMPLETED, DRAFT) & Workouts (COMPLETED, SCHEDULED, BLOCKED, MISSED)`,
+  );
 
   // 11. Chăm Sóc Định Kỳ (Catalogs & Schedules: PENDING, COMPLETED, OVERDUE)
   const catTetanus = await prisma.preventiveTypeCatalog.upsert({
@@ -1079,7 +1115,8 @@ async function main() {
       type: 'TRAINING_LOCK_PLACED',
       category: NotificationCategory.LOCK,
       title: 'Training Lock Placed',
-      message: 'Medical Lock LOCK-HR-000002-001 placed on Northern Dancer Legacy. Heavy workouts blocked.',
+      message:
+        'Medical Lock LOCK-HR-000002-001 placed on Northern Dancer Legacy. Heavy workouts blocked.',
       senderName: vet.fullName,
       readAt: null,
     },
@@ -1131,7 +1168,11 @@ async function main() {
       action: 'USER_REGISTERED',
       entityName: 'User',
       entityId: 'pending-groom-id',
-      newValuesJson: JSON.stringify({ email: 'pending.groom@gmail.com', role: 'GROOM', status: 'PENDING_APPROVAL' }),
+      newValuesJson: JSON.stringify({
+        email: 'pending.groom@gmail.com',
+        role: 'GROOM',
+        status: 'PENDING_APPROVAL',
+      }),
       timestamp: new Date(Date.now() - 5 * 86400000),
     },
     {
@@ -1139,7 +1180,11 @@ async function main() {
       action: 'STALL_ALLOCATION_CREATED',
       entityName: 'StallAllocation',
       entityId: `alloc-${horse1.id}`,
-      newValuesJson: JSON.stringify({ horseCode: horse1.horseCode, stallCode: 'STALL-A01', groom: groom1.fullName }),
+      newValuesJson: JSON.stringify({
+        horseCode: horse1.horseCode,
+        stallCode: 'STALL-A01',
+        groom: groom1.fullName,
+      }),
       timestamp: new Date(Date.now() - 4 * 86400000),
     },
     {
@@ -1147,7 +1192,11 @@ async function main() {
       action: 'MEDICAL_LOCK_APPLIED',
       entityName: 'MedicalLock',
       entityId: 'LOCK-HR-000002-001',
-      newValuesJson: JSON.stringify({ horseCode: horse2.horseCode, reason: 'Suspensory ligament acute desmitis', restDays: 14 }),
+      newValuesJson: JSON.stringify({
+        horseCode: horse2.horseCode,
+        reason: 'Suspensory ligament acute desmitis',
+        restDays: 14,
+      }),
       timestamp: new Date(Date.now() - 3 * 86400000),
     },
     {
@@ -1155,7 +1204,11 @@ async function main() {
       action: 'TRAINING_PLAN_CREATED',
       entityName: 'TrainingPlan',
       entityId: plan1.id,
-      newValuesJson: JSON.stringify({ planCode: 'GA-000001', horseCode: horse1.horseCode, phaseName: plan1.phaseName }),
+      newValuesJson: JSON.stringify({
+        planCode: 'GA-000001',
+        horseCode: horse1.horseCode,
+        phaseName: plan1.phaseName,
+      }),
       timestamp: new Date(Date.now() - 2 * 86400000),
     },
     {
@@ -1416,7 +1469,14 @@ async function main() {
   for (const s of shiftDefs) {
     const shift = await prisma.shiftCatalog.upsert({
       where: { code: s.code },
-      update: { name: s.name, startTime: s.startTime, endTime: s.endTime, isOvernight: s.isOvernight, sortOrder: s.sortOrder, description: s.description },
+      update: {
+        name: s.name,
+        startTime: s.startTime,
+        endTime: s.endTime,
+        isOvernight: s.isOvernight,
+        sortOrder: s.sortOrder,
+        description: s.description,
+      },
       create: s,
     });
     shiftIds[s.code] = shift.id;
@@ -1531,11 +1591,20 @@ async function main() {
   for (const sup of supplyDefs) {
     await prisma.supplyCatalog.upsert({
       where: { code: sup.code },
-      update: { name: sup.name, category: sup.category, unit: sup.unit, unitPrice: sup.unitPrice, withdrawalDays: sup.withdrawalDays, description: sup.description },
+      update: {
+        name: sup.name,
+        category: sup.category,
+        unit: sup.unit,
+        unitPrice: sup.unitPrice,
+        withdrawalDays: sup.withdrawalDays,
+        description: sup.description,
+      },
       create: sup,
     });
   }
-  console.log(`[*] Seeded 12 Comprehensive Supply Catalog Items across Feeds, Supplements, Medicine & Tools`);
+  console.log(
+    `[*] Seeded 12 Comprehensive Supply Catalog Items across Feeds, Supplements, Medicine & Tools`,
+  );
 
   // ----------------------------------------------------------------
   // Flow 4 Phase 1: Phân ca trực mẫu (ShiftRoster) cho tuần hiện tại
