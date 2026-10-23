@@ -190,42 +190,9 @@ export class SimulatorService {
     };
   }
 
-  async getHorsesForSimulator() {
-    const horses = await this.prisma.horse.findMany({
-      where: { deletedAt: null },
-      select: {
-        id: true,
-        name: true,
-        horseCode: true,
-        microchipRfid: true,
-        microchip: true,
-        breed: true,
-        color: true,
-        gender: true,
-        dob: true,
-        status: true,
-        isMedicalLocked: true,
-        stallAllocations: {
-          where: { isActive: true },
-          select: {
-            id: true,
-            stall: { select: { id: true, code: true, zone: true } },
-          },
-          take: 1,
-        },
-      },
-      orderBy: { name: 'asc' },
-    });
-    return horses.map((h) => ({
-      ...h,
-      stallCode: h.stallAllocations[0]?.stall?.code || null,
-      zone: h.stallAllocations[0]?.stall?.zone || null,
-    }));
-  }
-
   async getContext(
     sessionId: string,
-    actor?: CurrentUserPayload,
+    actor: CurrentUserPayload,
   ): Promise<WorkoutSimulationContext | ExamSimulationContext> {
     const session = await this.prisma.simulatorSession.findUnique({
       where: { id: sessionId },
@@ -246,7 +213,7 @@ export class SimulatorService {
       );
     }
     if (session.type === SimulatorSessionType.EXAM) {
-      if (actor && (actor.role !== UserRole.VETERINARIAN || session.actorUserId !== actor.userId)) {
+      if (actor.role !== UserRole.VETERINARIAN || session.actorUserId !== actor.userId) {
         throw apiError(
           HttpStatus.FORBIDDEN,
           'SIMULATOR_SESSION_FORBIDDEN',
@@ -276,7 +243,7 @@ export class SimulatorService {
         },
       };
     }
-    if (actor && actor.role !== UserRole.HEAD_TRAINER) {
+    if (actor.role !== UserRole.HEAD_TRAINER) {
       throw apiError(
         HttpStatus.FORBIDDEN,
         'SIMULATOR_TRAINER_REQUIRED',
@@ -284,9 +251,8 @@ export class SimulatorService {
       );
     }
     if (
-      actor &&
-      (session.actorUserId !== actor.userId ||
-        session.workoutSession?.trainingPlan.trainerUserId !== actor.userId)
+      session.actorUserId !== actor.userId ||
+      session.workoutSession?.trainingPlan.trainerUserId !== actor.userId
     ) {
       throw apiError(
         HttpStatus.FORBIDDEN,

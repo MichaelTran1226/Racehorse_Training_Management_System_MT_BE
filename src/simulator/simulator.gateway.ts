@@ -14,7 +14,6 @@ import { validate } from 'class-validator';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { Role } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from '../auth/auth.service';
 import { IncidentsService } from '../incidents/incidents.service';
 import { CurrentUserPayload } from '../common/decorators/current-user.decorator';
@@ -66,7 +65,6 @@ export class SimulatorGateway implements OnGatewayInit, OnGatewayConnection, OnG
     private readonly simulatorService: SimulatorService,
     private readonly incidentsService: IncidentsService,
     private readonly realtimeService: SimulatorRealtimeService,
-    private readonly prisma: PrismaService,
   ) {}
 
   afterInit(server: Server) {
@@ -82,20 +80,8 @@ export class SimulatorGateway implements OnGatewayInit, OnGatewayConnection, OnG
         client.handshake.headers?.authorization?.replace(/^Bearer\s+/i, '');
 
       if (!rawToken || typeof rawToken !== 'string') {
-        const defaultTrainer = await this.prisma.user.findFirst({
-          where: { role: Role.HEAD_TRAINER, status: 'ACTIVE' },
-        });
-        const fallbackUser: CurrentUserPayload = {
-          userId: defaultTrainer?.id || 'simulator-device',
-          email: defaultTrainer?.email || 'simulator@equiflow.internal',
-          role: Role.HEAD_TRAINER,
-          fullName: defaultTrainer?.fullName || 'EquiFlow Simulator Device',
-        };
-        client.data.user = fallbackUser;
-        client.data.authReady = Promise.resolve();
-        this.logger.log(
-          `Simulator Device connected [${client.id}] in public mode (actor: ${fallbackUser.email})`,
-        );
+        this.logger.warn(`Rejected connection [${client.id}]: missing auth token`);
+        client.disconnect(true);
         return;
       }
 
@@ -163,10 +149,7 @@ export class SimulatorGateway implements OnGatewayInit, OnGatewayConnection, OnG
     await client.data?.authReady;
     const user: CurrentUserPayload | undefined = client.data?.user;
     if (!user) throw new Error('UNAUTHENTICATED');
-    if (user.role !== Role.VETERINARIAN && user.email !== 'simulator@equiflow.internal') {
-      const isDevice = user.fullName?.includes('Simulator');
-      if (!isDevice) throw new Error('FORBIDDEN');
-    }
+    if (user.role !== Role.VETERINARIAN) throw new Error('FORBIDDEN');
     return user;
   }
 

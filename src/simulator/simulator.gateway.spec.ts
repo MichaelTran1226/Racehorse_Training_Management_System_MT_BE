@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { Role, SeverityLevel } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from '../auth/auth.service';
 import { IncidentsService } from '../incidents/incidents.service';
 import { SimulatorGateway } from './simulator.gateway';
@@ -49,19 +48,6 @@ describe('SimulatorGateway', () => {
         { provide: SimulatorService, useValue: simulatorService },
         { provide: IncidentsService, useValue: incidentsService },
         { provide: SimulatorRealtimeService, useValue: realtimeService },
-        {
-          provide: PrismaService,
-          useValue: {
-            user: {
-              findFirst: jest.fn().mockResolvedValue({
-                id: 'trainer-1',
-                email: 'trainer@equiflow.internal',
-                role: 'HEAD_TRAINER',
-                fullName: 'EquiFlow Simulator Device',
-              }),
-            },
-          },
-        },
       ],
     }).compile();
 
@@ -70,7 +56,7 @@ describe('SimulatorGateway', () => {
   });
 
   describe('handleConnection', () => {
-    it('connects client in public mode when token is missing', async () => {
+    it('disconnects client when token is missing', async () => {
       const mockClient: any = {
         handshake: { auth: {} },
         disconnect: jest.fn(),
@@ -79,9 +65,8 @@ describe('SimulatorGateway', () => {
 
       await gateway.handleConnection(mockClient);
 
-      expect(mockClient.disconnect).not.toHaveBeenCalled();
-      expect(mockClient.data.user).toBeDefined();
-      expect(mockClient.data.user.role).toBe('HEAD_TRAINER');
+      expect(mockClient.disconnect).toHaveBeenCalledWith(true);
+      expect(mockClient.data.user).toBeUndefined();
     });
 
     it('disconnects client when JWT is invalid', async () => {
