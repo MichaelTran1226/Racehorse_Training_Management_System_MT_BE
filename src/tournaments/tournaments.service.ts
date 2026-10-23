@@ -526,36 +526,39 @@ export class TournamentsService {
       );
     }
 
-    // Kiểm tra trùng lặp
-    const existing = await this.prisma.tournamentRegistration.findUnique({
-      where: {
-        tournamentId_horseId: {
-          tournamentId,
-          horseId: dto.horseId,
-        },
-      },
-    });
-
-    if (existing) {
-      throw apiError(
+    const duplicate = () =>
+      apiError(
         HttpStatus.CONFLICT,
         'ALREADY_REGISTERED',
         `Horse ${horse.name} is already registered for this tournament.`,
       );
-    }
 
-    const registration = await this.prisma.tournamentRegistration.create({
-      data: {
-        tournamentId,
-        horseId: dto.horseId,
-        registeredByTrainerId: actor.id,
-        status: RegistrationStatus.REGISTERED,
-        notes: dto.notes,
-      },
-      include: {
-        horse: { select: { id: true, name: true, horseCode: true } },
-      },
-    });
+    // RULE-CONC-01: kiểm tra trùng + tạo trong một transaction; ràng buộc unique (tournamentId, horseId)
+    // chặn lượt đăng ký đồng thời lọt qua bước kiểm tra, khi đó trả 409 thay vì 500.
+    const registration = await this.prisma
+      .$transaction(async (tx) => {
+        const existing = await tx.tournamentRegistration.findUnique({
+          where: { tournamentId_horseId: { tournamentId, horseId: dto.horseId } },
+        });
+        if (existing) throw duplicate();
+        return tx.tournamentRegistration.create({
+          data: {
+            tournamentId,
+            horseId: dto.horseId,
+            registeredByTrainerId: actor.id,
+            status: RegistrationStatus.REGISTERED,
+            notes: dto.notes,
+          },
+          include: {
+            horse: { select: { id: true, name: true, horseCode: true } },
+          },
+        });
+      })
+      .catch((err: unknown) => {
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002')
+          throw duplicate();
+        throw err;
+      });
 
     await this.audit.record(
       { id: actor.id, name: actor.name },

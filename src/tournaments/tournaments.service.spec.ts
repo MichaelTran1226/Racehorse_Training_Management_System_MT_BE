@@ -3,7 +3,7 @@ import { TournamentsService } from './tournaments.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { RegistrationStatus, TournamentStatus, TrackSurface } from '@prisma/client';
+import { Prisma, RegistrationStatus, TournamentStatus, TrackSurface } from '@prisma/client';
 
 describe('TournamentsService', () => {
   let service: TournamentsService;
@@ -283,6 +283,37 @@ describe('TournamentsService', () => {
       const actor = { id: 'u2', name: 'Trainer', role: 'HEAD_TRAINER' };
       const res = await service.registerHorse('t-1', { horseId: 'h-ok' }, actor);
       expect(res.id).toBe('reg-1');
+    });
+
+    // RULE-CONC-01: hai lượt đăng ký cùng ngựa chạy đồng thời đều qua bước kiểm tra trùng.
+    it('registers inside a transaction and answers a concurrent duplicate with 409 ALREADY_REGISTERED', async () => {
+      prisma.tournament.findUnique.mockResolvedValue({
+        id: 't-1',
+        name: 'Cup',
+        status: TournamentStatus.OPEN_REGISTRATION,
+        registrationDeadline: new Date(Date.now() + 86400000),
+      });
+      prisma.horse.findUnique.mockResolvedValue({
+        id: 'h-ok',
+        name: 'Champion',
+        isMedicalLocked: false,
+        deletedAt: null,
+      });
+      prisma.tournamentRegistration.findUnique.mockResolvedValue(null);
+      prisma.tournamentRegistration.create.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+          code: 'P2002',
+          clientVersion: 'test',
+        }),
+      );
+
+      const actor = { id: 'u2', name: 'Trainer', role: 'HEAD_TRAINER' };
+      await expect(service.registerHorse('t-1', { horseId: 'h-ok' }, actor)).rejects.toMatchObject({
+        status: 409,
+        response: expect.objectContaining({ code: 'ALREADY_REGISTERED' }),
+      });
+      expect(prisma.$transaction).toHaveBeenCalled();
+      expect(notifications.notifyUsers).not.toHaveBeenCalled();
     });
 
     it('should cancel registration', async () => {
